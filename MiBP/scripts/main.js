@@ -204,15 +204,12 @@ system.runInterval(() => {
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   for (const car of cars) {
     const cLoc = car.location;
-    let nearbyCarCount = 0;
-    for (const otherCar of cars) {
-      const oLoc = otherCar.location;
-      const dSq = Math.pow(cLoc.x - oLoc.x, 2) + Math.pow(cLoc.y - oLoc.y, 2) + Math.pow(cLoc.z - oLoc.z, 2);
-      if (dSq <= 400) {
-        nearbyCarCount++;
-      }
-    }
-    if (nearbyCarCount >= 4) {
+    const nearbyEntities = overworld.getEntities({
+      location: cLoc,
+      maxDistance: 15,
+      excludeTypes: ["minecraft:item"]
+    });
+    if (nearbyEntities.length >= 6) {
       car.addEffect("slowness", 30, { amplifier: 7, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
