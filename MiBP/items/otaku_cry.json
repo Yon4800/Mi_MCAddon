@@ -4,8 +4,7 @@
     "description": {
       "identifier": "mi:otaku_cry",
       "menu_category": {
-        "category": "equipment",
-        "group": "itemGroup.name.pickaxe"
+        "category": "equipment"
       }
     },
     "components": {
@@ -26,13 +25,6 @@
         ]
       },
       "minecraft:damage": 5,
-      "minecraft:tags": {
-        "tags": [
-          "minecraft:is_tool",
-          "minecraft:is_pickaxe",
-          "minecraft:is_shovel"
-        ]
-      },
       "minecraft:digger": {
         "use_efficiency": true,
         "destroy_speeds": [

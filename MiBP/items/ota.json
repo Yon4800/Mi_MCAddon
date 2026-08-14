@@ -4,8 +4,7 @@
     "description": {
       "identifier": "mi:ota",
       "menu_category": {
-        "category": "equipment",
-        "group": "itemGroup.name.axe"
+        "category": "equipment"
       }
     },
     "components": {
@@ -26,13 +25,6 @@
         ]
       },
       "minecraft:damage": 6,
-      "minecraft:tags": {
-        "tags": [
-          "minecraft:is_tool",
-          "minecraft:is_axe",
-          "minecraft:is_pickaxe"
-        ]
-      },
       "minecraft:digger": {
         "use_efficiency": true,
         "destroy_speeds": [

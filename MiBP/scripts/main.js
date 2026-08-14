@@ -17,7 +17,7 @@ var emojiMap = {
   ":blebcat:": "\uE007",
   ":regretcar:": "\uE008"
 };
-world.beforeEvents.chatSend.subscribe((event) => {
+world.afterEvents.chatSend.subscribe((event) => {
   const sender = event.sender;
   let message = event.message;
   let hasEmoji = false;
@@ -28,7 +28,6 @@ world.beforeEvents.chatSend.subscribe((event) => {
     }
   }
   if (hasEmoji) {
-    event.cancel = true;
     system.run(() => {
       world.sendMessage(`<${sender.name}> ${message}`);
     });
