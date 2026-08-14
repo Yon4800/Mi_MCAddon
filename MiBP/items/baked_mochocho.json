@@ -4,7 +4,7 @@
     "description": {
       "identifier": "mi:baked_mochocho",
       "menu_category": {
-        "category": "equipment"
+        "category": "items"
       }
     },
     "components": {
@@ -14,8 +14,10 @@
       },
       "minecraft:food": {
         "nutrition": 8,
-        "saturation_modifier": 2.0
+        "saturation_modifier": 2.0,
+        "can_always_eat": true
       },
+      "minecraft:use_animation": "eat",
       "minecraft:use_modifiers": {
         "use_duration": 1.6
       }
