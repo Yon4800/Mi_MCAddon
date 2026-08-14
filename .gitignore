@@ -1,3 +1,5 @@
 node_modules/
 .vscode/
 *.log
+MiRP/font/emojis/*
+MiRP/font/glyph_*.png
