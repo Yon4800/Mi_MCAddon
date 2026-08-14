@@ -29,3 +29,6 @@ item.spawn_egg.entity.mi:m_tutinoko.name=Murakami Tutinoko Spawn Egg
 item.mi:ecology_server.name=Ecology Server
 item.mi:anko.name=Anko
 item.mi:baked_mochocho.name=Baked Mochocho
+
+entity.mi:regretcar.name=Regret Car
+item.spawn_egg.entity.mi:regretcar.name=Regret Car Spawn Egg

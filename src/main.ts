@@ -12,6 +12,9 @@ interface MochochoState {
 }
 const mochochoEatMap = new Map<string, MochochoState>();
 
+// Set of players who acquired driver's license
+const licensedPlayers = new Set<string>();
+
 // ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
 // ----------------------------------------------------
@@ -68,14 +71,29 @@ world.afterEvents.entityDie.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 2. Interaction Events (Cat -> Blobcat / Woneko, Yosano -> Love)
+// 2. Interaction Events (Cat -> Blobcat / Woneko, Yosano -> Love, Car -> License)
 // ----------------------------------------------------
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
   const itemStack = event.itemStack;
 
-  if (!target || !itemStack) return;
+  if (!target) return;
+
+  // Car ride (License acquisition)
+  if (target.typeId === "mi:regretcar") {
+    const playerId = player.id;
+    if (!licensedPlayers.has(playerId)) {
+      licensedPlayers.add(playerId);
+      system.run(() => {
+        const loc = target.location;
+        player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1, z: loc.z });
+        player.sendMessage("§e🚗 [Mi_Addon] 長い変な車に乗車し、運転免許を取得しました！§r");
+      });
+    }
+  }
+
+  if (!itemStack) return;
 
   // Cat + blob_aichi -> blobcat
   if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:blob_aichi") {
@@ -218,19 +236,18 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 4. Woneko State & Blobcat Rival Effect Loop (Every 1 sec)
+// 4. Periodic Entity Loop (Woneko States & Traffic Jam on Regretcars)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
 
-  // Query all woneko entities
+  // A. Woneko State & Blobcat Rival Effect Loop
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
   const blobcats = overworld.getEntities({ type: "mi:blobcat" });
 
   for (const woneko of wonekos) {
     const loc = woneko.location;
 
-    // A. Health-based Texture Variant update
     const healthComp = woneko.getComponent(EntityComponentTypes.Health) as EntityHealthComponent;
     if (healthComp) {
       const currentHp = healthComp.currentValue;
@@ -245,7 +262,6 @@ system.runInterval(() => {
       }
     }
 
-    // B. Blobcat Rival Proximity Check (Range <= 8 blocks)
     let isRivalNear = false;
     for (const blobcat of blobcats) {
       const bLoc = blobcat.location;
@@ -257,9 +273,29 @@ system.runInterval(() => {
     }
 
     if (isRivalNear) {
-      // Apply Strength II (+5 attack power) and Alert particle
       woneko.addEffect("strength", 40, { amplifier: 1, showParticles: true });
       overworld.spawnParticle("minecraft:villager_angry", { x: loc.x, y: loc.y + 1, z: loc.z });
+    }
+  }
+
+  // B. Regretcar Traffic Jam Gimmick (3 or more cars nearby -> Traffic jam slowdown)
+  const cars = overworld.getEntities({ type: "mi:regretcar" });
+  for (const car of cars) {
+    const cLoc = car.location;
+    let nearbyCarCount = 0;
+
+    for (const otherCar of cars) {
+      const oLoc = otherCar.location;
+      const dSq = Math.pow(cLoc.x - oLoc.x, 2) + Math.pow(cLoc.y - oLoc.y, 2) + Math.pow(cLoc.z - oLoc.z, 2);
+      if (dSq <= 144) { // within 12 blocks (12^2 = 144)
+        nearbyCarCount++;
+      }
+    }
+
+    // If 3 or more cars are crowded, trigger traffic jam
+    if (nearbyCarCount >= 3) {
+      car.addEffect("slowness", 30, { amplifier: 3, showParticles: false });
+      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }
 }, 20);

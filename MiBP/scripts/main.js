@@ -3,6 +3,7 @@ import { world, system, ItemStack, EntityComponentTypes } from "@minecraft/serve
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
+var licensedPlayers = /* @__PURE__ */ new Set();
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   const dimension = deadEntity.dimension;
@@ -50,7 +51,20 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
   const itemStack = event.itemStack;
-  if (!target || !itemStack)
+  if (!target)
+    return;
+  if (target.typeId === "mi:regretcar") {
+    const playerId = player.id;
+    if (!licensedPlayers.has(playerId)) {
+      licensedPlayers.add(playerId);
+      system.run(() => {
+        const loc = target.location;
+        player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1, z: loc.z });
+        player.sendMessage("\xA7e\u{1F697} [Mi_Addon] \u9577\u3044\u5909\u306A\u8ECA\u306B\u4E57\u8ECA\u3057\u3001\u904B\u8EE2\u514D\u8A31\u3092\u53D6\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r");
+      });
+    }
+  }
+  if (!itemStack)
     return;
   if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:blob_aichi") {
     system.run(() => {
@@ -185,6 +199,22 @@ system.runInterval(() => {
     if (isRivalNear) {
       woneko.addEffect("strength", 40, { amplifier: 1, showParticles: true });
       overworld.spawnParticle("minecraft:villager_angry", { x: loc.x, y: loc.y + 1, z: loc.z });
+    }
+  }
+  const cars = overworld.getEntities({ type: "mi:regretcar" });
+  for (const car of cars) {
+    const cLoc = car.location;
+    let nearbyCarCount = 0;
+    for (const otherCar of cars) {
+      const oLoc = otherCar.location;
+      const dSq = Math.pow(cLoc.x - oLoc.x, 2) + Math.pow(cLoc.y - oLoc.y, 2) + Math.pow(cLoc.z - oLoc.z, 2);
+      if (dSq <= 144) {
+        nearbyCarCount++;
+      }
+    }
+    if (nearbyCarCount >= 3) {
+      car.addEffect("slowness", 30, { amplifier: 3, showParticles: false });
+      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }
 }, 20);

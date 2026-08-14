@@ -1,0 +1,20 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:regretcar",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entities/regretcar"
+      },
+      "geometry": {
+        "default": "geometry.regretcar"
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

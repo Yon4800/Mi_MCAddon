@@ -1,0 +1,73 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:regretcar",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "regretcar",
+          "vehicle",
+          "inanimate",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 30,
+        "max": 30
+      },
+      "minecraft:physics": {},
+      "minecraft:collision_box": {
+        "width": 1.4,
+        "height": 0.9
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:movement": {
+        "value": 0.42
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": true
+      },
+      "minecraft:rideable": {
+        "seat_count": 2,
+        "family_types": [
+          "player"
+        ],
+        "interact_text": "action.interact.ride.boat",
+        "controlling_seat": 0,
+        "seats": [
+          {
+            "position": [
+              0,
+              0.65,
+              0.7
+            ],
+            "min_rider_count": 0,
+            "max_rider_count": 1
+          },
+          {
+            "position": [
+              0,
+              0.65,
+              -0.3
+            ],
+            "min_rider_count": 1,
+            "max_rider_count": 2
+          }
+        ]
+      },
+      "minecraft:input_ground_controlled": {},
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      }
+    }
+  }
+}
