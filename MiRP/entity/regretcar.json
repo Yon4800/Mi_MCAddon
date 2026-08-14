@@ -12,6 +12,9 @@
       "geometry": {
         "default": "geometry.regretcar"
       },
+      "scripts": {
+        "scale": "3.0"
+      },
       "render_controllers": [
         "controller.render.default"
       ]
