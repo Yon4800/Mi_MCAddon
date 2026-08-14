@@ -309,20 +309,27 @@ system.runInterval(() => {
     }
   }
 
-  // B. Regretcar Traffic Jam Gimmick (Dense entities or other cars nearby -> Traffic jam slowdown)
+  // B. Regretcar Traffic Jam Gimmick (10+ cars or 30+ entities within 64 blocks -> Traffic jam slowdown)
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   for (const car of cars) {
     const cLoc = car.location;
 
-    // Check all nearby entities within 15 blocks (excluding dropped items)
+    // Check all nearby entities within 64 blocks (excluding dropped items)
     const nearbyEntities = overworld.getEntities({
       location: cLoc,
-      maxDistance: 15,
+      maxDistance: 64,
       excludeTypes: ["minecraft:item"]
     });
 
-    // If 6 or more entities (mobs, players, animals, cars) are crowded around the car, trigger traffic jam (slow creeping speed)
-    if (nearbyEntities.length >= 6) {
+    // Check nearby cars within 64 blocks
+    const nearbyCars = overworld.getEntities({
+      location: cLoc,
+      maxDistance: 64,
+      type: "mi:regretcar"
+    });
+
+    // If 10 or more cars OR 30 or more entities within 64 blocks, trigger traffic jam
+    if (nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
       car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }

@@ -227,10 +227,15 @@ system.runInterval(() => {
     const cLoc = car.location;
     const nearbyEntities = overworld.getEntities({
       location: cLoc,
-      maxDistance: 15,
+      maxDistance: 64,
       excludeTypes: ["minecraft:item"]
     });
-    if (nearbyEntities.length >= 6) {
+    const nearbyCars = overworld.getEntities({
+      location: cLoc,
+      maxDistance: 64,
+      type: "mi:regretcar"
+    });
+    if (nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
       car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
