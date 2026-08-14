@@ -3,17 +3,14 @@ const path = require('path');
 const zlib = require('zlib');
 
 const baseDir = path.resolve(__dirname, '..');
+const kEmojiDir = path.join(baseDir, 'MiRP/font/k_emojis');
 const emojiDir = path.join(baseDir, 'MiRP/font/emojis');
 
-if (!fs.existsSync(emojiDir)) {
-  fs.mkdirSync(emojiDir, { recursive: true });
-}
+if (!fs.existsSync(kEmojiDir)) fs.mkdirSync(kEmojiDir, { recursive: true });
+if (!fs.existsSync(emojiDir)) fs.mkdirSync(emojiDir, { recursive: true });
 
-// Read raw RGBA pixel data from an uncompressed or simple 16x16 PNG
-// For standard PNG parsing:
 function parsePngRGBA(filePath) {
   const buf = fs.readFileSync(filePath);
-  // Check PNG signature
   if (buf[0] !== 0x89 || buf[1] !== 0x50 || buf[2] !== 0x4E || buf[3] !== 0x47) {
     return null;
   }
@@ -102,21 +99,48 @@ function createPngRGBA(width, height, getPixel) {
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-// 1. Gather all PNG files in font/emojis/
-const files = fs.readdirSync(emojiDir).filter(f => f.endsWith('.png'));
-console.log(`Found ${files.length} individual emoji files in MiRP/font/emojis/`);
+// 1. Fixed order for k_emojis (existing default emojis)
+const fixedKOrder = [
+  'blobcat.png', 'woneko.png', 'aichi.png', 'mochocho.png',
+  'ota.png', 'otaku_cry.png', 'blebcat.png', 'regretcar.png',
+  'yosano.png', 'tutinoko.png'
+];
 
 const emojiSlotMap = []; // slot index (1..255) -> parsed pixels
+let currentSlot = 1;
 
-for (let i = 0; i < files.length; i++) {
-  const fileName = files[i];
-  const parsed = parsePngRGBA(path.join(emojiDir, fileName));
-  if (parsed) {
-    emojiSlotMap[i + 1] = parsed; // slot 1 = \uE001, etc.
+// Load k_emojis first (fixed slots \uE001 .. \uE00A)
+for (const file of fixedKOrder) {
+  const p = path.join(kEmojiDir, file);
+  if (fs.existsSync(p)) {
+    const parsed = parsePngRGBA(p);
+    if (parsed) {
+      emojiSlotMap[currentSlot++] = parsed;
+    }
   }
 }
 
-// 2. Build 256x256 glyph_E0.png from individual 16x16 images
+// Also load any additional files in k_emojis
+const otherKFiles = fs.readdirSync(kEmojiDir).filter(f => f.endsWith('.png') && !fixedKOrder.includes(f));
+for (const file of otherKFiles) {
+  const parsed = parsePngRGBA(path.join(kEmojiDir, file));
+  if (parsed) {
+    emojiSlotMap[currentSlot++] = parsed;
+  }
+}
+
+// Load custom user emojis from emojis/ (slots following k_emojis)
+const customFiles = fs.readdirSync(emojiDir).filter(f => f.endsWith('.png'));
+for (const file of customFiles) {
+  const parsed = parsePngRGBA(path.join(emojiDir, file));
+  if (parsed) {
+    emojiSlotMap[currentSlot++] = parsed;
+  }
+}
+
+console.log(`Packed total of ${currentSlot - 1} emojis (${fixedKOrder.length} from k_emojis, ${customFiles.length} from emojis) into font glyphs.`);
+
+// 2. Build 256x256 font sheet
 const sheetWidth = 256;
 const sheetHeight = 256;
 
@@ -129,7 +153,6 @@ const packedSheet = createPngRGBA(sheetWidth, sheetHeight, (x, y) => {
 
   const emoji = emojiSlotMap[slot];
   if (emoji && emoji.pixels) {
-    // Sample nearest if dimensions differ from 16x16
     const srcX = Math.floor((localX / 16) * emoji.width);
     const srcY = Math.floor((localY / 16) * emoji.height);
     const idx = srcY * emoji.width + srcX;
@@ -154,4 +177,4 @@ for (const target of targetPaths) {
   fs.writeFileSync(target, packedSheet);
 }
 
-console.log("Successfully packed all individual emojis into glyph_E0.png and glyph_E1.png!");
+console.log("Successfully packed k_emojis and emojis into glyph_E0.png and glyph_E1.png!");
