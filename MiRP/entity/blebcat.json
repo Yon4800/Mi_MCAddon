@@ -7,13 +7,13 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/blebcat"
+        "default": "textures/entities/blebcat"
       },
       "geometry": {
-        "default": "geometry.cat"
+        "default": "geometry.blebcat"
       },
       "render_controllers": [
-        "controller.render.cat"
+        "controller.render.default"
       ]
     }
   }

@@ -2,20 +2,18 @@
   "format_version": "1.10.0",
   "minecraft:client_entity": {
     "description": {
-      "identifier": "mi:woneko",
+      "identifier": "mi:m_tutinoko",
       "materials": {
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entities/neko_relax",
-        "tired": "textures/entities/neko_tired2",
-        "cry": "textures/entities/neko_cry"
+        "default": "textures/entities/m_tutinoko"
       },
       "geometry": {
-        "default": "geometry.woneko"
+        "default": "geometry.m_tutinoko"
       },
       "render_controllers": [
-        "controller.render.woneko"
+        "controller.render.default"
       ]
     }
   }
