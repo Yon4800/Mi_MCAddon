@@ -57,6 +57,26 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       player.sendMessage("\xA7a[Mi_Addon] \u732B\u304C \u306B\u3083\u3093\u3077\u3063\u3077\u30FC (blobcat) \u306B\u9032\u5316\u3057\u307E\u3057\u305F\uFF01\xA7r");
     });
   }
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:machida") {
+    system.run(() => {
+      const loc = target.location;
+      const dim = target.dimension;
+      if (player.gameMode !== "creative") {
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
+        } else {
+          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          if (equippable) {
+            equippable.setEquipment("Mainhand", void 0);
+          }
+        }
+      }
+      target.remove();
+      dim.spawnEntity("mi:woneko", loc);
+      dim.spawnParticle("minecraft:heart_particle", loc);
+      player.sendMessage("\xA7a[Mi_Addon] \u732B\u304C \u3092\u306D\u3053 (woneko) \u306B\u9032\u5316\u3057\u307E\u3057\u305F\uFF01\xA7r");
+    });
+  }
   if (target.typeId === "mi:yosano" && itemStack.typeId === "mi:machida") {
     system.run(() => {
       const loc = target.location;

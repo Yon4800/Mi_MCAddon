@@ -78,6 +78,32 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     });
   }
 
+  // Cat + machida -> woneko
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:machida") {
+    system.run(() => {
+      const loc = target.location;
+      const dim = target.dimension;
+
+      // Consume 1 machida item
+      if (player.gameMode !== "creative") {
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
+        } else {
+          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          if (equippable) {
+            equippable.setEquipment("Mainhand", undefined);
+          }
+        }
+      }
+
+      // Remove cat and spawn woneko
+      target.remove();
+      dim.spawnEntity("mi:woneko", loc);
+      dim.spawnParticle("minecraft:heart_particle", loc);
+      player.sendMessage("§a[Mi_Addon] 猫が をねこ (woneko) に進化しました！§r");
+    });
+  }
+
   // Yosano + machida -> Affection increase
   if (target.typeId === "mi:yosano" && itemStack.typeId === "mi:machida") {
     system.run(() => {
