@@ -8,13 +8,18 @@
     "conditions": [
       {
         "minecraft:spawns_on_surface": {},
+        "minecraft:spawns_underground": {},
         "minecraft:brightness_filter": {
           "min": 0,
           "max": 7,
           "adjust_for_weather": true
         },
         "minecraft:weight": {
-          "default": 120
+          "default": 160
+        },
+        "minecraft:herd": {
+          "min_size": 4,
+          "max_size": 8
         }
       }
     ]

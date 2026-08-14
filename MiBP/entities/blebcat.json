@@ -15,23 +15,23 @@
         ]
       },
       "minecraft:health": {
-        "value": 5,
-        "max": 5
+        "value": 3,
+        "max": 3
       },
       "minecraft:physics": {
         "has_gravity": true,
         "has_collision": true
       },
       "minecraft:collision_box": {
-        "width": 0.6,
-        "height": 0.6
+        "width": 0.5,
+        "height": 0.5
       },
       "minecraft:pushable": {
         "is_pushable": true,
         "is_pushable_by_piston": true
       },
       "minecraft:movement": {
-        "value": 0.35
+        "value": 0.38
       },
       "minecraft:movement.basic": {},
       "minecraft:jump.static": {},
@@ -40,14 +40,15 @@
         "can_jump": true
       },
       "minecraft:attack": {
-        "damage": 3
+        "damage": 2
       },
       "minecraft:nameable": {
         "always_show": false,
         "allow_name_tag_renaming": true
       },
       "minecraft:behavior.hurt_by_target": {
-        "priority": 0
+        "priority": 0,
+        "alert_same_type": true
       },
       "minecraft:behavior.nearest_attackable_target": {
         "priority": 1,
@@ -59,13 +60,13 @@
               "subject": "other",
               "value": "player"
             },
-            "max_dist": 24
+            "max_dist": 32
           }
         ]
       },
       "minecraft:behavior.melee_attack": {
         "priority": 2,
-        "speed_multiplier": 1.3,
+        "speed_multiplier": 1.4,
         "track_target": true
       },
       "minecraft:behavior.charge_attack": {
@@ -73,11 +74,11 @@
       },
       "minecraft:behavior.random_stroll": {
         "priority": 5,
-        "speed_multiplier": 0.8
+        "speed_multiplier": 0.9
       },
       "minecraft:behavior.look_at_player": {
         "priority": 6,
-        "look_distance": 8.0
+        "look_distance": 10.0
       }
     }
   }
