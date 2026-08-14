@@ -16,7 +16,11 @@
       },
       "render_controllers": [
         "controller.render.woneko"
-      ]
+      ],
+      "spawn_egg": {
+        "base_color": "#FFB6C1",
+        "overlay_color": "#5DADE2"
+      }
     }
   }
 }
