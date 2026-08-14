@@ -1,0 +1,9 @@
+{
+  "font_type": "bitmap",
+  "characters": [
+    {
+      "page": 224,
+      "texture": "font/glyph_E0.png"
+    }
+  ]
+}

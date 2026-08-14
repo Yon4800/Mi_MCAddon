@@ -1,0 +1,31 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mi:ota_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "EM ",
+      "ES ",
+      " M "
+    ],
+    "key": {
+      "E": {
+        "item": "mi:ecology_server"
+      },
+      "M": {
+        "item": "mi:machida"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "mi:ota",
+      "count": 1
+    }
+  }
+}

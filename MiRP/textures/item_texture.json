@@ -31,6 +31,12 @@
     },
     "baked_mochocho": {
       "textures": "textures/items/baked_mochocho"
+    },
+    "ota": {
+      "textures": "textures/items/ota"
+    },
+    "otaku_cry": {
+      "textures": "textures/items/otaku_cry"
     }
   }
 }

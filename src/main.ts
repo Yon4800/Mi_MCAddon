@@ -22,6 +22,42 @@ const accidentCarsMap = new Map<string, number>();
 const carPrevPosMap = new Map<string, { x: number, y: number, z: number }>();
 
 // ----------------------------------------------------
+// 0. Misskey Emoji Chat System (chatSend event)
+// ----------------------------------------------------
+const emojiMap: Record<string, string> = {
+  ":blobcat:": "\uE001",
+  ":woneko:": "\uE002",
+  ":aichi:": "\uE003",
+  ":blob_aichi:": "\uE003",
+  ":mochocho:": "\uE004",
+  ":baked_mochocho:": "\uE004",
+  ":ota:": "\uE005",
+  ":otaku_cry:": "\uE006",
+  ":blebcat:": "\uE007",
+  ":regretcar:": "\uE008"
+};
+
+world.beforeEvents.chatSend.subscribe((event) => {
+  const sender = event.sender;
+  let message = event.message;
+  let hasEmoji = false;
+
+  for (const [key, glyph] of Object.entries(emojiMap)) {
+    if (message.includes(key)) {
+      message = message.split(key).join(glyph);
+      hasEmoji = true;
+    }
+  }
+
+  if (hasEmoji) {
+    event.cancel = true;
+    system.run(() => {
+      world.sendMessage(`<${sender.name}> ${message}`);
+    });
+  }
+});
+
+// ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
 // ----------------------------------------------------
 world.afterEvents.entityDie.subscribe((event) => {
@@ -127,13 +163,13 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     });
   }
 
-  // Cat + machida -> woneko
-  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:machida") {
+  // Cat + silenthill -> woneko
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:silenthill") {
     system.run(() => {
       const loc = target.location;
       const dim = target.dimension;
 
-      // Consume 1 machida item
+      // Consume 1 silenthill item
       if (player.gameMode !== "creative") {
         if (itemStack.amount > 1) {
           itemStack.amount -= 1;
@@ -184,7 +220,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       } else {
         // Max love level: 3
         player.sendMessage("§d与謝野晶子: 「あぁ！ 愛しています！ これをあなたに捧げますわ！」§r");
-
+        
         // Give special item (Kanagawa)
         dim.spawnItem(new ItemStack("mi:kanagawa", 1), loc);
         dim.spawnItem(new ItemStack("minecraft:ender_pearl", 2), loc);
@@ -192,7 +228,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         // Ender pearl teleport effect & despawn
         dim.spawnParticle("minecraft:ender_chest_portal_particle", loc);
         player.sendMessage("§d与謝野晶子 はエンダーパールを投げていずこかへ消え去った…§r");
-
+        
         yosanoLoveMap.delete(entityId);
         target.remove();
       }
@@ -243,7 +279,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
-
+    
     // Auto reset if 60 seconds passed since last eat
     if (now - state.lastEatTime > 60000) {
       state.count = 0;
@@ -273,7 +309,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 5. Periodic Entity Loop (Woneko, Car Accidents & Traffic Jams)
+// 5. Periodic Entity Loop (Woneko, Car Accidents, Slopes & Traffic Jams)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
@@ -316,7 +352,7 @@ system.runInterval(() => {
     }
   }
 
-  // B. Regretcar Wall Crash (Accident) & Traffic Jam Gimmick
+  // B. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations: { x: number, y: number, z: number }[] = [];
 
@@ -348,15 +384,13 @@ system.runInterval(() => {
     // 2. Detect Wall Collision (Crash into solid block while ridden)
     const rideable = car.getComponent("minecraft:rideable") as any;
     const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
-
-    // Check if player is riding or very close to controlling the car
     const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
 
     if (isRidden) {
       const viewDir = car.getViewDirection();
       let hasWallHit = false;
 
-      // Scan multi-points ahead of the long front nose (1.5 to 3.8 blocks ahead, across left/center/right)
+      // Scan multi-points ahead of the long front nose (1.8 to 3.4 blocks ahead, across left/center/right)
       const testDistances = [1.8, 2.6, 3.4];
       const lateralOffsets = [-0.8, 0, 0.8];
 

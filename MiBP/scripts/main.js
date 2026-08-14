@@ -5,6 +5,35 @@ var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
 var accidentCarsMap = /* @__PURE__ */ new Map();
+var emojiMap = {
+  ":blobcat:": "\uE001",
+  ":woneko:": "\uE002",
+  ":aichi:": "\uE003",
+  ":blob_aichi:": "\uE003",
+  ":mochocho:": "\uE004",
+  ":baked_mochocho:": "\uE004",
+  ":ota:": "\uE005",
+  ":otaku_cry:": "\uE006",
+  ":blebcat:": "\uE007",
+  ":regretcar:": "\uE008"
+};
+world.beforeEvents.chatSend.subscribe((event) => {
+  const sender = event.sender;
+  let message = event.message;
+  let hasEmoji = false;
+  for (const [key, glyph] of Object.entries(emojiMap)) {
+    if (message.includes(key)) {
+      message = message.split(key).join(glyph);
+      hasEmoji = true;
+    }
+  }
+  if (hasEmoji) {
+    event.cancel = true;
+    system.run(() => {
+      world.sendMessage(`<${sender.name}> ${message}`);
+    });
+  }
+});
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   const dimension = deadEntity.dimension;
@@ -87,7 +116,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       player.sendMessage("\xA7a[Mi_Addon] \u732B\u304C \u306B\u3083\u3093\u3077\u3063\u3077\u30FC (blobcat) \u306B\u9032\u5316\u3057\u307E\u3057\u305F\uFF01\xA7r");
     });
   }
-  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:machida") {
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:silenthill") {
     system.run(() => {
       const loc = target.location;
       const dim = target.dimension;

@@ -32,3 +32,7 @@ item.mi:baked_mochocho.name=ベイクドモチョチョ
 
 entity.mi:regretcar.name=長い変な車
 item.spawn_egg.entity.mi:regretcar.name=長い変な車のスポーンエッグ
+
+item.mi:ota.name=オタクくん
+item.mi:otaku_cry.name=オタクくんの泣いたやつ
+item.spawn_egg.entity.mi:woneko.name=をねこのスポーンエッグ
