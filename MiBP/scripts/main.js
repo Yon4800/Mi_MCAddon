@@ -129,17 +129,29 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 world.afterEvents.itemCompleteUse.subscribe((event) => {
   const player = event.source;
   const itemStack = event.itemStack;
+  const playerId = player.id;
+  const now = Date.now();
   if (itemStack.typeId === "mi:baked_mochocho") {
-    const playerId = player.id;
-    const currentCount = (mochochoEatMap.get(playerId) || 0) + 1;
-    mochochoEatMap.set(playerId, currentCount);
-    if (currentCount >= 20) {
+    let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
+    if (now - state.lastEatTime > 6e4) {
+      state.count = 0;
+    }
+    state.count += 1;
+    state.lastEatTime = now;
+    mochochoEatMap.set(playerId, state);
+    if (state.count >= 20) {
       player.addEffect("nausea", 300, { amplifier: 1 });
       player.addEffect("hunger", 300, { amplifier: 1 });
       player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u3059\u304E\u3066\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
-      mochochoEatMap.set(playerId, 0);
+      mochochoEatMap.set(playerId, { count: 0, lastEatTime: now });
     } else {
-      player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (\u98DF\u3079\u305F\u6570: ${currentCount}/20)\xA7r`);
+      player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (\u98DF\u3079\u305F\u6570: ${state.count}/20)\xA7r`);
+    }
+  }
+  if (itemStack.typeId === "minecraft:milk_bucket") {
+    if (mochochoEatMap.has(playerId)) {
+      mochochoEatMap.delete(playerId);
+      player.sendMessage("\xA7b[Mi_Addon] \u725B\u4E73\u3092\u98F2\u3093\u3067\u80C3\u304C\u3059\u3063\u304D\u308A\u3057\u305F\uFF01\uFF08\u98DF\u3079\u904E\u304E\u30AB\u30A6\u30F3\u30C8\u304C\u30EA\u30BB\u30C3\u30C8\u3055\u308C\u307E\u3057\u305F\uFF09\xA7r");
     }
   }
 });

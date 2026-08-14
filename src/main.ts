@@ -5,8 +5,12 @@ console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 // Map for Yosano affection state
 const yosanoLoveMap = new Map<string, number>();
 
-// Map for Baked Mochocho eat counter per player
-const mochochoEatMap = new Map<string, number>();
+// Map for Baked Mochocho eat counter & timestamp per player
+interface MochochoState {
+  count: number;
+  lastEatTime: number;
+}
+const mochochoEatMap = new Map<string, MochochoState>();
 
 // ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
@@ -173,24 +177,42 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 3. Item Complete Use (Baked Mochocho Overeat Penalty)
+// 3. Item Complete Use (Baked Mochocho Overeat & Reset Logic)
 // ----------------------------------------------------
 world.afterEvents.itemCompleteUse.subscribe((event) => {
   const player = event.source;
   const itemStack = event.itemStack;
+  const playerId = player.id;
+  const now = Date.now();
 
+  // Baked Mochocho Logic
   if (itemStack.typeId === "mi:baked_mochocho") {
-    const playerId = player.id;
-    const currentCount = (mochochoEatMap.get(playerId) || 0) + 1;
-    mochochoEatMap.set(playerId, currentCount);
+    let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
+    
+    // Auto reset if 60 seconds passed since last eat
+    if (now - state.lastEatTime > 60000) {
+      state.count = 0;
+    }
 
-    if (currentCount >= 20) {
+    state.count += 1;
+    state.lastEatTime = now;
+    mochochoEatMap.set(playerId, state);
+
+    if (state.count >= 20) {
       player.addEffect("nausea", 300, { amplifier: 1 }); // 15s nausea
       player.addEffect("hunger", 300, { amplifier: 1 });  // 15s hunger
       player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを食べすぎて、強烈な吐き気と空腹におそわれた…！§r");
-      mochochoEatMap.set(playerId, 0); // Reset count
+      mochochoEatMap.set(playerId, { count: 0, lastEatTime: now }); // Reset counter
     } else {
-      player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (食べた数: ${currentCount}/20)§r`);
+      player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (食べた数: ${state.count}/20)§r`);
+    }
+  }
+
+  // Reset counter when drinking Milk Bucket
+  if (itemStack.typeId === "minecraft:milk_bucket") {
+    if (mochochoEatMap.has(playerId)) {
+      mochochoEatMap.delete(playerId);
+      player.sendMessage("§b[Mi_Addon] 牛乳を飲んで胃がすっきりした！（食べ過ぎカウントがリセットされました）§r");
     }
   }
 });
