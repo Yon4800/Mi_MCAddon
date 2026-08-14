@@ -6,6 +6,21 @@
       "is_spawnable": true,
       "is_summonable": true
     },
+    "component_groups": {
+      "mi:angry": {
+        "minecraft:attack": {
+          "damage": 6
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 1,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        },
+        "minecraft:behavior.charge_attack": {
+          "priority": 2
+        }
+      }
+    },
     "components": {
       "minecraft:type_family": {
         "family": [
@@ -67,6 +82,22 @@
       "minecraft:nameable": {
         "always_show": false,
         "allow_name_tag_renaming": true
+      }
+    },
+    "events": {
+      "mi:become_angry": {
+        "add": {
+          "component_groups": [
+            "mi:angry"
+          ]
+        }
+      },
+      "mi:calm_down": {
+        "remove": {
+          "component_groups": [
+            "mi:angry"
+          ]
+        }
       }
     }
   }

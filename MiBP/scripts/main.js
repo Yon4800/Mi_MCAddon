@@ -1,5 +1,5 @@
 // src/main.ts
-import { world, system, ItemStack, EntityComponentTypes } from "@minecraft/server";
+import { world, system, ItemStack, EntityComponentTypes, Player } from "@minecraft/server";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
@@ -138,6 +138,27 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         target.remove();
       }
     });
+  }
+});
+world.afterEvents.entityHurt.subscribe((event) => {
+  const hurtEntity = event.hurtEntity;
+  const damageSource = event.damageSource;
+  const attacker = damageSource.damagingEntity;
+  if (hurtEntity.typeId === "mi:regretcar" && attacker instanceof Player) {
+    const playerId = attacker.id;
+    if (!licensedPlayers.has(playerId)) {
+      hurtEntity.triggerEvent("mi:become_angry");
+      const cLoc = hurtEntity.location;
+      const pLoc = attacker.location;
+      attacker.dimension.spawnParticle("minecraft:villager_angry", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+      attacker.dimension.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+      attacker.sendMessage("\xA7c\u{1F697}\u{1F4A8} [Mi_Addon] \u7121\u514D\u8A31\u3067\u8ECA\u3092\u653B\u6483\u3057\u305F\u305F\u3081\u3001\u9577\u3044\u5909\u306A\u8ECA\u304C\u6FC0\u6012\u3057\u3066\u4F53\u5F53\u305F\u308A\u3057\u3066\u304D\u305F\uFF01\xA7r");
+      const dx = pLoc.x - cLoc.x;
+      const dz = pLoc.z - cLoc.z;
+      const dist = Math.sqrt(dx * dx + dz * dz) || 1;
+      attacker.applyKnockback(dx / dist * 1.5, dz / dist * 1.5, 1.2, 0.4);
+      attacker.applyDamage(4);
+    }
   }
 });
 world.afterEvents.itemCompleteUse.subscribe((event) => {

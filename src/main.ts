@@ -1,4 +1,4 @@
-import { world, system, ItemStack, EntityComponentTypes, EntityHealthComponent } from "@minecraft/server";
+import { world, system, ItemStack, EntityComponentTypes, EntityHealthComponent, Player } from "@minecraft/server";
 
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 
@@ -195,7 +195,38 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 3. Item Complete Use (Baked Mochocho Overeat & Reset Logic)
+// 3. Entity Hurt Event (Unlicensed Player Attacks Regretcar -> Retaliate/Ram)
+// ----------------------------------------------------
+world.afterEvents.entityHurt.subscribe((event) => {
+  const hurtEntity = event.hurtEntity;
+  const damageSource = event.damageSource;
+  const attacker = damageSource.damagingEntity;
+
+  if (hurtEntity.typeId === "mi:regretcar" && attacker instanceof Player) {
+    const playerId = attacker.id;
+
+    // Check if player does not have a license
+    if (!licensedPlayers.has(playerId)) {
+      hurtEntity.triggerEvent("mi:become_angry");
+      const cLoc = hurtEntity.location;
+      const pLoc = attacker.location;
+
+      attacker.dimension.spawnParticle("minecraft:villager_angry", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+      attacker.dimension.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+      attacker.sendMessage("§c🚗💨 [Mi_Addon] 無免許で車を攻撃したため、長い変な車が激怒して体当たりしてきた！§r");
+
+      // Ramming impact / knockback
+      const dx = pLoc.x - cLoc.x;
+      const dz = pLoc.z - cLoc.z;
+      const dist = Math.sqrt(dx * dx + dz * dz) || 1;
+      attacker.applyKnockback((dx / dist) * 1.5, (dz / dist) * 1.5, 1.2, 0.4);
+      attacker.applyDamage(4);
+    }
+  }
+});
+
+// ----------------------------------------------------
+// 4. Item Complete Use (Baked Mochocho Overeat & Reset Logic)
 // ----------------------------------------------------
 world.afterEvents.itemCompleteUse.subscribe((event) => {
   const player = event.source;
@@ -236,7 +267,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 4. Periodic Entity Loop (Woneko States & Traffic Jam on Regretcars)
+// 5. Periodic Entity Loop (Woneko States & Traffic Jam on Regretcars)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
