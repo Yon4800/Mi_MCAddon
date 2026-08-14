@@ -184,7 +184,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       } else {
         // Max love level: 3
         player.sendMessage("§d与謝野晶子: 「あぁ！ 愛しています！ これをあなたに捧げますわ！」§r");
-        
+
         // Give special item (Kanagawa)
         dim.spawnItem(new ItemStack("mi:kanagawa", 1), loc);
         dim.spawnItem(new ItemStack("minecraft:ender_pearl", 2), loc);
@@ -192,7 +192,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         // Ender pearl teleport effect & despawn
         dim.spawnParticle("minecraft:ender_chest_portal_particle", loc);
         player.sendMessage("§d与謝野晶子 はエンダーパールを投げていずこかへ消え去った…§r");
-        
+
         yosanoLoveMap.delete(entityId);
         target.remove();
       }
@@ -243,7 +243,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
-    
+
     // Auto reset if 60 seconds passed since last eat
     if (now - state.lastEatTime > 60000) {
       state.count = 0;
@@ -345,36 +345,53 @@ system.runInterval(() => {
       }
     }
 
-    // 2. Detect Wall Collision (Crash into solid block)
-    const prevPos = carPrevPosMap.get(carId);
-    carPrevPosMap.set(carId, { x: cLoc.x, y: cLoc.y, z: cLoc.z });
+    // 2. Detect Wall Collision (Crash into solid block while ridden)
+    const rideable = car.getComponent(EntityComponentTypes.Ridable);
+    const riders = rideable?.getRiders() || [];
 
-    if (prevPos) {
-      const moveDistSq = Math.pow(cLoc.x - prevPos.x, 2) + Math.pow(cLoc.z - prevPos.z, 2);
+    if (riders.length > 0) {
       const viewDir = car.getViewDirection();
-      const frontX = Math.floor(cLoc.x + viewDir.x * 2.2);
-      const frontY = Math.floor(cLoc.y + 0.6);
-      const frontZ = Math.floor(cLoc.z + viewDir.z * 2.2);
+      let hasWallHit = false;
 
-      try {
-        const frontBlock = overworld.getBlock({ x: frontX, y: frontY, z: frontZ });
-        // If front block is a solid wall and car was moving or trying to move
-        if (frontBlock && !frontBlock.isAir && !frontBlock.isLiquid && moveDistSq < 0.05) {
-          // Trigger accident!
-          accidentCarsMap.set(carId, now + 60000); // 1 minute (60,000 ms)
-          activeAccidentLocations.push(cLoc);
+      // Scan multi-points ahead of the long front nose (1.5 to 3.8 blocks ahead, across left/center/right)
+      const testDistances = [1.8, 2.6, 3.4];
+      const lateralOffsets = [-0.8, 0, 0.8];
 
-          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+      for (const dist of testDistances) {
+        for (const lat of lateralOffsets) {
+          const checkX = Math.floor(cLoc.x + viewDir.x * dist - viewDir.z * lat);
+          const checkY = Math.floor(cLoc.y + 0.5);
+          const checkZ = Math.floor(cLoc.z + viewDir.z * dist + viewDir.x * lat);
 
-          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-          for (const p of nearbyPlayers) {
-            p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
-          }
-          continue;
+          try {
+            const block = overworld.getBlock({ x: checkX, y: checkY, z: checkZ });
+            if (block && !block.isAir && !block.isLiquid) {
+              hasWallHit = true;
+              break;
+            }
+          } catch (e) {}
         }
-      } catch (e) {
-        // Block coordinate check safe guard
+        if (hasWallHit) break;
+      }
+
+      if (hasWallHit) {
+        // Trigger accident!
+        accidentCarsMap.set(carId, now + 60000); // 1 minute
+        activeAccidentLocations.push(cLoc);
+
+        // Bounce back slightly from the wall
+        try {
+          car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+        } catch (e) {}
+
+        overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+        overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+
+        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        for (const p of nearbyPlayers) {
+          p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
+        }
+        continue;
       }
     }
 
@@ -403,10 +420,10 @@ system.runInterval(() => {
 
     // Slowdown if near an accident OR congested
     if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
-      car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
+      car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }
-}, 20);
+}, 5);
 
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");

@@ -5,7 +5,6 @@ var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
 var accidentCarsMap = /* @__PURE__ */ new Map();
-var carPrevPosMap = /* @__PURE__ */ new Map();
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   const dimension = deadEntity.dimension;
@@ -247,28 +246,44 @@ system.runInterval(() => {
         }
       }
     }
-    const prevPos = carPrevPosMap.get(carId);
-    carPrevPosMap.set(carId, { x: cLoc.x, y: cLoc.y, z: cLoc.z });
-    if (prevPos) {
-      const moveDistSq = Math.pow(cLoc.x - prevPos.x, 2) + Math.pow(cLoc.z - prevPos.z, 2);
+    const rideable = car.getComponent(EntityComponentTypes.Ridable);
+    const riders = rideable?.getRiders() || [];
+    if (riders.length > 0) {
       const viewDir = car.getViewDirection();
-      const frontX = Math.floor(cLoc.x + viewDir.x * 2.2);
-      const frontY = Math.floor(cLoc.y + 0.6);
-      const frontZ = Math.floor(cLoc.z + viewDir.z * 2.2);
-      try {
-        const frontBlock = overworld.getBlock({ x: frontX, y: frontY, z: frontZ });
-        if (frontBlock && !frontBlock.isAir && !frontBlock.isLiquid && moveDistSq < 0.05) {
-          accidentCarsMap.set(carId, now + 6e4);
-          activeAccidentLocations.push(cLoc);
-          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-          for (const p of nearbyPlayers) {
-            p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
+      let hasWallHit = false;
+      const testDistances = [1.8, 2.6, 3.4];
+      const lateralOffsets = [-0.8, 0, 0.8];
+      for (const dist of testDistances) {
+        for (const lat of lateralOffsets) {
+          const checkX = Math.floor(cLoc.x + viewDir.x * dist - viewDir.z * lat);
+          const checkY = Math.floor(cLoc.y + 0.5);
+          const checkZ = Math.floor(cLoc.z + viewDir.z * dist + viewDir.x * lat);
+          try {
+            const block = overworld.getBlock({ x: checkX, y: checkY, z: checkZ });
+            if (block && !block.isAir && !block.isLiquid) {
+              hasWallHit = true;
+              break;
+            }
+          } catch (e) {
           }
-          continue;
         }
-      } catch (e) {
+        if (hasWallHit)
+          break;
+      }
+      if (hasWallHit) {
+        accidentCarsMap.set(carId, now + 6e4);
+        activeAccidentLocations.push(cLoc);
+        try {
+          car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+        } catch (e) {
+        }
+        overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+        overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        for (const p of nearbyPlayers) {
+          p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
+        }
+        continue;
       }
     }
     let isNearAccident = false;
@@ -290,9 +305,9 @@ system.runInterval(() => {
       type: "mi:regretcar"
     });
     if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
-      car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
+      car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }
-}, 20);
+}, 5);
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
