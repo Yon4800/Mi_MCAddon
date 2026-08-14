@@ -23,3 +23,9 @@ item.mi:silenthill.name=Silent Hill
 item.mi:sanjuu.name=Sanjuu
 item.mi:gif.name=Gif
 item.mi:bunchou.name=Bunchou
+
+entity.mi:m_tutinoko.name=Murakami Tutinoko
+item.spawn_egg.entity.mi:m_tutinoko.name=Murakami Tutinoko Spawn Egg
+item.mi:ecology_server.name=Ecology Server
+item.mi:anko.name=Anko
+item.mi:baked_mochocho.name=Baked Mochocho

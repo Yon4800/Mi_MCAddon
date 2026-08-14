@@ -2,6 +2,7 @@
 import { world, system, ItemStack, EntityComponentTypes } from "@minecraft/server";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 var yosanoLoveMap = /* @__PURE__ */ new Map();
+var mochochoEatMap = /* @__PURE__ */ new Map();
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   const dimension = deadEntity.dimension;
@@ -9,6 +10,20 @@ world.afterEvents.entityDie.subscribe((event) => {
   if (!deadEntity || !location)
     return;
   const typeId = deadEntity.typeId;
+  if (typeId === "mi:blebcat") {
+    if (Math.random() < 0.4) {
+      dimension.spawnItem(new ItemStack("mi:ecology_server", 1), location);
+    }
+    if (Math.random() < 0.2) {
+      dimension.spawnItem(new ItemStack("mi:sanjuu", 1), location);
+    }
+    return;
+  }
+  if (typeId === "mi:m_tutinoko") {
+    const amount = Math.floor(Math.random() * 2) + 1;
+    dimension.spawnItem(new ItemStack("mi:anko", amount), location);
+    return;
+  }
   let dropItemId = null;
   let chance = 0.15;
   if (typeId === "minecraft:zombie" || typeId === "minecraft:zombie_villager" || typeId === "minecraft:husk") {
@@ -17,7 +32,7 @@ world.afterEvents.entityDie.subscribe((event) => {
     dropItemId = "mi:machida";
   } else if (typeId === "minecraft:creeper") {
     dropItemId = "mi:silenthill";
-  } else if (typeId === "minecraft:enderman" || typeId === "mi:blebcat") {
+  } else if (typeId === "minecraft:enderman") {
     dropItemId = "mi:sanjuu";
     chance = 0.2;
   } else if (typeId === "minecraft:spider" || typeId === "minecraft:cave_spider") {
@@ -109,6 +124,23 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         target.remove();
       }
     });
+  }
+});
+world.afterEvents.itemCompleteUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+  if (itemStack.typeId === "mi:baked_mochocho") {
+    const playerId = player.id;
+    const currentCount = (mochochoEatMap.get(playerId) || 0) + 1;
+    mochochoEatMap.set(playerId, currentCount);
+    if (currentCount >= 20) {
+      player.addEffect("nausea", 300, { amplifier: 1 });
+      player.addEffect("hunger", 300, { amplifier: 1 });
+      player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u3059\u304E\u3066\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
+      mochochoEatMap.set(playerId, 0);
+    } else {
+      player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (\u98DF\u3079\u305F\u6570: ${currentCount}/20)\xA7r`);
+    }
   }
 });
 system.runInterval(() => {

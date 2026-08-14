@@ -5,6 +5,9 @@ console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 // Map for Yosano affection state
 const yosanoLoveMap = new Map<string, number>();
 
+// Map for Baked Mochocho eat counter per player
+const mochochoEatMap = new Map<string, number>();
+
 // ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
 // ----------------------------------------------------
@@ -17,6 +20,24 @@ world.afterEvents.entityDie.subscribe((event) => {
 
   const typeId = deadEntity.typeId;
 
+  // Custom entity drops
+  if (typeId === "mi:blebcat") {
+    if (Math.random() < 0.4) {
+      dimension.spawnItem(new ItemStack("mi:ecology_server", 1), location);
+    }
+    if (Math.random() < 0.2) {
+      dimension.spawnItem(new ItemStack("mi:sanjuu", 1), location);
+    }
+    return;
+  }
+
+  if (typeId === "mi:m_tutinoko") {
+    const amount = Math.floor(Math.random() * 2) + 1; // 1-2 anko
+    dimension.spawnItem(new ItemStack("mi:anko", amount), location);
+    return;
+  }
+
+  // Vanilla mob drops
   let dropItemId: string | null = null;
   let chance = 0.15; // default 15%
 
@@ -26,7 +47,7 @@ world.afterEvents.entityDie.subscribe((event) => {
     dropItemId = "mi:machida";
   } else if (typeId === "minecraft:creeper") {
     dropItemId = "mi:silenthill";
-  } else if (typeId === "minecraft:enderman" || typeId === "mi:blebcat") {
+  } else if (typeId === "minecraft:enderman") {
     dropItemId = "mi:sanjuu";
     chance = 0.20;
   } else if (typeId === "minecraft:spider" || typeId === "minecraft:cave_spider") {
@@ -43,7 +64,7 @@ world.afterEvents.entityDie.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 2. Interaction Events (Cat -> Blobcat, Yosano -> Love)
+// 2. Interaction Events (Cat -> Blobcat / Woneko, Yosano -> Love)
 // ----------------------------------------------------
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
@@ -152,7 +173,30 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 3. Woneko State & Blobcat Rival Effect Loop (Every 1 sec)
+// 3. Item Complete Use (Baked Mochocho Overeat Penalty)
+// ----------------------------------------------------
+world.afterEvents.itemCompleteUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+
+  if (itemStack.typeId === "mi:baked_mochocho") {
+    const playerId = player.id;
+    const currentCount = (mochochoEatMap.get(playerId) || 0) + 1;
+    mochochoEatMap.set(playerId, currentCount);
+
+    if (currentCount >= 20) {
+      player.addEffect("nausea", 300, { amplifier: 1 }); // 15s nausea
+      player.addEffect("hunger", 300, { amplifier: 1 });  // 15s hunger
+      player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを食べすぎて、強烈な吐き気と空腹におそわれた…！§r");
+      mochochoEatMap.set(playerId, 0); // Reset count
+    } else {
+      player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (食べた数: ${currentCount}/20)§r`);
+    }
+  }
+});
+
+// ----------------------------------------------------
+// 4. Woneko State & Blobcat Rival Effect Loop (Every 1 sec)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
@@ -184,7 +228,7 @@ system.runInterval(() => {
     for (const blobcat of blobcats) {
       const bLoc = blobcat.location;
       const distSq = Math.pow(loc.x - bLoc.x, 2) + Math.pow(loc.y - bLoc.y, 2) + Math.pow(loc.z - bLoc.z, 2);
-      if (distSq <= 64) { // 8 * 8 = 64
+      if (distSq <= 64) {
         isRivalNear = true;
         break;
       }

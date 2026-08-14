@@ -23,3 +23,9 @@ item.mi:silenthill.name=静岡 (silenthill)
 item.mi:sanjuu.name=三重 (sanjuu)
 item.mi:gif.name=岐阜 (gif)
 item.mi:bunchou.name=文鳥
+
+entity.mi:m_tutinoko.name=村上ツチノコ
+item.spawn_egg.entity.mi:m_tutinoko.name=村上ツチノコのスポーンエッグ
+item.mi:ecology_server.name=生態サーバー
+item.mi:anko.name=あんこ
+item.mi:baked_mochocho.name=ベイクドモチョチョ

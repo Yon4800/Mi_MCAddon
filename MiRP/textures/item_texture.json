@@ -22,6 +22,15 @@
     },
     "bunchou": {
       "textures": "textures/items/bunchou"
+    },
+    "ecology_server": {
+      "textures": "textures/items/ecology_server"
+    },
+    "anko": {
+      "textures": "textures/items/anko"
+    },
+    "baked_mochocho": {
+      "textures": "textures/items/baked_mochocho"
     }
   }
 }

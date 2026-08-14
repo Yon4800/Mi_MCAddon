@@ -1,0 +1,24 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mi:baked_mochocho",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "baked_mochocho",
+      "minecraft:display_name": {
+        "value": "ベイクドモチョチョ"
+      },
+      "minecraft:food": {
+        "nutrition": 8,
+        "saturation_modifier": "supereminent"
+      },
+      "minecraft:use_modifiers": {
+        "use_duration": 1.6
+      }
+    }
+  }
+}
