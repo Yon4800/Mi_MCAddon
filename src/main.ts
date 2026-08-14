@@ -185,7 +185,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   const playerId = player.id;
   const now = Date.now();
 
-  // Baked Mochocho Logic
+  // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
     
@@ -198,13 +198,13 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
     state.lastEatTime = now;
     mochochoEatMap.set(playerId, state);
 
-    if (state.count >= 20) {
+    if (state.count >= 5) {
       player.addEffect("nausea", 300, { amplifier: 1 }); // 15s nausea
       player.addEffect("hunger", 300, { amplifier: 1 });  // 15s hunger
-      player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを食べすぎて、強烈な吐き気と空腹におそわれた…！§r");
+      player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを1分間に食べすぎて(5個)、強烈な吐き気と空腹におそわれた…！§r");
       mochochoEatMap.set(playerId, { count: 0, lastEatTime: now }); // Reset counter
     } else {
-      player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (食べた数: ${state.count}/20)§r`);
+      player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (1分間の摂取数: ${state.count}/5)§r`);
     }
   }
 

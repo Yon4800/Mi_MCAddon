@@ -139,13 +139,13 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
     state.count += 1;
     state.lastEatTime = now;
     mochochoEatMap.set(playerId, state);
-    if (state.count >= 20) {
+    if (state.count >= 5) {
       player.addEffect("nausea", 300, { amplifier: 1 });
       player.addEffect("hunger", 300, { amplifier: 1 });
-      player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u3059\u304E\u3066\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
+      player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u30921\u5206\u9593\u306B\u98DF\u3079\u3059\u304E\u3066(5\u500B)\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
       mochochoEatMap.set(playerId, { count: 0, lastEatTime: now });
     } else {
-      player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (\u98DF\u3079\u305F\u6570: ${state.count}/20)\xA7r`);
+      player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (1\u5206\u9593\u306E\u6442\u53D6\u6570: ${state.count}/5)\xA7r`);
     }
   }
   if (itemStack.typeId === "minecraft:milk_bucket") {
