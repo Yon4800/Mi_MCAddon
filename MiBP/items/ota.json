@@ -9,6 +9,9 @@
     },
     "components": {
       "minecraft:icon": "ota",
+      "minecraft:display_name": {
+        "value": "item.mi:ota.name"
+      },
       "minecraft:max_stack_size": 1,
       "minecraft:hand_equipped": true,
       "minecraft:durability": {

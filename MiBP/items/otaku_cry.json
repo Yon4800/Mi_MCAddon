@@ -9,6 +9,9 @@
     },
     "components": {
       "minecraft:icon": "otaku_cry",
+      "minecraft:display_name": {
+        "value": "item.mi:otaku_cry.name"
+      },
       "minecraft:max_stack_size": 1,
       "minecraft:hand_equipped": true,
       "minecraft:durability": {
