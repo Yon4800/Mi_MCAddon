@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "sanjuu"
-      },
+      "minecraft:icon": "sanjuu",
       "minecraft:display_name": {
         "value": "sanjuu"
       }

@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "kanagawa"
-      },
+      "minecraft:icon": "kanagawa",
       "minecraft:display_name": {
         "value": "神奈川"
       }

@@ -10,10 +10,10 @@
         "default": "textures/entity/yosano"
       },
       "geometry": {
-        "default": "geometry.cat"
+        "default": "geometry.humanoid"
       },
       "render_controllers": [
-        "controller.render.cat"
+        "controller.render.default"
       ]
     }
   }

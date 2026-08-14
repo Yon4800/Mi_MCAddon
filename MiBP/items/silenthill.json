@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "silenthill"
-      },
+      "minecraft:icon": "silenthill",
       "minecraft:display_name": {
         "value": "silenthill"
       }

@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "machida"
-      },
+      "minecraft:icon": "machida",
       "minecraft:display_name": {
         "value": "町田"
       }

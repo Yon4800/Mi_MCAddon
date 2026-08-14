@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "blob_aichi"
-      },
+      "minecraft:icon": "blob_aichi",
       "minecraft:display_name": {
         "value": "blob_aichi"
       }

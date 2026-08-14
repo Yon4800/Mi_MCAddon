@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "bunchou"
-      },
+      "minecraft:icon": "bunchou",
       "minecraft:display_name": {
         "value": "文鳥"
       }

@@ -8,9 +8,7 @@
       }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "gif"
-      },
+      "minecraft:icon": "gif",
       "minecraft:display_name": {
         "value": "gif"
       }
