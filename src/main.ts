@@ -346,10 +346,13 @@ system.runInterval(() => {
     }
 
     // 2. Detect Wall Collision (Crash into solid block while ridden)
-    const rideable = car.getComponent(EntityComponentTypes.Ridable);
-    const riders = rideable?.getRiders() || [];
+    const rideable = car.getComponent("minecraft:rideable") as any;
+    const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
 
-    if (riders.length > 0) {
+    // Check if player is riding or very close to controlling the car
+    const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+
+    if (isRidden) {
       const viewDir = car.getViewDirection();
       let hasWallHit = false;
 

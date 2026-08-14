@@ -246,9 +246,10 @@ system.runInterval(() => {
         }
       }
     }
-    const rideable = car.getComponent(EntityComponentTypes.Ridable);
-    const riders = rideable?.getRiders() || [];
-    if (riders.length > 0) {
+    const rideable = car.getComponent("minecraft:rideable");
+    const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
+    const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    if (isRidden) {
       const viewDir = car.getViewDirection();
       let hasWallHit = false;
       const testDistances = [1.8, 2.6, 3.4];
