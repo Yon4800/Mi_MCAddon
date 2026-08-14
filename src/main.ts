@@ -372,7 +372,7 @@ system.runInterval(() => {
               hasWallHit = true;
               break;
             }
-          } catch (e) {}
+          } catch (e) { }
         }
         if (hasWallHit) break;
       }
@@ -385,7 +385,7 @@ system.runInterval(() => {
         // Bounce back slightly from the wall
         try {
           car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
-        } catch (e) {}
+        } catch (e) { }
 
         overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
         overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
@@ -398,7 +398,28 @@ system.runInterval(() => {
       }
     }
 
-    // 3. Regular Traffic Jam & Accident Jam Slowdown
+    // 3. Slope / Step (Sag) Detection (Uphill / Downhill / Slab / Stairs)
+    let isSlope = false;
+    const viewDir = car.getViewDirection();
+    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+
+    // Check if current or front ground is a slab/stairs or has height difference (step)
+    const currentTypeId = groundBlockCurrent?.typeId || "";
+    const frontTypeId = groundBlockFront?.typeId || "";
+    const stepTypeId = stepBlockFront?.typeId || "";
+
+    if (
+      currentTypeId.includes("slab") || currentTypeId.includes("stairs") ||
+      frontTypeId.includes("slab") || frontTypeId.includes("stairs") ||
+      (stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid) ||
+      (groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId)
+    ) {
+      isSlope = true;
+    }
+
+    // 4. Regular Traffic Jam, Sag Traffic Jam & Accident Jam Slowdown
     let isNearAccident = false;
     for (const accLoc of activeAccidentLocations) {
       const distSq = Math.pow(cLoc.x - accLoc.x, 2) + Math.pow(cLoc.y - accLoc.y, 2) + Math.pow(cLoc.z - accLoc.z, 2);
@@ -421,10 +442,20 @@ system.runInterval(() => {
       type: "mi:regretcar"
     });
 
-    // Slowdown if near an accident OR congested
-    if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
+    // Jam threshold: significantly lower on slopes (Sag Jam: only 4+ cars or 12+ entities needed)
+    const carJamThreshold = isSlope ? 4 : 10;
+    const entityJamThreshold = isSlope ? 12 : 30;
+
+    const isCongested = nearbyCars.length >= carJamThreshold || nearbyEntities.length >= entityJamThreshold;
+
+    if (isNearAccident || isCongested) {
+      // Severe Traffic Jam (amplifier 5)
       car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+    } else if (isSlope) {
+      // Natural Slope Deceleration (amplifier 2)
+      car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
+      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
     }
   }
 }, 5);

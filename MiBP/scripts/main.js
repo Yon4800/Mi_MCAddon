@@ -250,15 +250,15 @@ system.runInterval(() => {
     const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
     const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
     if (isRidden) {
-      const viewDir = car.getViewDirection();
+      const viewDir2 = car.getViewDirection();
       let hasWallHit = false;
       const testDistances = [1.8, 2.6, 3.4];
       const lateralOffsets = [-0.8, 0, 0.8];
       for (const dist of testDistances) {
         for (const lat of lateralOffsets) {
-          const checkX = Math.floor(cLoc.x + viewDir.x * dist - viewDir.z * lat);
+          const checkX = Math.floor(cLoc.x + viewDir2.x * dist - viewDir2.z * lat);
           const checkY = Math.floor(cLoc.y + 0.5);
-          const checkZ = Math.floor(cLoc.z + viewDir.z * dist + viewDir.x * lat);
+          const checkZ = Math.floor(cLoc.z + viewDir2.z * dist + viewDir2.x * lat);
           try {
             const block = overworld.getBlock({ x: checkX, y: checkY, z: checkZ });
             if (block && !block.isAir && !block.isLiquid) {
@@ -275,7 +275,7 @@ system.runInterval(() => {
         accidentCarsMap.set(carId, now + 6e4);
         activeAccidentLocations.push(cLoc);
         try {
-          car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+          car.applyKnockback(-viewDir2.x, -viewDir2.z, 0.6, 0.2);
         } catch (e) {
         }
         overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
@@ -286,6 +286,17 @@ system.runInterval(() => {
         }
         continue;
       }
+    }
+    let isSlope = false;
+    const viewDir = car.getViewDirection();
+    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+    const currentTypeId = groundBlockCurrent?.typeId || "";
+    const frontTypeId = groundBlockFront?.typeId || "";
+    const stepTypeId = stepBlockFront?.typeId || "";
+    if (currentTypeId.includes("slab") || currentTypeId.includes("stairs") || frontTypeId.includes("slab") || frontTypeId.includes("stairs") || stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid || groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId) {
+      isSlope = true;
     }
     let isNearAccident = false;
     for (const accLoc of activeAccidentLocations) {
@@ -305,9 +316,15 @@ system.runInterval(() => {
       maxDistance: 64,
       type: "mi:regretcar"
     });
-    if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
+    const carJamThreshold = isSlope ? 4 : 10;
+    const entityJamThreshold = isSlope ? 12 : 30;
+    const isCongested = nearbyCars.length >= carJamThreshold || nearbyEntities.length >= entityJamThreshold;
+    if (isNearAccident || isCongested) {
       car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+    } else if (isSlope) {
+      car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
+      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
     }
   }
 }, 5);
