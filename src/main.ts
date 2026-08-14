@@ -323,7 +323,7 @@ system.runInterval(() => {
 
     // If 6 or more entities (mobs, players, animals, cars) are crowded around the car, trigger traffic jam (slow creeping speed)
     if (nearbyEntities.length >= 6) {
-      car.addEffect("slowness", 30, { amplifier: 4, showParticles: false });
+      car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }
