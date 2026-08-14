@@ -287,7 +287,7 @@ system.runInterval(() => {
     for (const otherCar of cars) {
       const oLoc = otherCar.location;
       const dSq = Math.pow(cLoc.x - oLoc.x, 2) + Math.pow(cLoc.y - oLoc.y, 2) + Math.pow(cLoc.z - oLoc.z, 2);
-      if (dSq <= 144) { // within 12 blocks (12^2 = 144)
+      if (dSq <= 400) { // within 20 blocks (20^2 = 400)
         nearbyCarCount++;
       }
     }
