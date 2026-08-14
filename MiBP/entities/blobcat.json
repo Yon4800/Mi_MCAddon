@@ -82,6 +82,10 @@
       },
       "minecraft:behavior.look_at_player": {
         "priority": 7
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
       }
     },
     "events": {

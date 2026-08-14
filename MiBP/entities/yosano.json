@@ -39,6 +39,10 @@
       },
       "minecraft:behavior.look_at_player": {
         "priority": 5
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
       }
     }
   }

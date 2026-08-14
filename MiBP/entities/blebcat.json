@@ -61,6 +61,10 @@
       },
       "minecraft:behavior.random_hover": {
         "priority": 3
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
       }
     }
   }

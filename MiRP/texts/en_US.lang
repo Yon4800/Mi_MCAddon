@@ -1,2 +1,25 @@
 pack.name=Mi_Addon Resource Pack
 pack.description=Resource Pack for Mi_Addon
+
+## Entities
+entity.mi:blobcat.name=Blobcat
+entity.mi:blebcat.name=Blebcat
+entity.mi:yosano.name=Yosano Akiko
+entity.mi:woneko.name=Woneko
+entity.mi:m_tutinoko.name=Tutinoko
+
+## Spawn Eggs
+item.spawn_egg.entity.mi:blobcat.name=Blobcat Spawn Egg
+item.spawn_egg.entity.mi:blebcat.name=Blebcat Spawn Egg
+item.spawn_egg.entity.mi:yosano.name=Yosano Akiko Spawn Egg
+item.spawn_egg.entity.mi:woneko.name=Woneko Spawn Egg
+item.spawn_egg.entity.mi:m_tutinoko.name=Tutinoko Spawn Egg
+
+## Items
+item.mi:blob_aichi.name=Blob Aichi
+item.mi:kanagawa.name=Kanagawa
+item.mi:machida.name=Machida
+item.mi:silenthill.name=Silent Hill
+item.mi:sanjuu.name=Sanjuu
+item.mi:gif.name=Gif
+item.mi:bunchou.name=Bunchou

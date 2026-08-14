@@ -83,6 +83,10 @@
       },
       "minecraft:behavior.random_stroll": {
         "priority": 5
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
       }
     },
     "events": {

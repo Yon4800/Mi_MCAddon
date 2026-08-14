@@ -1,2 +1,25 @@
 pack.name=Mi_Addon リソースパック
 pack.description=Mi_Addon のリソースパックです
+
+## エンティティ名
+entity.mi:blobcat.name=にゃんぷっぷー
+entity.mi:blebcat.name=blebcat
+entity.mi:yosano.name=与謝野晶子
+entity.mi:woneko.name=をねこ
+entity.mi:m_tutinoko.name=ツチノコ
+
+## スポーンエッグ名
+item.spawn_egg.entity.mi:blobcat.name=にゃんぷっぷーのスポーンエッグ
+item.spawn_egg.entity.mi:blebcat.name=blebcatのスポーンエッグ
+item.spawn_egg.entity.mi:yosano.name=与謝野晶子のスポーンエッグ
+item.spawn_egg.entity.mi:woneko.name=をねこのスポーンエッグ
+item.spawn_egg.entity.mi:m_tutinoko.name=ツチノコのスポーンエッグ
+
+## アイテム名
+item.mi:blob_aichi.name=顔のついた愛知
+item.mi:kanagawa.name=神奈川
+item.mi:machida.name=町田
+item.mi:silenthill.name=静岡 (silenthill)
+item.mi:sanjuu.name=三重 (sanjuu)
+item.mi:gif.name=岐阜 (gif)
+item.mi:bunchou.name=文鳥
