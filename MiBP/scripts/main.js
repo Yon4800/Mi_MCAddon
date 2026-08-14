@@ -6,18 +6,18 @@ var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
 var accidentCarsMap = /* @__PURE__ */ new Map();
 var emojiMap = {
-  ":blobcat:": "\uE001",
-  ":woneko:": "\uE002",
-  ":aichi:": "\uE003",
-  ":blob_aichi:": "\uE003",
-  ":mochocho:": "\uE004",
-  ":baked_mochocho:": "\uE004",
-  ":ota:": "\uE005",
-  ":otaku_cry:": "\uE006",
-  ":blebcat:": "\uE007",
-  ":regretcar:": "\uE008",
-  ":yosano:": "\uE009",
-  ":tutinoko:": "\uE00A"
+  ":blobcat:": "\uE101",
+  ":woneko:": "\uE102",
+  ":aichi:": "\uE103",
+  ":blob_aichi:": "\uE103",
+  ":mochocho:": "\uE104",
+  ":baked_mochocho:": "\uE104",
+  ":ota:": "\uE105",
+  ":otaku_cry:": "\uE106",
+  ":blebcat:": "\uE107",
+  ":regretcar:": "\uE108",
+  ":yosano:": "\uE109",
+  ":tutinoko:": "\uE10A"
 };
 if (world.afterEvents?.chatSend) {
   world.afterEvents.chatSend.subscribe((event) => {

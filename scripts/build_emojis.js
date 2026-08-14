@@ -136,22 +136,59 @@ function createPngRGBA(width, height, getPixel) {
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-// Fixed order for k_emojis
+function buildSheet(slotMap) {
+  const sheetWidth = 256;
+  const sheetHeight = 256;
+
+  return createPngRGBA(sheetWidth, sheetHeight, (x, y) => {
+    const col = Math.floor(x / 16);
+    const row = Math.floor(y / 16);
+    const slot = row * 16 + col;
+    const localX = x % 16;
+    const localY = y % 16;
+
+    const emoji = slotMap[slot];
+    if (emoji && emoji.pixels) {
+      const srcX = Math.floor((localX / 16) * emoji.width);
+      const srcY = Math.floor((localY / 16) * emoji.height);
+      const idx = srcY * emoji.width + srcX;
+      return emoji.pixels[idx] || [0, 0, 0, 0];
+    }
+    return [0, 0, 0, 0];
+  });
+}
+
+function writeToAllFontDirs(fileName, data) {
+  const targetPaths = [
+    path.join(baseDir, 'MiRP/font', fileName),
+    path.join(baseDir, 'MiRP/texts/ja_JP/font', fileName),
+    path.join(baseDir, 'MiRP/texts/en_US/font', fileName)
+  ];
+  for (const target of targetPaths) {
+    const dir = path.dirname(target);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(target, data);
+  }
+}
+
+// ----------------------------------------------------
+// 1. Build glyph_E1.png for k_emojis (Default / Fixed emojis on Page 225: \uE101..\uE1FF)
+// ----------------------------------------------------
 const fixedKOrder = [
   'blobcat.png', 'woneko.png', 'aichi.png', 'mochocho.png',
   'ota.png', 'otaku_cry.png', 'blebcat.png', 'regretcar.png',
   'yosano.png', 'tutinoko.png'
 ];
 
-const emojiSlotMap = [];
-let currentSlot = 1;
+const kEmojiSlotMap = [];
+let kSlot = 1;
 
 for (const file of fixedKOrder) {
   const p = path.join(kEmojiDir, file);
   if (fs.existsSync(p)) {
     const parsed = parsePngRGBA(p);
     if (parsed) {
-      emojiSlotMap[currentSlot++] = parsed;
+      kEmojiSlotMap[kSlot++] = parsed;
     }
   }
 }
@@ -160,50 +197,28 @@ const otherKFiles = fs.readdirSync(kEmojiDir).filter(f => f.endsWith('.png') && 
 for (const file of otherKFiles) {
   const parsed = parsePngRGBA(path.join(kEmojiDir, file));
   if (parsed) {
-    emojiSlotMap[currentSlot++] = parsed;
+    kEmojiSlotMap[kSlot++] = parsed;
   }
 }
 
+const sheetE1 = buildSheet(kEmojiSlotMap);
+writeToAllFontDirs('glyph_E1.png', sheetE1);
+console.log(`Successfully built glyph_E1.png with ${kSlot - 1} default emojis from k_emojis/ (\uE101 - \uE10A)!`);
+
+// ----------------------------------------------------
+// 2. Build glyph_E0.png for custom emojis/ (User-added emojis on Page 224: \uE001..\uE0FF)
+// ----------------------------------------------------
 const customFiles = fs.readdirSync(emojiDir).filter(f => f.endsWith('.png'));
+const customSlotMap = [];
+let cSlot = 1;
+
 for (const file of customFiles) {
   const parsed = parsePngRGBA(path.join(emojiDir, file));
   if (parsed) {
-    emojiSlotMap[currentSlot++] = parsed;
+    customSlotMap[cSlot++] = parsed;
   }
 }
 
-console.log(`Packed ${currentSlot - 1} emojis properly with complete unfilter decoding!`);
-
-const sheetWidth = 256;
-const sheetHeight = 256;
-
-const packedSheet = createPngRGBA(sheetWidth, sheetHeight, (x, y) => {
-  const col = Math.floor(x / 16);
-  const row = Math.floor(y / 16);
-  const slot = row * 16 + col;
-  const localX = x % 16;
-  const localY = y % 16;
-
-  const emoji = emojiSlotMap[slot];
-  if (emoji && emoji.pixels) {
-    const srcX = Math.floor((localX / 16) * emoji.width);
-    const srcY = Math.floor((localY / 16) * emoji.height);
-    const idx = srcY * emoji.width + srcX;
-    return emoji.pixels[idx] || [0, 0, 0, 0];
-  }
-  return [0, 0, 0, 0];
-});
-
-const targetPaths = [
-  path.join(baseDir, 'MiRP/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/texts/ja_JP/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E0.png')
-];
-
-for (const target of targetPaths) {
-  const dir = path.dirname(target);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(target, packedSheet);
-}
-
-console.log("Successfully packed perfectly opaque and colored emojis into glyph_E0.png!");
+const sheetE0 = buildSheet(customSlotMap);
+writeToAllFontDirs('glyph_E0.png', sheetE0);
+console.log(`Successfully built glyph_E0.png with ${cSlot - 1} custom emojis from emojis/ (\uE001 .. \uE0FF)!`);
