@@ -7,10 +7,20 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/yosano"
+        "default": "textures/entities/yosano"
       },
       "geometry": {
         "default": "geometry.humanoid"
+      },
+      "scripts": {
+        "animate": [
+          "root"
+        ]
+      },
+      "animations": {
+        "root": "controller.animation.humanoid.root",
+        "move": "controller.animation.humanoid.move",
+        "look_at_target": "controller.animation.humanoid.look_at_target"
       },
       "render_controllers": [
         "controller.render.default"
