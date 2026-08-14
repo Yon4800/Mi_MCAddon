@@ -138,11 +138,14 @@ const packedSheet = createPngRGBA(sheetWidth, sheetHeight, (x, y) => {
   return [0, 0, 0, 0];
 });
 
-// 3. Write glyph_E0.png to all target font paths
+// 3. Write glyph_E0.png and glyph_E1.png to all target font paths
 const targetPaths = [
   path.join(baseDir, 'MiRP/font/glyph_E0.png'),
+  path.join(baseDir, 'MiRP/font/glyph_E1.png'),
   path.join(baseDir, 'MiRP/texts/ja_JP/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E0.png')
+  path.join(baseDir, 'MiRP/texts/ja_JP/font/glyph_E1.png'),
+  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E0.png'),
+  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E1.png')
 ];
 
 for (const target of targetPaths) {
@@ -151,4 +154,4 @@ for (const target of targetPaths) {
   fs.writeFileSync(target, packedSheet);
 }
 
-console.log("Successfully packed all individual emojis into glyph_E0.png!");
+console.log("Successfully packed all individual emojis into glyph_E0.png and glyph_E1.png!");
