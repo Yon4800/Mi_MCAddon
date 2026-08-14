@@ -1,0 +1,29 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.yosano.move": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "animations": [
+            "humanoid_base_pose",
+            "look_at_target"
+          ],
+          "transitions": [
+            { "moving": "query.modified_move_speed > 0.05" }
+          ]
+        },
+        "moving": {
+          "animations": [
+            "humanoid_base_pose",
+            "walking",
+            "look_at_target"
+          ],
+          "transitions": [
+            { "default": "query.modified_move_speed <= 0.05" }
+          ]
+        }
+      }
+    }
+  }
+}
