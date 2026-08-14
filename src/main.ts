@@ -37,24 +37,26 @@ const emojiMap: Record<string, string> = {
   ":regretcar:": "\uE008"
 };
 
-world.afterEvents.chatSend.subscribe((event) => {
-  const sender = event.sender;
-  let message = event.message;
-  let hasEmoji = false;
+if ((world.afterEvents as any)?.chatSend) {
+  (world.afterEvents as any).chatSend.subscribe((event: any) => {
+    const sender = event.sender;
+    let message = event.message;
+    let hasEmoji = false;
 
-  for (const [key, glyph] of Object.entries(emojiMap)) {
-    if (message.includes(key)) {
-      message = message.split(key).join(glyph);
-      hasEmoji = true;
+    for (const [key, glyph] of Object.entries(emojiMap)) {
+      if (message.includes(key)) {
+        message = message.split(key).join(glyph);
+        hasEmoji = true;
+      }
     }
-  }
 
-  if (hasEmoji) {
-    system.run(() => {
-      world.sendMessage(`<${sender.name}> ${message}`);
-    });
-  }
-});
+    if (hasEmoji) {
+      system.run(() => {
+        world.sendMessage(`<${sender.name}> ${message}`);
+      });
+    }
+  });
+}
 
 // ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
