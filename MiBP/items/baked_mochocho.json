@@ -14,7 +14,7 @@
       },
       "minecraft:food": {
         "nutrition": 8,
-        "saturation_modifier": "supereminent"
+        "saturation_modifier": 2.0
       },
       "minecraft:use_modifiers": {
         "use_duration": 1.6
