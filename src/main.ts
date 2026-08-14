@@ -34,7 +34,9 @@ const emojiMap: Record<string, string> = {
   ":ota:": "\uE005",
   ":otaku_cry:": "\uE006",
   ":blebcat:": "\uE007",
-  ":regretcar:": "\uE008"
+  ":regretcar:": "\uE008",
+  ":yosano:": "\uE009",
+  ":tutinoko:": "\uE00A"
 };
 
 if ((world.afterEvents as any)?.chatSend) {
