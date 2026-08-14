@@ -1,0 +1,39 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Mi_Addon Resource Pack",
+    "description": "Resource Pack for Mi_Addon",
+    "uuid": "556ce7ae-bf7d-4878-8584-0a64e5ed0712",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      80
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "aa2a4d32-2a4d-4e40-843c-2090986323a5",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "35bc7269-17da-4654-9405-b2319bf30c96",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

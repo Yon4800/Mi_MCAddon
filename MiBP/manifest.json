@@ -1,0 +1,54 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Mi_Addon Behavior Pack",
+    "description": "Behavior Pack for Mi_Addon",
+    "uuid": "35bc7269-17da-4654-9405-b2319bf30c96",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      80
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "cd6fcdd8-fd8f-4d0c-b26d-273d799af187",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "ea5ddc57-755d-4b9b-ba96-e78a77747c33",
+      "entry": "scripts/main.js",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.11.0"
+    },
+    {
+      "uuid": "556ce7ae-bf7d-4878-8584-0a64e5ed0712",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
