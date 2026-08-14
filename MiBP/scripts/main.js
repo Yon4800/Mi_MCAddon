@@ -213,7 +213,7 @@ system.runInterval(() => {
       }
     }
     if (nearbyCarCount >= 4) {
-      car.addEffect("slowness", 30, { amplifier: 3, showParticles: false });
+      car.addEffect("slowness", 30, { amplifier: 7, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
   }

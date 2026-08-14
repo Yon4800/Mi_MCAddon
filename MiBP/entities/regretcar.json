@@ -16,20 +16,20 @@
         ]
       },
       "minecraft:health": {
-        "value": 50,
-        "max": 50
+        "value": 45,
+        "max": 45
       },
       "minecraft:physics": {},
       "minecraft:collision_box": {
-        "width": 2.8,
-        "height": 1.8
+        "width": 2.1,
+        "height": 1.35
       },
       "minecraft:pushable": {
         "is_pushable": true,
         "is_pushable_by_piston": true
       },
       "minecraft:movement": {
-        "value": 0.45
+        "value": 0.60
       },
       "minecraft:movement.basic": {},
       "minecraft:navigation.walk": {
@@ -46,8 +46,8 @@
           {
             "position": [
               0,
-              1.6,
-              1.8
+              1.25,
+              1.35
             ],
             "min_rider_count": 0,
             "max_rider_count": 1
@@ -55,8 +55,8 @@
           {
             "position": [
               0,
-              1.6,
-              -0.8
+              1.25,
+              -0.6
             ],
             "min_rider_count": 1,
             "max_rider_count": 2
