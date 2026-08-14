@@ -18,6 +18,17 @@
         "value": 5,
         "max": 5
       },
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": true
+      },
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 0.6
+      },
+      "minecraft:pushable": {
+        "is_pushable": true
+      },
       "minecraft:movement": {
         "value": 0.28
       },
