@@ -7,20 +7,20 @@
         "default": {
           "animations": [
             "humanoid_base_pose",
-            "look_at_target"
+            "look_at_target_default"
           ],
           "transitions": [
-            { "moving": "query.modified_move_speed > 0.05" }
+            { "moving": "query.modified_move_speed > 0.02 || query.is_moving" }
           ]
         },
         "moving": {
           "animations": [
             "humanoid_base_pose",
-            "walking",
-            "look_at_target"
+            "move",
+            "look_at_target_default"
           ],
           "transitions": [
-            { "default": "query.modified_move_speed <= 0.05" }
+            { "default": "query.modified_move_speed <= 0.02 && !query.is_moving" }
           ]
         }
       }

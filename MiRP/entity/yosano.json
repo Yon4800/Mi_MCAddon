@@ -12,15 +12,19 @@
       "geometry": {
         "default": "geometry.humanoid"
       },
-      "animations": {
-        "humanoid_base_pose": "animation.humanoid.base_pose",
-        "walking": "animation.humanoid.walking",
-        "look_at_target": "animation.humanoid.look_at_target.default"
-      },
       "scripts": {
+        "scale": "0.9375",
         "animate": [
           "controller.animation.yosano.move"
         ]
+      },
+      "animations": {
+        "humanoid_base_pose": "animation.humanoid.base_pose",
+        "look_at_target_default": "animation.humanoid.look_at_target.default",
+        "move": "animation.humanoid.walking",
+        "riding.arms": "animation.humanoid.riding.arms",
+        "riding.legs": "animation.humanoid.riding.legs",
+        "sneaking": "animation.humanoid.sneaking"
       },
       "render_controllers": [
         "controller.render.default"
