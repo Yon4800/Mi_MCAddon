@@ -223,7 +223,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       } else {
         // Max love level: 3
         player.sendMessage("§d与謝野晶子: 「あぁ！ 愛しています！ これをあなたに捧げますわ！」§r");
-        
+
         // Give special item (Kanagawa)
         dim.spawnItem(new ItemStack("mi:kanagawa", 1), loc);
         dim.spawnItem(new ItemStack("minecraft:ender_pearl", 2), loc);
@@ -231,7 +231,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         // Ender pearl teleport effect & despawn
         dim.spawnParticle("minecraft:ender_chest_portal_particle", loc);
         player.sendMessage("§d与謝野晶子 はエンダーパールを投げていずこかへ消え去った…§r");
-        
+
         yosanoLoveMap.delete(entityId);
         target.remove();
       }
@@ -282,7 +282,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
-    
+
     // Auto reset if 60 seconds passed since last eat
     if (now - state.lastEatTime > 60000) {
       state.count = 0;
