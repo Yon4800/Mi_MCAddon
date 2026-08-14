@@ -292,8 +292,8 @@ system.runInterval(() => {
       }
     }
 
-    // If 3 or more cars are crowded, trigger traffic jam
-    if (nearbyCarCount >= 3) {
+    // If 6 or more cars are crowded, trigger traffic jam
+    if (nearbyCarCount >= 6) {
       car.addEffect("slowness", 30, { amplifier: 3, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
