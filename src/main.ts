@@ -15,6 +15,12 @@ const mochochoEatMap = new Map<string, MochochoState>();
 // Set of players who acquired driver's license
 const licensedPlayers = new Set<string>();
 
+// Map for accident cars: carId -> recovery timestamp (ms)
+const accidentCarsMap = new Map<string, number>();
+
+// Map for previous positions of regretcars: carId -> position
+const carPrevPosMap = new Map<string, { x: number, y: number, z: number }>();
+
 // ----------------------------------------------------
 // 1. Rare Mob Drops (entityDie event)
 // ----------------------------------------------------
@@ -178,7 +184,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       } else {
         // Max love level: 3
         player.sendMessage("§d与謝野晶子: 「あぁ！ 愛しています！ これをあなたに捧げますわ！」§r");
-
+        
         // Give special item (Kanagawa)
         dim.spawnItem(new ItemStack("mi:kanagawa", 1), loc);
         dim.spawnItem(new ItemStack("minecraft:ender_pearl", 2), loc);
@@ -186,7 +192,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         // Ender pearl teleport effect & despawn
         dim.spawnParticle("minecraft:ender_chest_portal_particle", loc);
         player.sendMessage("§d与謝野晶子 はエンダーパールを投げていずこかへ消え去った…§r");
-
+        
         yosanoLoveMap.delete(entityId);
         target.remove();
       }
@@ -237,7 +243,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
-
+    
     // Auto reset if 60 seconds passed since last eat
     if (now - state.lastEatTime > 60000) {
       state.count = 0;
@@ -267,10 +273,11 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 5. Periodic Entity Loop (Woneko States & Traffic Jam on Regretcars)
+// 5. Periodic Entity Loop (Woneko, Car Accidents & Traffic Jams)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
+  const now = Date.now();
 
   // A. Woneko State & Blobcat Rival Effect Loop
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
@@ -309,27 +316,93 @@ system.runInterval(() => {
     }
   }
 
-  // B. Regretcar Traffic Jam Gimmick (10+ cars or 30+ entities within 64 blocks -> Traffic jam slowdown)
+  // B. Regretcar Wall Crash (Accident) & Traffic Jam Gimmick
   const cars = overworld.getEntities({ type: "mi:regretcar" });
+  const activeAccidentLocations: { x: number, y: number, z: number }[] = [];
+
   for (const car of cars) {
     const cLoc = car.location;
+    const carId = car.id;
 
-    // Check all nearby entities within 64 blocks (excluding dropped items)
+    // 1. Check if car is currently in an accident
+    if (accidentCarsMap.has(carId)) {
+      const recoveryTime = accidentCarsMap.get(carId)!;
+      if (now < recoveryTime) {
+        // Immobilize completely (1 minute)
+        car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+        overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        activeAccidentLocations.push(cLoc);
+        continue;
+      } else {
+        // Accident recovery after 1 minute
+        accidentCarsMap.delete(carId);
+        overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        for (const p of nearbyPlayers) {
+          p.sendMessage("§a🔧🚗 [Mi_Addon] 車両の応急修理が完了し、事故現場が復旧しました！§r");
+        }
+      }
+    }
+
+    // 2. Detect Wall Collision (Crash into solid block)
+    const prevPos = carPrevPosMap.get(carId);
+    carPrevPosMap.set(carId, { x: cLoc.x, y: cLoc.y, z: cLoc.z });
+
+    if (prevPos) {
+      const moveDistSq = Math.pow(cLoc.x - prevPos.x, 2) + Math.pow(cLoc.z - prevPos.z, 2);
+      const viewDir = car.getViewDirection();
+      const frontX = Math.floor(cLoc.x + viewDir.x * 2.2);
+      const frontY = Math.floor(cLoc.y + 0.6);
+      const frontZ = Math.floor(cLoc.z + viewDir.z * 2.2);
+
+      try {
+        const frontBlock = overworld.getBlock({ x: frontX, y: frontY, z: frontZ });
+        // If front block is a solid wall and car was moving or trying to move
+        if (frontBlock && !frontBlock.isAir && !frontBlock.isLiquid && moveDistSq < 0.05) {
+          // Trigger accident!
+          accidentCarsMap.set(carId, now + 60000); // 1 minute (60,000 ms)
+          activeAccidentLocations.push(cLoc);
+
+          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
+          }
+          continue;
+        }
+      } catch (e) {
+        // Block coordinate check safe guard
+      }
+    }
+
+    // 3. Regular Traffic Jam & Accident Jam Slowdown
+    let isNearAccident = false;
+    for (const accLoc of activeAccidentLocations) {
+      const distSq = Math.pow(cLoc.x - accLoc.x, 2) + Math.pow(cLoc.y - accLoc.y, 2) + Math.pow(cLoc.z - accLoc.z, 2);
+      if (distSq <= 625) { // within 25 blocks of an accident (25^2 = 625)
+        isNearAccident = true;
+        break;
+      }
+    }
+
+    // Check all nearby entities within 64 blocks
     const nearbyEntities = overworld.getEntities({
       location: cLoc,
       maxDistance: 64,
       excludeTypes: ["minecraft:item"]
     });
 
-    // Check nearby cars within 64 blocks
     const nearbyCars = overworld.getEntities({
       location: cLoc,
       maxDistance: 64,
       type: "mi:regretcar"
     });
 
-    // If 10 or more cars OR 30 or more entities within 64 blocks, trigger traffic jam
-    if (nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
+    // Slowdown if near an accident OR congested
+    if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
       car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }

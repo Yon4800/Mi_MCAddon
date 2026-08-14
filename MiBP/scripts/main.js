@@ -4,6 +4,8 @@ console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
+var accidentCarsMap = /* @__PURE__ */ new Map();
+var carPrevPosMap = /* @__PURE__ */ new Map();
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   const dimension = deadEntity.dimension;
@@ -192,6 +194,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
+  const now = Date.now();
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
   const blobcats = overworld.getEntities({ type: "mi:blobcat" });
   for (const woneko of wonekos) {
@@ -223,8 +226,59 @@ system.runInterval(() => {
     }
   }
   const cars = overworld.getEntities({ type: "mi:regretcar" });
+  const activeAccidentLocations = [];
   for (const car of cars) {
     const cLoc = car.location;
+    const carId = car.id;
+    if (accidentCarsMap.has(carId)) {
+      const recoveryTime = accidentCarsMap.get(carId);
+      if (now < recoveryTime) {
+        car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+        overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        activeAccidentLocations.push(cLoc);
+        continue;
+      } else {
+        accidentCarsMap.delete(carId);
+        overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        for (const p of nearbyPlayers) {
+          p.sendMessage("\xA7a\u{1F527}\u{1F697} [Mi_Addon] \u8ECA\u4E21\u306E\u5FDC\u6025\u4FEE\u7406\u304C\u5B8C\u4E86\u3057\u3001\u4E8B\u6545\u73FE\u5834\u304C\u5FA9\u65E7\u3057\u307E\u3057\u305F\uFF01\xA7r");
+        }
+      }
+    }
+    const prevPos = carPrevPosMap.get(carId);
+    carPrevPosMap.set(carId, { x: cLoc.x, y: cLoc.y, z: cLoc.z });
+    if (prevPos) {
+      const moveDistSq = Math.pow(cLoc.x - prevPos.x, 2) + Math.pow(cLoc.z - prevPos.z, 2);
+      const viewDir = car.getViewDirection();
+      const frontX = Math.floor(cLoc.x + viewDir.x * 2.2);
+      const frontY = Math.floor(cLoc.y + 0.6);
+      const frontZ = Math.floor(cLoc.z + viewDir.z * 2.2);
+      try {
+        const frontBlock = overworld.getBlock({ x: frontX, y: frontY, z: frontZ });
+        if (frontBlock && !frontBlock.isAir && !frontBlock.isLiquid && moveDistSq < 0.05) {
+          accidentCarsMap.set(carId, now + 6e4);
+          activeAccidentLocations.push(cLoc);
+          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
+          }
+          continue;
+        }
+      } catch (e) {
+      }
+    }
+    let isNearAccident = false;
+    for (const accLoc of activeAccidentLocations) {
+      const distSq = Math.pow(cLoc.x - accLoc.x, 2) + Math.pow(cLoc.y - accLoc.y, 2) + Math.pow(cLoc.z - accLoc.z, 2);
+      if (distSq <= 625) {
+        isNearAccident = true;
+        break;
+      }
+    }
     const nearbyEntities = overworld.getEntities({
       location: cLoc,
       maxDistance: 64,
@@ -235,7 +289,7 @@ system.runInterval(() => {
       maxDistance: 64,
       type: "mi:regretcar"
     });
-    if (nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
+    if (isNearAccident || nearbyCars.length >= 10 || nearbyEntities.length >= 30) {
       car.addEffect("slowness", 30, { amplifier: 5, showParticles: false });
       overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     }
