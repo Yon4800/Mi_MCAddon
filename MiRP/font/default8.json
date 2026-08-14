@@ -4,10 +4,6 @@
     {
       "page": 224,
       "texture": "font/glyph_E0.png"
-    },
-    {
-      "page": 225,
-      "texture": "font/glyph_E1.png"
     }
   ]
 }

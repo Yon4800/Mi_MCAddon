@@ -140,7 +140,7 @@ for (const file of customFiles) {
 
 console.log(`Packed total of ${currentSlot - 1} emojis (${fixedKOrder.length} from k_emojis, ${customFiles.length} from emojis) into font glyphs.`);
 
-// 2. Build 256x256 font sheet
+// 2. Build 256x256 font sheet (glyph_E0.png)
 const sheetWidth = 256;
 const sheetHeight = 256;
 
@@ -161,14 +161,11 @@ const packedSheet = createPngRGBA(sheetWidth, sheetHeight, (x, y) => {
   return [0, 0, 0, 0];
 });
 
-// 3. Write glyph_E0.png and glyph_E1.png to all target font paths
+// 3. Write glyph_E0.png to all target font paths
 const targetPaths = [
   path.join(baseDir, 'MiRP/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/font/glyph_E1.png'),
   path.join(baseDir, 'MiRP/texts/ja_JP/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/texts/ja_JP/font/glyph_E1.png'),
-  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E0.png'),
-  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E1.png')
+  path.join(baseDir, 'MiRP/texts/en_US/font/glyph_E0.png')
 ];
 
 for (const target of targetPaths) {
@@ -177,4 +174,4 @@ for (const target of targetPaths) {
   fs.writeFileSync(target, packedSheet);
 }
 
-console.log("Successfully packed k_emojis and emojis into glyph_E0.png and glyph_E1.png!");
+console.log("Successfully packed k_emojis and emojis into glyph_E0.png!");
