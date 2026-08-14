@@ -1,0 +1,99 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:woneko",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "mi:variant_relax": {
+        "minecraft:variant": {
+          "value": 0
+        }
+      },
+      "mi:variant_tired": {
+        "minecraft:variant": {
+          "value": 1
+        }
+      },
+      "mi:variant_cry": {
+        "minecraft:variant": {
+          "value": 2
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "woneko",
+          "cat",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 10,
+        "max": 10
+      },
+      "minecraft:movement": {
+        "value": 0.35
+      },
+      "minecraft:attack": {
+        "damage": 6
+      },
+      "minecraft:variant": {
+        "value": 0
+      },
+      "minecraft:tameable": {
+        "probability": 0.33,
+        "tame_items": [
+          "cod",
+          "salmon",
+          "tropical_fish"
+        ]
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "blebcat"
+            },
+            "max_dist": 16
+          }
+        ]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 5
+      }
+    },
+    "events": {
+      "mi:set_relax": {
+        "add": {
+          "component_groups": [
+            "mi:variant_relax"
+          ]
+        }
+      },
+      "mi:set_tired": {
+        "add": {
+          "component_groups": [
+            "mi:variant_tired"
+          ]
+        }
+      },
+      "mi:set_cry": {
+        "add": {
+          "component_groups": [
+            "mi:variant_cry"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:woneko",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/neko_relax",
+        "tired": "textures/entity/neko_tired2",
+        "cry": "textures/entity/neko_cry"
+      },
+      "geometry": {
+        "default": "geometry.cat"
+      },
+      "render_controllers": [
+        {
+          "controller.render.cat": "query.variant == 0"
+        }
+      ]
+    }
+  }
+}

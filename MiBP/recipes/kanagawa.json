@@ -1,0 +1,25 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mi:kanagawa_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "ingredients": [
+      {
+        "item": "mi:blob_aichi",
+        "count": 2
+      },
+      {
+        "item": "mi:machida",
+        "count": 1
+      }
+    ],
+    "result": {
+      "item": "mi:kanagawa",
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:blebcat",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "blebcat",
+          "monster",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 5,
+        "max": 5
+      },
+      "minecraft:movement": {
+        "value": 0.28
+      },
+      "minecraft:movement.hover": {
+        "value": 0.28
+      },
+      "minecraft:can_fly": {},
+      "minecraft:navigation.hover": {
+        "can_path_over_water": true,
+        "can_sink": false
+      },
+      "minecraft:attack": {
+        "damage": 3
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 1,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "player"
+            },
+            "max_dist": 16
+          }
+        ]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 2
+      },
+      "minecraft:behavior.random_hover": {
+        "priority": 3
+      }
+    }
+  }
+}

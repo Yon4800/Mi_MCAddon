@@ -1,0 +1,84 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:blobcat",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "is_experimental": false
+    },
+    "component_groups": {
+      "mi:tamed": {
+        "minecraft:is_tamed": {}
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "blobcat",
+          "cat",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 8,
+        "max": 8
+      },
+      "minecraft:movement": {
+        "value": 0.35
+      },
+      "minecraft:attack": {
+        "damage": 6
+      },
+      "minecraft:tameable": {
+        "probability": 0.33,
+        "tame_items": [
+          "cod",
+          "salmon",
+          "tropical_fish"
+        ],
+        "tame_event": {
+          "event": "mi:on_tame",
+          "target": "self"
+        }
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "blebcat"
+            },
+            "max_dist": 16
+          }
+        ]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3
+      },
+      "minecraft:behavior.follow_owner": {
+        "priority": 4,
+        "speed_multiplier": 1.2,
+        "start_distance": 6,
+        "stop_distance": 2
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 6
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 7
+      }
+    },
+    "events": {
+      "mi:on_tame": {
+        "add": {
+          "component_groups": [
+            "mi:tamed"
+          ]
+        }
+      }
+    }
+  }
+}

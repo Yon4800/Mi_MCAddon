@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mi:blob_aichi",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "blob_aichi"
+      },
+      "minecraft:display_name": {
+        "value": "blob_aichi"
+      }
+    }
+  }
+}

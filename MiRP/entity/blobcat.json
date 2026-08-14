@@ -1,0 +1,20 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:blobcat",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/blobcat"
+      },
+      "geometry": {
+        "default": "geometry.cat"
+      },
+      "render_controllers": [
+        "controller.render.cat"
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "resource_pack_name": "MiRP",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "blob_aichi": {
+      "textures": "textures/items/blob_aichi"
+    },
+    "kanagawa": {
+      "textures": "textures/items/kanagawa"
+    },
+    "machida": {
+      "textures": "textures/items/machida"
+    },
+    "silenthill": {
+      "textures": "textures/items/silenthill"
+    },
+    "sanjuu": {
+      "textures": "textures/items/sanjuu"
+    },
+    "gif": {
+      "textures": "textures/items/gif"
+    },
+    "bunchou": {
+      "textures": "textures/items/bunchou"
+    }
+  }
+}
