@@ -1,0 +1,7 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": { "identifier": "mi:suibunhokyu_ha_igyo", "menu_category": { "category": "items" } },
+    "components": { "minecraft:icon": "suibunhokyu_ha_igyo", "minecraft:display_name": { "value": "水分補給の偉業" } }
+  }
+}

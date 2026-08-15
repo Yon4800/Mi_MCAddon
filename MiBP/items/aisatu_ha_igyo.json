@@ -1,0 +1,7 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": { "identifier": "mi:aisatu_ha_igyo", "menu_category": { "category": "items" } },
+    "components": { "minecraft:icon": "aisatu_ha_igyo", "minecraft:display_name": { "value": "挨拶の偉業" } }
+  }
+}

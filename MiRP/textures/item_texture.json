@@ -40,6 +40,45 @@
     },
     "tin_foil_hat": {
       "textures": "textures/items/tin_foil_hat"
+    },
+    "igyo": {
+      "textures": "textures/items/igyo/igyo"
+    },
+    "igyo_tool": {
+      "textures": "textures/items/igyo/igyo_tool/igyo_tool"
+    },
+    "suimin_ha_igyo": {
+      "textures": "textures/items/igyo/suimin_ha_igyo"
+    },
+    "suibunhokyu_ha_igyo": {
+      "textures": "textures/items/igyo/suibunhokyu_ha_igyo"
+    },
+    "aisatu_ha_igyo": {
+      "textures": "textures/items/igyo/aisatu_ha_igyo"
+    },
+    "asakatsu_ha_igyo": {
+      "textures": "textures/items/igyo/asakatsu_ha_igyo"
+    },
+    "chokin_ha_igyo": {
+      "textures": "textures/items/igyo/chokin_ha_igyo"
+    },
+    "dokusho_ha_igyo": {
+      "textures": "textures/items/igyo/dokusho_ha_igyo"
+    },
+    "josetsu_ha_igyo": {
+      "textures": "textures/items/igyo/josetsu_ha_igyo"
+    },
+    "kaimono_ha_igyo": {
+      "textures": "textures/items/igyo/kaimono_ha_igyo"
+    },
+    "seichi_ha_igyo": {
+      "textures": "textures/items/igyo/seichi_ha_igyo"
+    },
+    "upgrade_ha_igyo": {
+      "textures": "textures/items/igyo/upgrade_ha_igyo"
+    },
+    "shokuji_ha_igyo": {
+      "textures": "textures/items/igyo/shokuji_ha_igyo"
     }
   }
 }

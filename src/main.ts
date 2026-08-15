@@ -21,6 +21,134 @@ const accidentCarsMap = new Map<string, number>();
 // Map for previous positions of regretcars: carId -> position
 const carPrevPosMap = new Map<string, { x: number, y: number, z: number }>();
 
+type AchievementKey = "suimin" | "suibunhokyu" | "aisatu" | "asakatsu" | "chokin" | "dokusho" | "josetsu" | "kaimono" | "seichi" | "upgrade" | "shokuji";
+
+const achievementItems: Record<AchievementKey, { itemId: string, displayName: string }> = {
+  suimin: { itemId: "mi:suimin_ha_igyo", displayName: "睡眠の偉業" },
+  suibunhokyu: { itemId: "mi:suibunhokyu_ha_igyo", displayName: "水分補給の偉業" },
+  aisatu: { itemId: "mi:aisatu_ha_igyo", displayName: "挨拶の偉業" },
+  asakatsu: { itemId: "mi:asakatsu_ha_igyo", displayName: "朝活の偉業" },
+  chokin: { itemId: "mi:chokin_ha_igyo", displayName: "貯金の偉業" },
+  dokusho: { itemId: "mi:dokusho_ha_igyo", displayName: "読書の偉業" },
+  josetsu: { itemId: "mi:josetsu_ha_igyo", displayName: "除雪の偉業" },
+  kaimono: { itemId: "mi:kaimono_ha_igyo", displayName: "買い物の偉業" },
+  seichi: { itemId: "mi:seichi_ha_igyo", displayName: "整地の偉業" },
+  upgrade: { itemId: "mi:upgrade_ha_igyo", displayName: "アップグレードの偉業" },
+  shokuji: { itemId: "mi:shokuji_ha_igyo", displayName: "食事の偉業" }
+};
+
+let achievementScanTick = 0;
+
+function getAchievementCounter(player: Player, key: string): number {
+  const value = player.getDynamicProperty(`mi:achievement_${key}`);
+  return typeof value === "number" ? value : 0;
+}
+
+function addAchievementCounter(player: Player, key: string, amount = 1): number {
+  const nextValue = getAchievementCounter(player, key) + amount;
+  player.setDynamicProperty(`mi:achievement_${key}`, nextValue);
+  return nextValue;
+}
+
+function addPlayerItem(player: Player, itemId: string): void {
+  const inventory = player.getComponent("minecraft:inventory") as any;
+  inventory?.container?.addItem(new ItemStack(itemId, 1));
+}
+
+function grantAchievement(player: Player, key: AchievementKey): void {
+  const tag = `mi:achievement_${key}`;
+  if (player.hasTag(tag)) return;
+
+  player.addTag(tag);
+  addPlayerItem(player, achievementItems[key].itemId);
+  if (!player.hasTag("mi:achievement_first")) {
+    player.addTag("mi:achievement_first");
+    addPlayerItem(player, "mi:igyo");
+  }
+  player.sendMessage(`§6[Mi_Addon] ${achievementItems[key].displayName}を獲得しました！§r`);
+}
+
+function checkAchievementCounters(player: Player): void {
+  if (getAchievementCounter(player, "josetsu") >= 500) grantAchievement(player, "josetsu");
+  if (getAchievementCounter(player, "seichi") >= 1000) grantAchievement(player, "seichi");
+  if (getAchievementCounter(player, "shokuji") >= 500) grantAchievement(player, "shokuji");
+}
+
+function playerHasItem(player: Player, itemIds: string[]): boolean {
+  const inventory = player.getComponent("minecraft:inventory") as any;
+  return containerHasItem(inventory?.container, itemIds);
+}
+
+function containerHasItem(container: any, itemIds: string[]): boolean {
+  if (!container) return false;
+  for (let slot = 0; slot < container.size; slot++) {
+    const item = container.getItem(slot);
+    if (item && itemIds.includes(item.typeId)) return true;
+  }
+  return false;
+}
+
+function removeOneItemFromContainer(container: any, itemId: string): boolean {
+  if (!container) return false;
+  for (let slot = 0; slot < container.size; slot++) {
+    const item = container.getItem(slot);
+    if (!item || item.typeId !== itemId) continue;
+    if (item.amount > 1) {
+      item.amount -= 1;
+      container.setItem(slot, item);
+    } else {
+      container.setItem(slot, undefined);
+    }
+    return true;
+  }
+  return false;
+}
+
+function removeOneItem(player: Player, itemId: string): boolean {
+  const inventory = player.getComponent("minecraft:inventory") as any;
+  return removeOneItemFromContainer(inventory?.container, itemId);
+}
+
+function checkInventoryAchievements(player: Player): void {
+  if (playerHasItem(player, ["minecraft:gold_ingot", "minecraft:gold_nugget", "minecraft:raw_gold", "minecraft:gold_block"])) {
+    grantAchievement(player, "chokin");
+  }
+  if (playerHasItem(player, ["minecraft:netherite_pickaxe", "minecraft:netherite_axe", "minecraft:netherite_shovel", "minecraft:netherite_hoe", "minecraft:netherite_sword"])) {
+    grantAchievement(player, "upgrade");
+  }
+}
+
+function damageMiToolOnBlockBreak(player: Player): void {
+  if ((player as any).gameMode === "creative") return;
+
+  const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+  const mainhand = equippable?.getEquipment("Mainhand" as any);
+  if (!mainhand || !["mi:ota", "mi:otaku_cry", "mi:igyo_tool"].includes(mainhand.typeId)) return;
+
+  const durability = mainhand.getComponent("minecraft:durability") as any;
+  if (!durability) return;
+
+  const enchantable = mainhand.getComponent("minecraft:enchantable") as any;
+  const unbreaking = enchantable?.getEnchantment("unbreaking");
+  const unbreakingLevel = Math.max(0, Math.min(3, unbreaking?.level || 0));
+  const damageChance = durability.getDamageChance(unbreakingLevel);
+  if (Math.random() * 100 >= damageChance) return;
+
+  durability.damage += 1;
+  if (durability.damage >= durability.maxDurability) {
+    equippable.setEquipment("Mainhand" as any, undefined);
+    player.sendMessage("§c[Mi_Addon] ツールの耐久値が尽きました。§r");
+  } else {
+    equippable.setEquipment("Mainhand" as any, mainhand);
+  }
+}
+
+function updateIgyoToolOwnership(player: Player): void {
+  const ownsTool = player.hasTag("mi:igyo_tool_owned");
+  const hasTool = playerHasItem(player, ["mi:igyo_tool"]);
+  if (ownsTool && !hasTool) player.removeTag("mi:igyo_tool_owned");
+}
+
 // ----------------------------------------------------
 // 0. Misskey Emoji Chat System (chatSend event)
 // ----------------------------------------------------
@@ -58,7 +186,64 @@ if ((world.afterEvents as any)?.chatSend) {
         world.sendMessage(`<${sender.name}> ${message}`);
       });
     }
+
+    if (/^(hello|hi|hey|こんにちは|こんばんは|おはよう|おはようございます|やあ|やっほー)$/i.test(event.message.trim())) {
+      grantAchievement(sender, "aisatu");
+    }
   });
+}
+
+// ----------------------------------------------------
+// 0.5. Achievement Actions
+// ----------------------------------------------------
+world.afterEvents.playerBreakBlock.subscribe((event) => {
+  const player = event.player;
+  const blockId = event.brokenBlockPermutation.type.id;
+
+  damageMiToolOnBlockBreak(player);
+
+  if (blockId.includes("snow")) addAchievementCounter(player, "josetsu");
+  if (["minecraft:dirt", "minecraft:grass", "minecraft:grass_block"].includes(blockId)) addAchievementCounter(player, "seichi");
+  checkAchievementCounters(player);
+});
+
+world.afterEvents.playerInteractWithBlock.subscribe((event) => {
+  const blockId = event.block.typeId;
+
+  if (blockId === "minecraft:chest") {
+    const requiredItems = Object.values(achievementItems).map((achievement) => achievement.itemId);
+    const chestInventory = event.block.getComponent("minecraft:inventory") as any;
+    const chestContainer = chestInventory?.container;
+    if (!event.player.hasTag("mi:igyo_tool_owned") && requiredItems.every((itemId) => containerHasItem(chestContainer, [itemId]))) {
+      system.run(() => {
+        for (const itemId of requiredItems) removeOneItemFromContainer(chestContainer, itemId);
+        addPlayerItem(event.player, "mi:igyo_tool");
+        event.player.addTag("mi:igyo_tool_owned");
+        event.player.sendMessage("§6[Mi_Addon] すべての偉業をチェストに納め、偉業のツールを手に入れました！§r");
+      });
+    }
+  }
+
+  if (blockId.endsWith("_bed")) {
+    grantAchievement(event.player, "suimin");
+  }
+});
+
+world.afterEvents.itemUse.subscribe((event) => {
+  const player = event.source;
+  const itemId = event.itemStack.typeId;
+
+  if (itemId === "minecraft:water_bucket" || itemId === "minecraft:potion") {
+    grantAchievement(player, "suibunhokyu");
+  }
+  if (["minecraft:book", "minecraft:writable_book", "minecraft:written_book"].includes(itemId)) {
+    grantAchievement(player, "dokusho");
+  }
+});
+
+const playerTradeEvent = (world.afterEvents as any).playerTrade;
+if (playerTradeEvent) {
+  playerTradeEvent.subscribe((event: any) => grantAchievement(event.player, "kaimono"));
 }
 
 // ----------------------------------------------------
@@ -367,6 +552,11 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   const playerId = player.id;
   const now = Date.now();
 
+  if ((itemStack as any).getComponent?.("minecraft:food")) {
+    addAchievementCounter(player, "shokuji");
+    checkAchievementCounters(player);
+  }
+
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
@@ -414,10 +604,23 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
   const now = Date.now();
+  achievementScanTick += 1;
 
   // A. Tin Foil Hat Mental Protection & Wave Detection Loop
   const players = overworld.getPlayers();
   for (const p of players) {
+    if (achievementScanTick >= 20) {
+      updateIgyoToolOwnership(p);
+      checkInventoryAchievements(p);
+
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 9) {
+        const seconds = addAchievementCounter(p, "asakatsu_seconds", 5);
+        if (seconds >= 1800) grantAchievement(p, "asakatsu");
+      } else {
+        p.setDynamicProperty("mi:achievement_asakatsu_seconds", 0);
+      }
+    }
     const equippable = p.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
     const headItem = equippable?.getEquipment("Head" as any);
     if (headItem?.typeId === "mi:tin_foil_hat") {
@@ -444,6 +647,7 @@ system.runInterval(() => {
       }
     }
   }
+  if (achievementScanTick >= 20) achievementScanTick = 0;
 
   // B. Woneko State & Blobcat Rival Effect Loop
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
