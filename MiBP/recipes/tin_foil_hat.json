@@ -1,0 +1,31 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mi:tin_foil_hat_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      " I ",
+      "PGP",
+      " I "
+    ],
+    "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "P": {
+        "item": "minecraft:paper"
+      },
+      "G": {
+        "item": "mi:gif"
+      }
+    },
+    "result": {
+      "item": "mi:tin_foil_hat",
+      "count": 1
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { world, system, ItemStack, EntityComponentTypes, EntityHealthComponent, Player } from "@minecraft/server";
+import { world, system, ItemStack, EntityComponentTypes, EntityHealthComponent, EntityEquippableComponent, Player } from "@minecraft/server";
 
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 
@@ -36,7 +36,8 @@ const emojiMap: Record<string, string> = {
   ":blebcat:": "\uE107",
   ":regretcar:": "\uE108",
   ":yosano:": "\uE109",
-  ":tutinoko:": "\uE10A"
+  ":tutinoko:": "\uE10A",
+  ":tinfoil:": "\uE10B"
 };
 
 if ((world.afterEvents as any)?.chatSend) {
@@ -151,9 +152,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         if (itemStack.amount > 1) {
           itemStack.amount -= 1;
         } else {
-          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
           if (equippable) {
-            equippable.setEquipment("Mainhand", undefined);
+            equippable.setEquipment("Mainhand" as any, undefined);
           }
         }
       }
@@ -177,9 +178,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         if (itemStack.amount > 1) {
           itemStack.amount -= 1;
         } else {
-          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
           if (equippable) {
-            equippable.setEquipment("Mainhand", undefined);
+            equippable.setEquipment("Mainhand" as any, undefined);
           }
         }
       }
@@ -207,9 +208,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         if (itemStack.amount > 1) {
           itemStack.amount -= 1;
         } else {
-          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
           if (equippable) {
-            equippable.setEquipment("Mainhand", undefined);
+            equippable.setEquipment("Mainhand" as any, undefined);
           }
         }
       }
@@ -223,7 +224,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       } else {
         // Max love level: 3
         player.sendMessage("§d与謝野晶子: 「あぁ！ 愛しています！ これをあなたに捧げますわ！」§r");
-
+        
         // Give special item (Kanagawa)
         dim.spawnItem(new ItemStack("mi:kanagawa", 1), loc);
         dim.spawnItem(new ItemStack("minecraft:ender_pearl", 2), loc);
@@ -231,7 +232,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         // Ender pearl teleport effect & despawn
         dim.spawnParticle("minecraft:ender_chest_portal_particle", loc);
         player.sendMessage("§d与謝野晶子 はエンダーパールを投げていずこかへ消え去った…§r");
-
+        
         yosanoLoveMap.delete(entityId);
         target.remove();
       }
@@ -282,7 +283,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   // Baked Mochocho Logic (Limit: 5 per minute)
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
-
+    
     // Auto reset if 60 seconds passed since last eat
     if (now - state.lastEatTime > 60000) {
       state.count = 0;
@@ -292,10 +293,19 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
     state.lastEatTime = now;
     mochochoEatMap.set(playerId, state);
 
+    // Check if wearing Tin Foil Hat (immunity to nausea)
+    const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+    const headItem = equippable?.getEquipment("Head" as any);
+    const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
+
     if (state.count >= 5) {
-      player.addEffect("nausea", 300, { amplifier: 1 }); // 15s nausea
-      player.addEffect("hunger", 300, { amplifier: 1 });  // 15s hunger
-      player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを1分間に食べすぎて(5個)、強烈な吐き気と空腹におそわれた…！§r");
+      if (isWearingTinFoil) {
+        player.sendMessage("§b🛡️ [Mi_Addon] ベイクドモチョチョを食べすぎたが、アルミホイルが吐き気電波を完全遮断した！§r");
+      } else {
+        player.addEffect("nausea", 300, { amplifier: 1 }); // 15s nausea
+        player.addEffect("hunger", 300, { amplifier: 1 });  // 15s hunger
+        player.sendMessage("§c[Mi_Addon] ベイクドモチョチョを1分間に食べすぎて(5個)、強烈な吐き気と空腹におそわれた…！§r");
+      }
       mochochoEatMap.set(playerId, { count: 0, lastEatTime: now }); // Reset counter
     } else {
       player.sendMessage(`§a[Mi_Addon] ベイクドモチョチョを美味しく食べた！ (1分間の摂取数: ${state.count}/5)§r`);
@@ -312,13 +322,43 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 5. Periodic Entity Loop (Woneko, Car Accidents, Slopes & Traffic Jams)
+// 5. Periodic Entity Loop (Tin Foil Hat, Woneko, Car Accidents & Jams)
 // ----------------------------------------------------
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
   const now = Date.now();
 
-  // A. Woneko State & Blobcat Rival Effect Loop
+  // A. Tin Foil Hat Mental Protection & Wave Detection Loop
+  const players = overworld.getPlayers();
+  for (const p of players) {
+    const equippable = p.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+    const headItem = equippable?.getEquipment("Head" as any);
+    if (headItem?.typeId === "mi:tin_foil_hat") {
+      const pLoc = p.location;
+
+      // 1. Remove mental debuffs instantly
+      const debuffs = ["darkness", "blindness", "nausea", "bad_omen"];
+      for (const debuff of debuffs) {
+        if (p.getEffect(debuff as any)) {
+          p.removeEffect(debuff as any);
+          p.sendMessage("§b🛡️ [Mi_Addon] 陰謀論者のアルミホイルが怪電波・思考攻撃を反射・無効化した！§r");
+        }
+      }
+
+      // 2. 5G / Monster Thought-Wave Radar Detection
+      const nearbyMonsters = overworld.getEntities({
+        location: pLoc,
+        maxDistance: 16,
+        families: ["monster", "blebcat"]
+      });
+
+      if (nearbyMonsters.length > 0) {
+        overworld.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.8, z: pLoc.z });
+      }
+    }
+  }
+
+  // B. Woneko State & Blobcat Rival Effect Loop
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
   const blobcats = overworld.getEntities({ type: "mi:blobcat" });
 
@@ -355,7 +395,7 @@ system.runInterval(() => {
     }
   }
 
-  // B. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick
+  // C. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations: { x: number, y: number, z: number }[] = [];
 

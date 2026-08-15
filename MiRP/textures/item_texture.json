@@ -37,6 +37,9 @@
     },
     "otaku_cry": {
       "textures": "textures/items/otaku_cry"
+    },
+    "tin_foil_hat": {
+      "textures": "textures/items/tin_foil_hat"
     }
   }
 }

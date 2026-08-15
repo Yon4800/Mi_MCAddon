@@ -17,7 +17,8 @@ var emojiMap = {
   ":blebcat:": "\uE107",
   ":regretcar:": "\uE108",
   ":yosano:": "\uE109",
-  ":tutinoko:": "\uE10A"
+  ":tutinoko:": "\uE10A",
+  ":tinfoil:": "\uE10B"
 };
 if (world.afterEvents?.chatSend) {
   world.afterEvents.chatSend.subscribe((event) => {
@@ -207,10 +208,17 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
     state.count += 1;
     state.lastEatTime = now;
     mochochoEatMap.set(playerId, state);
+    const equippable = player.getComponent(EntityComponentTypes.Equippable);
+    const headItem = equippable?.getEquipment("Head");
+    const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
     if (state.count >= 5) {
-      player.addEffect("nausea", 300, { amplifier: 1 });
-      player.addEffect("hunger", 300, { amplifier: 1 });
-      player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u30921\u5206\u9593\u306B\u98DF\u3079\u3059\u304E\u3066(5\u500B)\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
+      if (isWearingTinFoil) {
+        player.sendMessage("\xA7b\u{1F6E1}\uFE0F [Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u3059\u304E\u305F\u304C\u3001\u30A2\u30EB\u30DF\u30DB\u30A4\u30EB\u304C\u5410\u304D\u6C17\u96FB\u6CE2\u3092\u5B8C\u5168\u906E\u65AD\u3057\u305F\uFF01\xA7r");
+      } else {
+        player.addEffect("nausea", 300, { amplifier: 1 });
+        player.addEffect("hunger", 300, { amplifier: 1 });
+        player.sendMessage("\xA7c[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u30921\u5206\u9593\u306B\u98DF\u3079\u3059\u304E\u3066(5\u500B)\u3001\u5F37\u70C8\u306A\u5410\u304D\u6C17\u3068\u7A7A\u8179\u306B\u304A\u305D\u308F\u308C\u305F\u2026\uFF01\xA7r");
+      }
       mochochoEatMap.set(playerId, { count: 0, lastEatTime: now });
     } else {
       player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (1\u5206\u9593\u306E\u6442\u53D6\u6570: ${state.count}/5)\xA7r`);
@@ -226,6 +234,29 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
   const now = Date.now();
+  const players = overworld.getPlayers();
+  for (const p of players) {
+    const equippable = p.getComponent(EntityComponentTypes.Equippable);
+    const headItem = equippable?.getEquipment("Head");
+    if (headItem?.typeId === "mi:tin_foil_hat") {
+      const pLoc = p.location;
+      const debuffs = ["darkness", "blindness", "nausea", "bad_omen"];
+      for (const debuff of debuffs) {
+        if (p.getEffect(debuff)) {
+          p.removeEffect(debuff);
+          p.sendMessage("\xA7b\u{1F6E1}\uFE0F [Mi_Addon] \u9670\u8B00\u8AD6\u8005\u306E\u30A2\u30EB\u30DF\u30DB\u30A4\u30EB\u304C\u602A\u96FB\u6CE2\u30FB\u601D\u8003\u653B\u6483\u3092\u53CD\u5C04\u30FB\u7121\u52B9\u5316\u3057\u305F\uFF01\xA7r");
+        }
+      }
+      const nearbyMonsters = overworld.getEntities({
+        location: pLoc,
+        maxDistance: 16,
+        families: ["monster", "blebcat"]
+      });
+      if (nearbyMonsters.length > 0) {
+        overworld.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.8, z: pLoc.z });
+      }
+    }
+  }
   const wonekos = overworld.getEntities({ type: "mi:woneko" });
   const blobcats = overworld.getEntities({ type: "mi:blobcat" });
   for (const woneko of wonekos) {
