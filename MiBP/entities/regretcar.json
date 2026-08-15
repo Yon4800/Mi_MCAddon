@@ -7,6 +7,22 @@
       "is_summonable": true
     },
     "component_groups": {
+      "mi:variant_0": { "minecraft:variant": { "value": 0 } },
+      "mi:variant_1": { "minecraft:variant": { "value": 1 } },
+      "mi:variant_2": { "minecraft:variant": { "value": 2 } },
+      "mi:variant_3": { "minecraft:variant": { "value": 3 } },
+      "mi:variant_4": { "minecraft:variant": { "value": 4 } },
+      "mi:variant_5": { "minecraft:variant": { "value": 5 } },
+      "mi:variant_6": { "minecraft:variant": { "value": 6 } },
+      "mi:variant_7": { "minecraft:variant": { "value": 7 } },
+      "mi:variant_8": { "minecraft:variant": { "value": 8 } },
+      "mi:variant_9": { "minecraft:variant": { "value": 9 } },
+      "mi:variant_10": { "minecraft:variant": { "value": 10 } },
+      "mi:variant_11": { "minecraft:variant": { "value": 11 } },
+      "mi:variant_12": { "minecraft:variant": { "value": 12 } },
+      "mi:variant_13": { "minecraft:variant": { "value": 13 } },
+      "mi:variant_14": { "minecraft:variant": { "value": 14 } },
+      "mi:variant_15": { "minecraft:variant": { "value": 15 } },
       "mi:angry": {
         "minecraft:attack": {
           "damage": 6
@@ -45,6 +61,9 @@
       },
       "minecraft:movement": {
         "value": 0.60
+      },
+      "minecraft:variant": {
+        "value": 0
       },
       "minecraft:movement.basic": {},
       "minecraft:navigation.walk": {
@@ -85,6 +104,22 @@
       }
     },
     "events": {
+      "mi:set_variant_0": { "remove": { "component_groups": ["mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_0"] } },
+      "mi:set_variant_1": { "remove": { "component_groups": ["mi:variant_0","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_1"] } },
+      "mi:set_variant_2": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_2"] } },
+      "mi:set_variant_3": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_3"] } },
+      "mi:set_variant_4": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_4"] } },
+      "mi:set_variant_5": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_5"] } },
+      "mi:set_variant_6": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_6"] } },
+      "mi:set_variant_7": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_7"] } },
+      "mi:set_variant_8": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_8"] } },
+      "mi:set_variant_9": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_9"] } },
+      "mi:set_variant_10": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_10"] } },
+      "mi:set_variant_11": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_12","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_11"] } },
+      "mi:set_variant_12": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_13","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_12"] } },
+      "mi:set_variant_13": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_14","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_13"] } },
+      "mi:set_variant_14": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_15"] }, "add": { "component_groups": ["mi:variant_14"] } },
+      "mi:set_variant_15": { "remove": { "component_groups": ["mi:variant_0","mi:variant_1","mi:variant_2","mi:variant_3","mi:variant_4","mi:variant_5","mi:variant_6","mi:variant_7","mi:variant_8","mi:variant_9","mi:variant_10","mi:variant_11","mi:variant_12","mi:variant_13","mi:variant_14"] }, "add": { "component_groups": ["mi:variant_15"] } },
       "mi:become_angry": {
         "add": {
           "component_groups": [

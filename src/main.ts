@@ -171,6 +171,48 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 
   if (!target) return;
 
+  // Dying regretcar with dye while preserving original texture
+  if (target.typeId === "mi:regretcar" && itemStack) {
+    const dyeColorEventMap: Record<string, { event: string; colorName: string }> = {
+      "minecraft:white_dye": { event: "mi:set_variant_0", colorName: "白" },
+      "minecraft:orange_dye": { event: "mi:set_variant_1", colorName: "オレンジ" },
+      "minecraft:magenta_dye": { event: "mi:set_variant_2", colorName: "マゼンタ" },
+      "minecraft:light_blue_dye": { event: "mi:set_variant_3", colorName: "ライトブルー" },
+      "minecraft:yellow_dye": { event: "mi:set_variant_4", colorName: "黄色" },
+      "minecraft:lime_dye": { event: "mi:set_variant_5", colorName: "ライム" },
+      "minecraft:pink_dye": { event: "mi:set_variant_6", colorName: "ピンク" },
+      "minecraft:gray_dye": { event: "mi:set_variant_7", colorName: "灰色" },
+      "minecraft:light_gray_dye": { event: "mi:set_variant_8", colorName: "ライトグレー" },
+      "minecraft:cyan_dye": { event: "mi:set_variant_9", colorName: "シアン" },
+      "minecraft:purple_dye": { event: "mi:set_variant_10", colorName: "紫" },
+      "minecraft:blue_dye": { event: "mi:set_variant_11", colorName: "青" },
+      "minecraft:brown_dye": { event: "mi:set_variant_12", colorName: "茶色" },
+      "minecraft:green_dye": { event: "mi:set_variant_13", colorName: "緑" },
+      "minecraft:red_dye": { event: "mi:set_variant_14", colorName: "赤" },
+      "minecraft:black_dye": { event: "mi:set_variant_15", colorName: "黒" }
+    };
+
+    const colorInfo = dyeColorEventMap[itemStack.typeId];
+    if (colorInfo) {
+      system.run(() => {
+        if (player.gameMode !== "creative") {
+          if (itemStack.amount > 1) {
+            itemStack.amount -= 1;
+          } else {
+            const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+            if (equippable) {
+              equippable.setEquipment("Mainhand" as any, undefined);
+            }
+          }
+        }
+
+        target.triggerEvent(colorInfo.event);
+        player.sendMessage(`§d[Mi_Addon] 長い変な車の色を${colorInfo.colorName}に染めました。§r`);
+      });
+      return;
+    }
+  }
+
   // Car ride (License acquisition)
   if (target.typeId === "mi:regretcar") {
     const playerId = player.id;

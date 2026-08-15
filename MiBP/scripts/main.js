@@ -114,6 +114,44 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const itemStack = event.itemStack;
   if (!target)
     return;
+  if (target.typeId === "mi:regretcar" && itemStack) {
+    const dyeColorEventMap = {
+      "minecraft:white_dye": { event: "mi:set_variant_0", colorName: "\u767D" },
+      "minecraft:orange_dye": { event: "mi:set_variant_1", colorName: "\u30AA\u30EC\u30F3\u30B8" },
+      "minecraft:magenta_dye": { event: "mi:set_variant_2", colorName: "\u30DE\u30BC\u30F3\u30BF" },
+      "minecraft:light_blue_dye": { event: "mi:set_variant_3", colorName: "\u30E9\u30A4\u30C8\u30D6\u30EB\u30FC" },
+      "minecraft:yellow_dye": { event: "mi:set_variant_4", colorName: "\u9EC4\u8272" },
+      "minecraft:lime_dye": { event: "mi:set_variant_5", colorName: "\u30E9\u30A4\u30E0" },
+      "minecraft:pink_dye": { event: "mi:set_variant_6", colorName: "\u30D4\u30F3\u30AF" },
+      "minecraft:gray_dye": { event: "mi:set_variant_7", colorName: "\u7070\u8272" },
+      "minecraft:light_gray_dye": { event: "mi:set_variant_8", colorName: "\u30E9\u30A4\u30C8\u30B0\u30EC\u30FC" },
+      "minecraft:cyan_dye": { event: "mi:set_variant_9", colorName: "\u30B7\u30A2\u30F3" },
+      "minecraft:purple_dye": { event: "mi:set_variant_10", colorName: "\u7D2B" },
+      "minecraft:blue_dye": { event: "mi:set_variant_11", colorName: "\u9752" },
+      "minecraft:brown_dye": { event: "mi:set_variant_12", colorName: "\u8336\u8272" },
+      "minecraft:green_dye": { event: "mi:set_variant_13", colorName: "\u7DD1" },
+      "minecraft:red_dye": { event: "mi:set_variant_14", colorName: "\u8D64" },
+      "minecraft:black_dye": { event: "mi:set_variant_15", colorName: "\u9ED2" }
+    };
+    const colorInfo = dyeColorEventMap[itemStack.typeId];
+    if (colorInfo) {
+      system.run(() => {
+        if (player.gameMode !== "creative") {
+          if (itemStack.amount > 1) {
+            itemStack.amount -= 1;
+          } else {
+            const equippable = player.getComponent(EntityComponentTypes.Equippable);
+            if (equippable) {
+              equippable.setEquipment("Mainhand", void 0);
+            }
+          }
+        }
+        target.triggerEvent(colorInfo.event);
+        player.sendMessage(`\xA7d[Mi_Addon] \u9577\u3044\u5909\u306A\u8ECA\u306E\u8272\u3092${colorInfo.colorName}\u306B\u67D3\u3081\u307E\u3057\u305F\u3002\xA7r`);
+      });
+      return;
+    }
+  }
   if (target.typeId === "mi:regretcar") {
     const playerId = player.id;
     if (!licensedPlayers.has(playerId)) {
