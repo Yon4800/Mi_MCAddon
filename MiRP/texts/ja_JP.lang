@@ -38,3 +38,5 @@ item.mi:otaku_cry.name=オタクくんの泣いたやつ
 item.spawn_egg.entity.mi:woneko.name=をねこのスポーンエッグ
 
 item.mi:tin_foil_hat.name=陰謀論者のアルミホイル
+
+tile.mi:tin_foil_block.name=陰謀論者のアルミホイルブロック

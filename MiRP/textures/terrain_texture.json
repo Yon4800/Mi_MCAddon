@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "MiRP",
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "tin_foil_block": {
+      "textures": "textures/blocks/tin_foil_block"
+    }
+  }
+}

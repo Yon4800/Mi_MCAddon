@@ -81,6 +81,33 @@ world.afterEvents.entityDie.subscribe((event) => {
     dimension.spawnItem(new ItemStack(dropItemId, 1), location);
   }
 });
+world.afterEvents.entitySpawn.subscribe((event) => {
+  const entity = event.entity;
+  if (!entity || !entity.isValid())
+    return;
+  const typeId = entity.typeId;
+  const isMonster = typeId.startsWith("minecraft:zombie") || typeId.startsWith("minecraft:skeleton") || typeId === "minecraft:creeper" || typeId === "minecraft:spider" || typeId === "minecraft:cave_spider" || typeId === "minecraft:enderman" || typeId === "minecraft:witch" || typeId === "minecraft:slime" || typeId === "minecraft:phantom" || typeId === "minecraft:drowned" || typeId === "minecraft:husk" || typeId === "minecraft:stray" || typeId === "mi:blebcat";
+  if (!isMonster)
+    return;
+  const loc = entity.location;
+  const dim = entity.dimension;
+  for (let dy = -1; dy >= -3; dy--) {
+    try {
+      const block = dim.getBlock({ x: Math.floor(loc.x), y: Math.floor(loc.y + dy), z: Math.floor(loc.z) });
+      if (block && block.typeId === "mi:tin_foil_block") {
+        system.run(() => {
+          dim.spawnParticle("minecraft:electric_spark_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
+          dim.spawnParticle("minecraft:smoke_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
+          if (entity.isValid()) {
+            entity.remove();
+          }
+        });
+        break;
+      }
+    } catch (e) {
+    }
+  }
+});
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
