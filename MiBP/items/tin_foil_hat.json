@@ -17,9 +17,6 @@
       "minecraft:wearable": {
         "slot": "slot.armor.head"
       },
-      "minecraft:armor": {
-        "protection": 1
-      },
       "minecraft:durability": {
         "max_durability": 165
       },

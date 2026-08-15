@@ -8,11 +8,17 @@
       "crafting_table"
     ],
     "pattern": [
-      "HHH",
-      "HHH",
-      "HHH"
+      "IGI",
+      "GHG",
+      "IGI"
     ],
     "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "G": {
+        "item": "mi:gif"
+      },
       "H": {
         "item": "mi:tin_foil_hat"
       }
