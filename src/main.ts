@@ -149,6 +149,14 @@ function updateIgyoToolOwnership(player: Player): void {
   if (ownsTool && !hasTool) player.removeTag("mi:igyo_tool_owned");
 }
 
+function getBlockSafely(dimension: any, location: { x: number, y: number, z: number }): any | undefined {
+  try {
+    return dimension.getBlock(location);
+  } catch (error) {
+    return undefined;
+  }
+}
+
 // ----------------------------------------------------
 // 0. Misskey Emoji Chat System (chatSend event)
 // ----------------------------------------------------
@@ -769,9 +777,9 @@ system.runInterval(() => {
     // 3. Slope / Step (Sag) Detection (Uphill / Downhill / Slab / Stairs)
     let isSlope = false;
     const viewDir = car.getViewDirection();
-    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
-    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
-    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+    const groundBlockCurrent = getBlockSafely(overworld, { x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+    const groundBlockFront = getBlockSafely(overworld, { x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+    const stepBlockFront = getBlockSafely(overworld, { x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
 
     // Check if current or front ground is a slab/stairs or has height difference (step)
     const currentTypeId = groundBlockCurrent?.typeId || "";

@@ -121,6 +121,13 @@ function updateIgyoToolOwnership(player) {
   if (ownsTool && !hasTool)
     player.removeTag("mi:igyo_tool_owned");
 }
+function getBlockSafely(dimension, location) {
+  try {
+    return dimension.getBlock(location);
+  } catch (error) {
+    return void 0;
+  }
+}
 var emojiMap = {
   ":blobcat:": "\uE101",
   ":woneko:": "\uE102",
@@ -599,9 +606,9 @@ system.runInterval(() => {
     }
     let isSlope = false;
     const viewDir = car.getViewDirection();
-    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
-    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
-    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+    const groundBlockCurrent = getBlockSafely(overworld, { x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+    const groundBlockFront = getBlockSafely(overworld, { x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+    const stepBlockFront = getBlockSafely(overworld, { x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
     const currentTypeId = groundBlockCurrent?.typeId || "";
     const frontTypeId = groundBlockFront?.typeId || "";
     const stepTypeId = stepBlockFront?.typeId || "";
