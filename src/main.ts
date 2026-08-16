@@ -285,8 +285,101 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
 }
 
 // Open Note Board UI with Emoji Deck support
-// All-in-One Misskey Note Post Modal with Anywhere Insertion ({1}, {2}, {3} or :cat:, :1:)
+// ----------------------------------------------------
+// Customizable Personal Emoji Deck System
+// ----------------------------------------------------
+const playerEmojiDeckMap = new Map<string, string[]>(); // playerId -> array of emojiGlyphs
+
+function getPlayerEmojiDeck(player: Player): string[] {
+  let deck = playerEmojiDeckMap.get(player.id);
+  if (!deck || deck.length === 0) {
+    // Default 4 emoji deck
+    deck = ["\uE101", "\uE102", "\uE104", "\uE10B"];
+    playerEmojiDeckMap.set(player.id, deck);
+  }
+  return deck;
+}
+
+// Emoji Deck Settings UI (Add / Remove / Customize)
+function openEmojiDeckSettingsUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const currentDeck = getPlayerEmojiDeck(player);
+
+  const deckLabels = currentDeck.map((glyph, i) => {
+    const opt = reactionOptions.find(o => o.glyph === glyph);
+    return `スロット {${i + 1}}: ${glyph} ${opt ? opt.label : ""}`;
+  });
+
+  const form = new ActionFormData()
+    .title("⚙️ 絵文字デッキのカスタマイズ")
+    .body(`現在の絵文字デッキ (${currentDeck.length} 個):\n${deckLabels.join("\n") || "なし"}\n\nデッキを増やしたり減らしたり自由にカスタマイズできます:`)
+    .button("➕ デッキに絵文字を追加する")
+    .button("➖ デッキから絵文字を削除する")
+    .button("🔄 デフォルト設定に戻す")
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      // Add emoji to deck
+      const pickForm = new ActionFormData()
+        .title("➕ デッキに追加する絵文字を選択");
+
+      for (const opt of reactionOptions) {
+        pickForm.button(`${opt.glyph} ${opt.label}`);
+      }
+
+      showFormSafe(player, pickForm, (pRes) => {
+        if (pRes.canceled || pRes.selection === undefined) {
+          openEmojiDeckSettingsUI(player, blockLoc);
+          return;
+        }
+        const chosen = reactionOptions[pRes.selection];
+        currentDeck.push(chosen.glyph);
+        player.sendMessage(`§a➕ 絵文字デッキに ${chosen.glyph} (${chosen.label}) を追加しました！（現在 ${currentDeck.length} 個）§r`);
+        openEmojiDeckSettingsUI(player, blockLoc);
+      });
+    } else if (res.selection === 1) {
+      // Remove emoji from deck
+      if (currentDeck.length <= 1) {
+        player.sendMessage("§c⚠️ 絵文字デッキは最低1個必要です。§r");
+        openEmojiDeckSettingsUI(player, blockLoc);
+        return;
+      }
+
+      const removeForm = new ActionFormData()
+        .title("➖ 削除する絵文字を選択")
+        .body("デッキから外したい絵文字を選んでください:");
+
+      for (let i = 0; i < currentDeck.length; i++) {
+        const glyph = currentDeck[i];
+        const opt = reactionOptions.find(o => o.glyph === glyph);
+        removeForm.button(`スロット {${i + 1}}: ${glyph} ${opt ? opt.label : ""}`);
+      }
+
+      showFormSafe(player, removeForm, (rRes) => {
+        if (rRes.canceled || rRes.selection === undefined) {
+          openEmojiDeckSettingsUI(player, blockLoc);
+          return;
+        }
+        const removed = currentDeck.splice(rRes.selection, 1)[0];
+        player.sendMessage(`§e➖ 絵文字デッキから ${removed} を削除しました。（残り ${currentDeck.length} 個）§r`);
+        openEmojiDeckSettingsUI(player, blockLoc);
+      });
+    } else if (res.selection === 2) {
+      playerEmojiDeckMap.set(player.id, ["\uE101", "\uE102", "\uE104", "\uE10B"]);
+      player.sendMessage("§b🔄 絵文字デッキを初期設定（4個）に戻しました。§r");
+      openEmojiDeckSettingsUI(player, blockLoc);
+    } else {
+      openNoteBoardUI(player, blockLoc);
+    }
+  });
+}
+
+// All-in-One Misskey Note Post Modal dynamically adapting to Player's Emoji Deck size
 function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const currentDeck = getPlayerEmojiDeck(player);
+
   const emojiDeckList = [
     "(なし)",
     ...reactionOptions.map(o => `${o.glyph} ${o.label}`)
@@ -295,38 +388,41 @@ function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number,
   const modal = new ModalFormData()
     .title("📝 Misskey ノート投稿")
     .textField(
-      "本文 (文章中の好きな場所に {1} や {2} と書くと絵文字が挿入されます):",
+      `本文 (文章中の好きな場所に {1}〜{${currentDeck.length}} と書くと絵文字が入ります):`,
       "例: 今日は {1} と一緒に {2} を食べたよ！",
       ""
-    )
-    .dropdown("🎨 絵文字デッキ ① (文章中の {1} に挿入):", emojiDeckList, 1) // default blobcat
-    .dropdown("🎨 絵文字デッキ ② (文章中の {2} に挿入):", emojiDeckList, 4) // default mochocho
-    .dropdown("🎨 絵文字デッキ ③ (文章中の {3} に挿入):", emojiDeckList, 0);
+    );
+
+  // Dynamically add dropdown for each slot in player's customized emoji deck
+  for (let i = 0; i < currentDeck.length; i++) {
+    const defaultGlyph = currentDeck[i];
+    const defaultIdx = reactionOptions.findIndex(o => o.glyph === defaultGlyph) + 1;
+    modal.dropdown(`🎨 絵文字デッキ {${i + 1}}:`, emojiDeckList, defaultIdx > 0 ? defaultIdx : 0);
+  }
 
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues) return;
 
     let text = String(res.formValues[0]).trim();
-    const emoji1Idx = Number(res.formValues[1]);
-    const emoji2Idx = Number(res.formValues[2]);
-    const emoji3Idx = Number(res.formValues[3]);
+    const selectedEmojis: string[] = [];
 
-    const e1 = emoji1Idx > 0 ? reactionOptions[emoji1Idx - 1].glyph : "";
-    const e2 = emoji2Idx > 0 ? reactionOptions[emoji2Idx - 1].glyph : "";
-    const e3 = emoji3Idx > 0 ? reactionOptions[emoji3Idx - 1].glyph : "";
-
-    // Check if user specified placeholders {1}, {2}, {3} in text
     let hasPlaceholder = false;
-    if (text.includes("{1}")) { text = text.split("{1}").join(e1); hasPlaceholder = true; }
-    if (text.includes("{2}")) { text = text.split("{2}").join(e2); hasPlaceholder = true; }
-    if (text.includes("{3}")) { text = text.split("{3}").join(e3); hasPlaceholder = true; }
+    for (let i = 0; i < currentDeck.length; i++) {
+      const formValIdx = Number(res.formValues[i + 1]);
+      const glyph = formValIdx > 0 ? reactionOptions[formValIdx - 1].glyph : "";
+      const placeholder = `{${i + 1}}`;
 
-    // If no placeholders used, append chosen emojis to end (if any)
-    if (!hasPlaceholder) {
-      const selected = [e1, e2, e3].filter(Boolean);
-      if (selected.length > 0) {
-        text = text ? `${text} ${selected.join(" ")}` : selected.join(" ");
+      if (text.includes(placeholder)) {
+        text = text.split(placeholder).join(glyph);
+        hasPlaceholder = true;
+      } else if (glyph) {
+        selectedEmojis.push(glyph);
       }
+    }
+
+    // If no placeholders used, append selected emojis to the end
+    if (!hasPlaceholder && selectedEmojis.length > 0) {
+      text = text ? `${text} ${selectedEmojis.join(" ")}` : selectedEmojis.join(" ");
     }
 
     // Auto-replace any shortcodes (:blobcat:, :cat:, :1:, :foil:, :mochocho: etc.)
@@ -358,15 +454,17 @@ function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number,
   });
 }
 
-// Updated openNoteBoardUI
+// Updated openNoteBoardUI with Emoji Deck Settings button
 function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
   const unreadCount = directMessages.filter(m => m.recipient === player.name && !m.read).length;
   const dmBadge = unreadCount > 0 ? ` (${unreadCount}件未読)` : "";
+  const deckCount = getPlayerEmojiDeck(player).length;
 
   const form = new ActionFormData()
     .title("📋 Misskey ノートタイムライン")
     .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMを送受信しましょう！")
-    .button("📝 ノートを投稿する (絵文字デッキ対応)")
+    .button("📝 ノートを投稿する")
+    .button(`⚙️ 絵文字デッキをカスタマイズ (${deckCount}スロット)`)
     .button("📜 タイムラインを見る / リアクション")
     .button(`✉️ ダイレクトメッセージ (DM)${dmBadge}`)
     .button("閉じる");
@@ -377,8 +475,10 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
     if (response.selection === 0) {
       openAllInOneNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
-      openTimelineListUI(player, blockLoc);
+      openEmojiDeckSettingsUI(player, blockLoc);
     } else if (response.selection === 2) {
+      openTimelineListUI(player, blockLoc);
+    } else if (response.selection === 3) {
       openDMHubUI(player, blockLoc);
     }
   });

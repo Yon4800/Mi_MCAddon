@@ -222,44 +222,108 @@ ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u6
     }
   });
 }
+var playerEmojiDeckMap = /* @__PURE__ */ new Map();
+function getPlayerEmojiDeck(player) {
+  let deck = playerEmojiDeckMap.get(player.id);
+  if (!deck || deck.length === 0) {
+    deck = ["\uE101", "\uE102", "\uE104", "\uE10B"];
+    playerEmojiDeckMap.set(player.id, deck);
+  }
+  return deck;
+}
+function openEmojiDeckSettingsUI(player, blockLoc) {
+  const currentDeck = getPlayerEmojiDeck(player);
+  const deckLabels = currentDeck.map((glyph, i) => {
+    const opt = reactionOptions.find((o) => o.glyph === glyph);
+    return `\u30B9\u30ED\u30C3\u30C8 {${i + 1}}: ${glyph} ${opt ? opt.label : ""}`;
+  });
+  const form = new ActionFormData().title("\u2699\uFE0F \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u306E\u30AB\u30B9\u30BF\u30DE\u30A4\u30BA").body(`\u73FE\u5728\u306E\u7D75\u6587\u5B57\u30C7\u30C3\u30AD (${currentDeck.length} \u500B):
+${deckLabels.join("\n") || "\u306A\u3057"}
+
+\u30C7\u30C3\u30AD\u3092\u5897\u3084\u3057\u305F\u308A\u6E1B\u3089\u3057\u305F\u308A\u81EA\u7531\u306B\u30AB\u30B9\u30BF\u30DE\u30A4\u30BA\u3067\u304D\u307E\u3059:`).button("\u2795 \u30C7\u30C3\u30AD\u306B\u7D75\u6587\u5B57\u3092\u8FFD\u52A0\u3059\u308B").button("\u2796 \u30C7\u30C3\u30AD\u304B\u3089\u7D75\u6587\u5B57\u3092\u524A\u9664\u3059\u308B").button("\u{1F504} \u30C7\u30D5\u30A9\u30EB\u30C8\u8A2D\u5B9A\u306B\u623B\u3059").button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === void 0)
+      return;
+    if (res.selection === 0) {
+      const pickForm = new ActionFormData().title("\u2795 \u30C7\u30C3\u30AD\u306B\u8FFD\u52A0\u3059\u308B\u7D75\u6587\u5B57\u3092\u9078\u629E");
+      for (const opt of reactionOptions) {
+        pickForm.button(`${opt.glyph} ${opt.label}`);
+      }
+      showFormSafe(player, pickForm, (pRes) => {
+        if (pRes.canceled || pRes.selection === void 0) {
+          openEmojiDeckSettingsUI(player, blockLoc);
+          return;
+        }
+        const chosen = reactionOptions[pRes.selection];
+        currentDeck.push(chosen.glyph);
+        player.sendMessage(`\xA7a\u2795 \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u306B ${chosen.glyph} (${chosen.label}) \u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\uFF01\uFF08\u73FE\u5728 ${currentDeck.length} \u500B\uFF09\xA7r`);
+        openEmojiDeckSettingsUI(player, blockLoc);
+      });
+    } else if (res.selection === 1) {
+      if (currentDeck.length <= 1) {
+        player.sendMessage("\xA7c\u26A0\uFE0F \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u306F\u6700\u4F4E1\u500B\u5FC5\u8981\u3067\u3059\u3002\xA7r");
+        openEmojiDeckSettingsUI(player, blockLoc);
+        return;
+      }
+      const removeForm = new ActionFormData().title("\u2796 \u524A\u9664\u3059\u308B\u7D75\u6587\u5B57\u3092\u9078\u629E").body("\u30C7\u30C3\u30AD\u304B\u3089\u5916\u3057\u305F\u3044\u7D75\u6587\u5B57\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044:");
+      for (let i = 0; i < currentDeck.length; i++) {
+        const glyph = currentDeck[i];
+        const opt = reactionOptions.find((o) => o.glyph === glyph);
+        removeForm.button(`\u30B9\u30ED\u30C3\u30C8 {${i + 1}}: ${glyph} ${opt ? opt.label : ""}`);
+      }
+      showFormSafe(player, removeForm, (rRes) => {
+        if (rRes.canceled || rRes.selection === void 0) {
+          openEmojiDeckSettingsUI(player, blockLoc);
+          return;
+        }
+        const removed = currentDeck.splice(rRes.selection, 1)[0];
+        player.sendMessage(`\xA7e\u2796 \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u304B\u3089 ${removed} \u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002\uFF08\u6B8B\u308A ${currentDeck.length} \u500B\uFF09\xA7r`);
+        openEmojiDeckSettingsUI(player, blockLoc);
+      });
+    } else if (res.selection === 2) {
+      playerEmojiDeckMap.set(player.id, ["\uE101", "\uE102", "\uE104", "\uE10B"]);
+      player.sendMessage("\xA7b\u{1F504} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u3092\u521D\u671F\u8A2D\u5B9A\uFF084\u500B\uFF09\u306B\u623B\u3057\u307E\u3057\u305F\u3002\xA7r");
+      openEmojiDeckSettingsUI(player, blockLoc);
+    } else {
+      openNoteBoardUI(player, blockLoc);
+    }
+  });
+}
 function openAllInOneNoteModal(player, blockLoc) {
+  const currentDeck = getPlayerEmojiDeck(player);
   const emojiDeckList = [
     "(\u306A\u3057)",
     ...reactionOptions.map((o) => `${o.glyph} ${o.label}`)
   ];
   const modal = new ModalFormData().title("\u{1F4DD} Misskey \u30CE\u30FC\u30C8\u6295\u7A3F").textField(
-    "\u672C\u6587 (\u6587\u7AE0\u4E2D\u306E\u597D\u304D\u306A\u5834\u6240\u306B {1} \u3084 {2} \u3068\u66F8\u304F\u3068\u7D75\u6587\u5B57\u304C\u633F\u5165\u3055\u308C\u307E\u3059):",
+    `\u672C\u6587 (\u6587\u7AE0\u4E2D\u306E\u597D\u304D\u306A\u5834\u6240\u306B {1}\u301C{${currentDeck.length}} \u3068\u66F8\u304F\u3068\u7D75\u6587\u5B57\u304C\u5165\u308A\u307E\u3059):`,
     "\u4F8B: \u4ECA\u65E5\u306F {1} \u3068\u4E00\u7DD2\u306B {2} \u3092\u98DF\u3079\u305F\u3088\uFF01",
     ""
-  ).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2460 (\u6587\u7AE0\u4E2D\u306E {1} \u306B\u633F\u5165):", emojiDeckList, 1).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2461 (\u6587\u7AE0\u4E2D\u306E {2} \u306B\u633F\u5165):", emojiDeckList, 4).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2462 (\u6587\u7AE0\u4E2D\u306E {3} \u306B\u633F\u5165):", emojiDeckList, 0);
+  );
+  for (let i = 0; i < currentDeck.length; i++) {
+    const defaultGlyph = currentDeck[i];
+    const defaultIdx = reactionOptions.findIndex((o) => o.glyph === defaultGlyph) + 1;
+    modal.dropdown(`\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD {${i + 1}}:`, emojiDeckList, defaultIdx > 0 ? defaultIdx : 0);
+  }
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues)
       return;
     let text = String(res.formValues[0]).trim();
-    const emoji1Idx = Number(res.formValues[1]);
-    const emoji2Idx = Number(res.formValues[2]);
-    const emoji3Idx = Number(res.formValues[3]);
-    const e1 = emoji1Idx > 0 ? reactionOptions[emoji1Idx - 1].glyph : "";
-    const e2 = emoji2Idx > 0 ? reactionOptions[emoji2Idx - 1].glyph : "";
-    const e3 = emoji3Idx > 0 ? reactionOptions[emoji3Idx - 1].glyph : "";
+    const selectedEmojis = [];
     let hasPlaceholder = false;
-    if (text.includes("{1}")) {
-      text = text.split("{1}").join(e1);
-      hasPlaceholder = true;
-    }
-    if (text.includes("{2}")) {
-      text = text.split("{2}").join(e2);
-      hasPlaceholder = true;
-    }
-    if (text.includes("{3}")) {
-      text = text.split("{3}").join(e3);
-      hasPlaceholder = true;
-    }
-    if (!hasPlaceholder) {
-      const selected = [e1, e2, e3].filter(Boolean);
-      if (selected.length > 0) {
-        text = text ? `${text} ${selected.join(" ")}` : selected.join(" ");
+    for (let i = 0; i < currentDeck.length; i++) {
+      const formValIdx = Number(res.formValues[i + 1]);
+      const glyph = formValIdx > 0 ? reactionOptions[formValIdx - 1].glyph : "";
+      const placeholder = `{${i + 1}}`;
+      if (text.includes(placeholder)) {
+        text = text.split(placeholder).join(glyph);
+        hasPlaceholder = true;
+      } else if (glyph) {
+        selectedEmojis.push(glyph);
       }
+    }
+    if (!hasPlaceholder && selectedEmojis.length > 0) {
+      text = text ? `${text} ${selectedEmojis.join(" ")}` : selectedEmojis.join(" ");
     }
     for (const [key, glyph] of Object.entries(emojiMap)) {
       if (text.includes(key)) {
@@ -289,15 +353,18 @@ function openAllInOneNoteModal(player, blockLoc) {
 function openNoteBoardUI(player, blockLoc) {
   const unreadCount = directMessages.filter((m) => m.recipient === player.name && !m.read).length;
   const dmBadge = unreadCount > 0 ? ` (${unreadCount}\u4EF6\u672A\u8AAD)` : "";
-  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B (\u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u5BFE\u5FDC)").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
+  const deckCount = getPlayerEmojiDeck(player).length;
+  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button(`\u2699\uFE0F \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u3092\u30AB\u30B9\u30BF\u30DE\u30A4\u30BA (${deckCount}\u30B9\u30ED\u30C3\u30C8)`).button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
       openAllInOneNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
-      openTimelineListUI(player, blockLoc);
+      openEmojiDeckSettingsUI(player, blockLoc);
     } else if (response.selection === 2) {
+      openTimelineListUI(player, blockLoc);
+    } else if (response.selection === 3) {
       openDMHubUI(player, blockLoc);
     }
   });
