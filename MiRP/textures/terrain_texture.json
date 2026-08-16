@@ -19,6 +19,12 @@
     },
     "zabuton_yellow": {
       "textures": "textures/blocks/zabuton/zabuton_yellow"
+    },
+    "instance_server": {
+      "textures": "textures/blocks/instance_server"
+    },
+    "note_board": {
+      "textures": "textures/blocks/note_board"
     }
   }
 }

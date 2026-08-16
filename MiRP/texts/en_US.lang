@@ -58,3 +58,7 @@ action.hint.exit.mi:zabuton_red=Press SHIFT to get up
 action.hint.exit.mi:zabuton_blue=Press SHIFT to get up
 action.hint.exit.mi:zabuton_green=Press SHIFT to get up
 action.hint.exit.mi:zabuton_yellow=Press SHIFT to get up
+
+tile.mi:instance_server.name=Instance Server
+tile.mi:note_board.name=Misskey Note Board
+item.mi:reaction_wand.name=Reaction Wand

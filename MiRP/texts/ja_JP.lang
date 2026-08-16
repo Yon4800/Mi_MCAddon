@@ -61,3 +61,7 @@ action.hint.exit.mi:zabuton_red=シフトで立ち上がる
 action.hint.exit.mi:zabuton_blue=シフトで立ち上がる
 action.hint.exit.mi:zabuton_green=シフトで立ち上がる
 action.hint.exit.mi:zabuton_yellow=シフトで立ち上がる
+
+tile.mi:instance_server.name=インスタンスサーバー
+tile.mi:note_board.name=Misskey ノート掲示板
+item.mi:reaction_wand.name=リアクションワンド

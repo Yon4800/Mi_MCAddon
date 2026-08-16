@@ -91,6 +91,9 @@
     },
     "shokuji_ha_igyo": {
       "textures": "textures/items/igyo/shokuji_ha_igyo"
+    },
+    "reaction_wand": {
+      "textures": "textures/items/reaction_wand"
     }
   }
 }

@@ -6,5 +6,13 @@
   },
   "mi:tatami": {
     "sound": "wood"
+  },
+  "mi:instance_server": {
+    "sound": "metal",
+    "textures": "instance_server"
+  },
+  "mi:note_board": {
+    "sound": "wood",
+    "textures": "note_board"
   }
 }

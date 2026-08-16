@@ -1,6 +1,260 @@
 import { world, system, ItemStack, EntityComponentTypes, EntityHealthComponent, EntityEquippableComponent, Player } from "@minecraft/server";
+import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
+
+// ----------------------------------------------------
+// 0.6. Fediverse, Notes & Emoji Reactions System (ActivityPub)
+// ----------------------------------------------------
+interface NoteItem {
+  id: string;
+  author: string;
+  instance: string;
+  content: string;
+  timestamp: number;
+  reactions: Record<string, number>;
+}
+
+interface InstanceData {
+  name: string;
+  owner: string;
+  federatedWith: string[];
+}
+
+// Global Fediverse State
+const globalNotes: NoteItem[] = [
+  {
+    id: "note_1",
+    author: "syuilo",
+    instance: "misskey.io",
+    content: "Misskeyへようこそ！今日も楽しくマイクラしましょう♪",
+    timestamp: Date.now() - 3600000,
+    reactions: { "": 5, "": 3, "❤️": 7 }
+  }
+];
+
+const instanceServerMap = new Map<string, InstanceData>(); // blockPosKey -> InstanceData
+const activeServerLocations: { x: number, y: number, z: number, federationCount: number }[] = [];
+
+// Available Reaction Emojis
+const reactionOptions = [
+  { label: "にゃんぷっぷー", glyph: "" },
+  { label: "をねこ", glyph: "" },
+  { label: "愛知", glyph: "" },
+  { label: "モチョチョ", glyph: "" },
+  { label: "オタクくん", glyph: "" },
+  { label: "blebcat", glyph: "" },
+  { label: "長い変な車", glyph: "" },
+  { label: "与謝野晶子", glyph: "" },
+  { label: "ツチノコ", glyph: "" },
+  { label: "アルミホイル", glyph: "" },
+  { label: "ハート (❤️)", glyph: "❤️" },
+  { label: "いいね (👍)", glyph: "👍" },
+  { label: "祝 (🎉)", glyph: "🎉" },
+  { label: "爆発 (💥)", glyph: "💥" }
+];
+
+// Open Instance Server UI
+function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const posKey = `${blockLoc.x},${blockLoc.y},${blockLoc.z}`;
+  let inst = instanceServerMap.get(posKey);
+  if (!inst) {
+    inst = {
+      name: `local-${Math.floor(Math.random() * 900 + 100)}.misskey`,
+      owner: player.name,
+      federatedWith: ["misskey.io"]
+    };
+    instanceServerMap.set(posKey, inst);
+  }
+
+  const form = new ActionFormData()
+    .title(`🏛️ インスタンス: @${inst.name}`)
+    .body(`管理者: ${inst.owner}\n連合先サーバー数: ${inst.federatedWith.length} 拠点\n電波バフ: ${inst.federatedWith.length > 0 ? "⚡ 稼働中 (移動速度 / 採掘速度)" : "💤 未接続"}`)
+    .button("📝 インスタンス名を変更する")
+    .button("🌐 連合（Federation）管理")
+    .button("📊 Fediverse 統計を見る")
+    .button("閉じる");
+
+  form.show(player as any).then((response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (response.selection === 0) {
+      // Change instance name modal
+      const modal = new ModalFormData()
+        .title("🏛️ インスタンス名の設定")
+        .textField("インスタンスのドメイン名を入力してください", "例: my-home.misskey", inst!.name);
+
+      modal.show(player as any).then((res) => {
+        if (res.canceled || !res.formValues) return;
+        const newName = String(res.formValues[0]).trim();
+        if (newName) {
+          inst!.name = newName;
+          player.sendMessage(`§a🏛️ [Fediverse] インスタンス名を「@${newName}」に設定しました！§r`);
+        }
+      });
+    } else if (response.selection === 1) {
+      // Federation Management
+      const fedForm = new ActionFormData()
+        .title("🌐 連合（Federation）管理")
+        .body(`現在の連合先:\n${inst!.federatedWith.map(s => `・ @${s}`).join("\n")}`)
+        .button("➕ 新しいインスタンスと連合を結ぶ")
+        .button("戻る");
+
+      fedForm.show(player as any).then((fRes) => {
+        if (fRes.canceled || fRes.selection === undefined) return;
+        if (fRes.selection === 0) {
+          const connectModal = new ModalFormData()
+            .title("➕ 連合先インスタンスの追加")
+            .textField("接続先ドメイン名を入力", "例: friend-base.misskey");
+
+          connectModal.show(player as any).then((cRes) => {
+            if (cRes.canceled || !cRes.formValues) return;
+            const target = String(cRes.formValues[0]).trim();
+            if (target && !inst!.federatedWith.includes(target)) {
+              inst!.federatedWith.push(target);
+              player.dimension.spawnParticle("minecraft:totem_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+              player.sendMessage(`§a🌐 [ActivityPub] @${target} との連合接続（リレー同期）が完了しました！電波バフが強化されました！§r`);
+            }
+          });
+        }
+      });
+    } else if (response.selection === 2) {
+      player.sendMessage(`§b📊 [Fediverse統計] インスタンス: @${inst!.name} | 登録ノート総数: ${globalNotes.length} 件 | 連合数: ${inst!.federatedWith.length} 拠点§r`);
+    }
+  });
+}
+
+// Open Note Board UI
+function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const form = new ActionFormData()
+    .title("📋 Misskey ノートタイムライン")
+    .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、リアクションを送りましょう！")
+    .button("📝 ノートを投稿する")
+    .button("📜 タイムラインを見る / リアクション")
+    .button("閉じる");
+
+  form.show(player as any).then((response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (response.selection === 0) {
+      // Post new note
+      const modal = new ModalFormData()
+        .title("📝 新規ノートの投稿")
+        .textField("いまなにしてる？ (本文)", "例: 今日はブランチマイニングでダイヤ見つけた！");
+
+      modal.show(player as any).then((res) => {
+        if (res.canceled || !res.formValues) return;
+        const text = String(res.formValues[0]).trim();
+        if (text) {
+          const newNote: NoteItem = {
+            id: `note_${Date.now()}`,
+            author: player.name,
+            instance: "local.misskey",
+            content: text,
+            timestamp: Date.now(),
+            reactions: {}
+          };
+          globalNotes.unshift(newNote);
+          if (globalNotes.length > 50) globalNotes.pop();
+
+          player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+          world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${text}」§r`);
+        }
+      });
+    } else if (response.selection === 1) {
+      // View timeline
+      openTimelineListUI(player, blockLoc);
+    }
+  });
+}
+
+// View timeline list & react
+function openTimelineListUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const form = new ActionFormData()
+    .title("📜 タイムライン一覧")
+    .body("リアクションしたいノートを選択してください:");
+
+  for (const n of globalNotes) {
+    const reactSummary = Object.entries(n.reactions).map(([k, v]) => `[${k}x${v}]`).join(" ");
+    form.button(`${n.author}: ${n.content.substring(0, 15)}...\n${reactSummary || "リアクションなし"}`);
+  }
+  form.button("🔙 戻る");
+
+  form.show(player as any).then((response) => {
+    if (response.canceled || response.selection === undefined) return;
+    if (response.selection >= globalNotes.length) return;
+
+    const note = globalNotes[response.selection];
+    openNoteDetailUI(player, note, blockLoc);
+  });
+}
+
+// Note detail and emoji reaction picker
+function openNoteDetailUI(player: Player, note: NoteItem, blockLoc: { x: number, y: number, z: number }) {
+  const reactSummary = Object.entries(note.reactions).map(([k, v]) => `[${k} x ${v}]`).join("  ");
+  const form = new ActionFormData()
+    .title(`📝 ノート詳細: @${note.author}`)
+    .body(`「${note.content}」\n\n💖 現在のリアクション:\n${reactSummary || "まだリアクションはありません"}`)
+    .button("💖 このノートに絵文字リアクションする")
+    .button("🔙 タイムラインに戻る");
+
+  form.show(player as any).then((response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (response.selection === 0) {
+      // Pick Emoji
+      const pickForm = new ActionFormData()
+        .title("🎨 リアクション絵文字を選択");
+
+      for (const opt of reactionOptions) {
+        pickForm.button(`${opt.glyph} ${opt.label}`);
+      }
+
+      pickForm.show(player as any).then((pRes) => {
+        if (pRes.canceled || pRes.selection === undefined) return;
+        const chosen = reactionOptions[pRes.selection];
+
+        note.reactions[chosen.glyph] = (note.reactions[chosen.glyph] || 0) + 1;
+        player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+        player.sendMessage(`§d💖 ${note.author} のノートに ${chosen.glyph} (${chosen.label}) でリアクションしました！§r`);
+      });
+    } else {
+      openTimelineListUI(player, blockLoc);
+    }
+  });
+}
+
+// Open Reaction Wand UI for entity/player
+function openReactionWandUI(player: Player, targetName: string, targetLoc: { x: number, y: number, z: number }, targetEntity?: any) {
+  const form = new ActionFormData()
+    .title(`🪄 ${targetName} にリアクションを送る`)
+    .body("送りたい絵文字リアクションを選んでください:");
+
+  for (const opt of reactionOptions) {
+    form.button(`${opt.glyph} ${opt.label}`);
+  }
+
+  form.show(player as any).then((res) => {
+    if (res.canceled || res.selection === undefined) return;
+    const chosen = reactionOptions[res.selection];
+
+    const dim = player.dimension;
+    dim.spawnParticle("minecraft:heart_particle", { x: targetLoc.x, y: targetLoc.y + 1.5, z: targetLoc.z });
+    dim.spawnParticle("minecraft:villager_happy", { x: targetLoc.x, y: targetLoc.y + 1.8, z: targetLoc.z });
+
+    if (targetEntity) {
+      try {
+        const hp = targetEntity.getComponent(EntityComponentTypes.Health) as EntityHealthComponent;
+        if (hp && hp.currentValue < hp.effectiveMax) {
+          hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 4));
+        }
+      } catch (e) { }
+    }
+
+    world.sendMessage(`§d✨ [${player.name}] が ${targetName} に ${chosen.glyph} (${chosen.label}) リアクションを贈りました！§r`);
+  });
+}
+
 
 // Map for Yosano affection state
 const yosanoLoveMap = new Map<string, number>();
@@ -838,6 +1092,23 @@ system.runInterval(() => {
     }
   }
 
+
+  // D. Fediverse Instance Server Beacon Buffs
+  for (const [posKey, inst] of instanceServerMap.entries()) {
+    const [sx, sy, sz] = posKey.split(',').map(Number);
+    const fedCount = inst.federatedWith.length;
+    if (fedCount > 0) {
+      const nearbyP = overworld.getPlayers({
+        location: { x: sx, y: sy, z: sz },
+        maxDistance: 32
+      });
+      for (const p of nearbyP) {
+        p.addEffect("speed", 30, { amplifier: 0, showParticles: false });
+        p.addEffect("haste", 30, { amplifier: Math.min(2, fedCount - 1), showParticles: false });
+      }
+    }
+  }
+
   // C. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations: { x: number, y: number, z: number }[] = [];
@@ -984,3 +1255,27 @@ system.runInterval(() => {
 }, 5);
 
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
+
+// ----------------------------------------------------
+// 0.7. Block Interaction for Fediverse (instance_server & note_board)
+// ----------------------------------------------------
+world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
+  const block = event.block;
+  const player = event.player;
+
+  if (block.typeId === "mi:instance_server") {
+    const loc = block.location;
+    system.run(() => {
+      openInstanceServerUI(player, loc);
+    });
+    return;
+  }
+
+  if (block.typeId === "mi:note_board") {
+    const loc = block.location;
+    system.run(() => {
+      openNoteBoardUI(player, loc);
+    });
+    return;
+  }
+});

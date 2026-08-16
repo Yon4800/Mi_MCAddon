@@ -1,0 +1,28 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mi:note_board_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PEP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:planks"
+      },
+      "E": {
+        "item": "mi:ecology_server"
+      }
+    },
+    "result": {
+      "item": "mi:note_board",
+      "count": 1
+    }
+  }
+}

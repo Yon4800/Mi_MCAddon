@@ -1,0 +1,31 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mi:reaction_wand_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "  E",
+      " G ",
+      "S  "
+    ],
+    "key": {
+      "S": {
+        "item": "minecraft:stick"
+      },
+      "G": {
+        "item": "minecraft:gold_ingot"
+      },
+      "E": {
+        "item": "mi:ecology_server"
+      }
+    },
+    "result": {
+      "item": "mi:reaction_wand",
+      "count": 1
+    }
+  }
+}

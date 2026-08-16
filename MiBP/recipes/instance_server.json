@@ -1,0 +1,31 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mi:instance_server_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "IRI",
+      "RER",
+      "IRI"
+    ],
+    "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "R": {
+        "item": "minecraft:redstone"
+      },
+      "E": {
+        "item": "mi:ecology_server"
+      }
+    },
+    "result": {
+      "item": "mi:instance_server",
+      "count": 1
+    }
+  }
+}
