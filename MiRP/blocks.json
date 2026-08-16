@@ -5,7 +5,6 @@
     "textures": "tin_foil_block"
   },
   "mi:tatami": {
-    "sound": "wood",
-    "textures": "tatami"
+    "sound": "wood"
   }
 }

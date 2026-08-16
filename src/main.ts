@@ -226,6 +226,68 @@ if ((world.afterEvents as any)?.chatSend) {
 }
 
 // ----------------------------------------------------
+// 0.5. Momo (a friendly good-luck spirit; formerly rumored cursed, now harmless & cute)
+// ----------------------------------------------------
+const momoLuckCooldownMap = new Map<string, number>(); // playerId -> last luck timestamp (ms)
+const MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1000;
+
+world.afterEvents.playerInteractWithEntity.subscribe((event) => {
+  if (event.target.typeId !== "mi:momo") return;
+
+  const player = event.player;
+  const now = Date.now();
+  const lastLuckTime = momoLuckCooldownMap.get(player.id) || 0;
+
+  system.run(() => {
+    if (now - lastLuckTime < MOMO_LUCK_COOLDOWN_MS) {
+      player.sendMessage("§dモモ: 「なでなで、ありがとうなの♪」§r");
+      return;
+    }
+
+    momoLuckCooldownMap.set(player.id, now);
+    player.addEffect("luck", 600, { amplifier: 0 });
+    player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1, z: player.location.z });
+    player.sendMessage("§d🍀 [Mi_Addon] モモが幸運のおまじないをかけてくれた！ちょっぴり運が良くなった気がする…§r");
+  });
+});
+
+// ----------------------------------------------------
+// 0.5. しゅいろさん (Misskey開発者の分身。話しかけると開発トークを聞かせてくれる)
+// ----------------------------------------------------
+const syuiloQuotes = [
+  "§bしゅいろ: 「あ、どうも。Misskeyの開発、今日も元気にやってますよ。」§r",
+  "§bしゅいろ: 「新機能のアイデア、思いついたらすぐ実装しちゃうタイプなんですよね。」§r",
+  "§bしゅいろ: 「サーバーが落ちてないか、いつも心のどこかで気にしてます。」§r",
+  "§bしゅいろ: 「絵文字リアクション、いっぱい増えてうれしいなあ。」§r",
+  "§bしゅいろ: 「バグ報告はいつでも歓迎です。直せるかは別として。」§r",
+  "§bしゅいろ: 「たまにはMinecraftで息抜きするのもいいものですね。」§r"
+];
+const syuiloQuoteIndexMap = new Map<string, number>(); // playerId -> next quote index
+const syuiloLastTalkTimeMap = new Map<string, number>(); // playerId -> cooldown
+
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  if (event.target.typeId !== "mi:syuilo") return;
+
+  const player = event.player;
+  const target = event.target;
+  const now = Date.now();
+  const lastTime = syuiloLastTalkTimeMap.get(player.id) || 0;
+  if (now - lastTime < 500) return; // 0.5s debouncing
+  syuiloLastTalkTimeMap.set(player.id, now);
+
+  const nextIndex = syuiloQuoteIndexMap.get(player.id) || 0;
+  const quote = syuiloQuotes[nextIndex];
+  syuiloQuoteIndexMap.set(player.id, (nextIndex + 1) % syuiloQuotes.length);
+
+  system.run(() => {
+    player.sendMessage(quote);
+    const loc = target.location;
+    player.dimension.spawnParticle("minecraft:note_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
+  });
+});
+
+// ----------------------------------------------------
 // 0.5. Achievement Actions
 // ----------------------------------------------------
 world.afterEvents.playerBreakBlock.subscribe((event) => {
@@ -237,6 +299,57 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
   if (blockId.includes("snow")) addAchievementCounter(player, "josetsu");
   if (["minecraft:dirt", "minecraft:grass", "minecraft:grass_block"].includes(blockId)) addAchievementCounter(player, "seichi");
   checkAchievementCounters(player);
+});
+
+// ----------------------------------------------------
+// 0.5. Zabuton Furniture (placed as a rideable entity; stack same-color to grow, sit by default vehicle mount)
+// ----------------------------------------------------
+const zabutonEntityIds = ["mi:zabuton_red", "mi:zabuton_blue", "mi:zabuton_green", "mi:zabuton_yellow"];
+
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  const target = event.target;
+  if (!zabutonEntityIds.includes(target.typeId)) return;
+
+  const itemStack = event.itemStack;
+  if (!itemStack || itemStack.typeId !== target.typeId) return; // not stacking; let the default vehicle mount happen
+
+  event.cancel = true;
+  const player = event.player;
+  system.run(() => {
+    const variantComponent = target.getComponent("minecraft:variant") as any;
+    const currentLayer = (variantComponent?.value as number) || 1;
+    if (currentLayer >= 4) return;
+
+    target.triggerEvent(`mi:set_layer_${currentLayer + 1}`);
+
+    if ((player as any).gameMode !== "creative") {
+      const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+      if (itemStack.amount > 1) {
+        itemStack.amount -= 1;
+        equippable?.setEquipment("Mainhand" as any, itemStack);
+      } else {
+        equippable?.setEquipment("Mainhand" as any, undefined);
+      }
+    }
+  });
+});
+
+world.afterEvents.entityHurt.subscribe((event) => {
+  const hurtEntity = event.hurtEntity;
+  if (!zabutonEntityIds.includes(hurtEntity.typeId)) return;
+
+  const loc = hurtEntity.location;
+  const dimension = hurtEntity.dimension;
+  const variantComponent = hurtEntity.getComponent("minecraft:variant") as any;
+  const layerCount = (variantComponent?.value as number) || 1;
+  system.run(() => {
+    try {
+      dimension.spawnItem(new ItemStack(hurtEntity.typeId, layerCount), loc);
+      hurtEntity.remove();
+    } catch (error) {
+      // The entity may already have been removed by the 1-HP death that triggered this hurt event.
+    }
+  });
 });
 
 world.afterEvents.playerInteractWithBlock.subscribe((event) => {

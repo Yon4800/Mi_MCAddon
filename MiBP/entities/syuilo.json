@@ -1,0 +1,90 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:syuilo",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "mi:talking": {}
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "syuilo",
+          "villager",
+          "humanoid",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 20,
+        "max": 20
+      },
+      "minecraft:physics": {},
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 1.8
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:movement": {
+        "value": 0.25
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": true,
+        "can_open_doors": true,
+        "can_pass_doors": true
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      },
+      "minecraft:interact": {
+        "interactions": [
+          {
+            "interact_text": "action.interact.talk",
+            "on_interact": {
+              "filters": {
+                "test": "is_family",
+                "subject": "other",
+                "value": "player"
+              },
+              "event": "mi:on_talk"
+            }
+          }
+        ]
+      },
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.open_door": {
+        "priority": 2
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 4,
+        "speed_multiplier": 1.0
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 5,
+        "look_distance": 8.0
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 6
+      }
+    },
+    "events": {
+      "mi:on_talk": {
+        "add": {
+          "component_groups": [
+            "mi:talking"
+          ]
+        }
+      }
+    }
+  }
+}

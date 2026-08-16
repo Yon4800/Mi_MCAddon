@@ -29,6 +29,18 @@
     "anko": {
       "textures": "textures/items/anko"
     },
+    "zabuton_red": {
+      "textures": "textures/blocks/zabuton/zabuton_red"
+    },
+    "zabuton_blue": {
+      "textures": "textures/blocks/zabuton/zabuton_blue"
+    },
+    "zabuton_green": {
+      "textures": "textures/blocks/zabuton/zabuton_green"
+    },
+    "zabuton_yellow": {
+      "textures": "textures/blocks/zabuton/zabuton_yellow"
+    },
     "baked_mochocho": {
       "textures": "textures/items/baked_mochocho"
     },

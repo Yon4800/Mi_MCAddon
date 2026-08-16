@@ -40,3 +40,21 @@ item.spawn_egg.entity.mi:woneko.name=Woneko Spawn Egg
 item.mi:tin_foil_hat.name=Tin Foil Hat
 
 tile.mi:tin_foil_block.name=Tin Foil Block
+
+tile.mi:tatami.name=Tatami Mat
+item.mi:zabuton_red.name=Zabuton (Red)
+item.mi:zabuton_blue.name=Zabuton (Blue)
+item.mi:zabuton_green.name=Zabuton (Green)
+item.mi:zabuton_yellow.name=Zabuton (Yellow)
+
+entity.mi:momo.name=Momo
+item.spawn_egg.entity.mi:momo.name=Momo Spawn Egg
+
+entity.mi:syuilo.name=Syuilo
+item.spawn_egg.entity.mi:syuilo.name=Syuilo Spawn Egg
+
+action.hint.exit.mi:regretcar=Press SHIFT to get off
+action.hint.exit.mi:zabuton_red=Press SHIFT to get up
+action.hint.exit.mi:zabuton_blue=Press SHIFT to get up
+action.hint.exit.mi:zabuton_green=Press SHIFT to get up
+action.hint.exit.mi:zabuton_yellow=Press SHIFT to get up

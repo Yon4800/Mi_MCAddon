@@ -6,9 +6,22 @@
       "menu_category": {
         "category": "construction",
         "group": "itemGroup.name.planks"
+      },
+      "traits": {
+        "minecraft:placement_direction": {
+          "enabled_states": ["minecraft:cardinal_direction"],
+          "y_rotation_offset": 180
+        }
       }
     },
     "components": {
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "tatami",
+          "render_method": "opaque"
+        }
+      },
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.6
       },
@@ -20,6 +33,24 @@
         "destroy_chance_modifier": 20
       },
       "minecraft:map_color": "#C9B27C"
-    }
+    },
+    "permutations": [
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": { "minecraft:transformation": { "rotation": [0, 0, 0] } }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": { "minecraft:transformation": { "rotation": [0, 180, 0] } }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": { "minecraft:transformation": { "rotation": [0, 90, 0] } }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": { "minecraft:transformation": { "rotation": [0, 270, 0] } }
+      }
+    ]
   }
 }

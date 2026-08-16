@@ -40,3 +40,24 @@ item.spawn_egg.entity.mi:woneko.name=をねこのスポーンエッグ
 item.mi:tin_foil_hat.name=陰謀論者のアルミホイル
 
 tile.mi:tin_foil_block.name=陰謀論者のアルミホイルブロック
+
+tile.mi:tatami.name=畳
+item.mi:zabuton_red.name=座布団(赤)
+item.mi:zabuton_blue.name=座布団(青)
+item.mi:zabuton_green.name=座布団(緑)
+item.mi:zabuton_yellow.name=座布団(黄)
+
+entity.mi:momo.name=モモ
+item.spawn_egg.entity.mi:momo.name=モモのスポーンエッグ
+
+entity.mi:syuilo.name=しゅいろ
+item.spawn_egg.entity.mi:syuilo.name=しゅいろのスポーンエッグ
+
+action.interact.talk=話しかける
+action.interact.pet=なでる
+
+action.hint.exit.mi:regretcar=シフトで降りる
+action.hint.exit.mi:zabuton_red=シフトで立ち上がる
+action.hint.exit.mi:zabuton_blue=シフトで立ち上がる
+action.hint.exit.mi:zabuton_green=シフトで立ち上がる
+action.hint.exit.mi:zabuton_yellow=シフトで立ち上がる

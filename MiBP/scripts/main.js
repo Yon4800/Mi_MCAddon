@@ -184,6 +184,55 @@ if (world.afterEvents?.chatSend) {
     }
   });
 }
+var momoLuckCooldownMap = /* @__PURE__ */ new Map();
+var MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1e3;
+world.afterEvents.playerInteractWithEntity.subscribe((event) => {
+  if (event.target.typeId !== "mi:momo")
+    return;
+  const player = event.player;
+  const now = Date.now();
+  const lastLuckTime = momoLuckCooldownMap.get(player.id) || 0;
+  system.run(() => {
+    if (now - lastLuckTime < MOMO_LUCK_COOLDOWN_MS) {
+      player.sendMessage("\xA7d\u30E2\u30E2: \u300C\u306A\u3067\u306A\u3067\u3001\u3042\u308A\u304C\u3068\u3046\u306A\u306E\u266A\u300D\xA7r");
+      return;
+    }
+    momoLuckCooldownMap.set(player.id, now);
+    player.addEffect("luck", 600, { amplifier: 0 });
+    player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1, z: player.location.z });
+    player.sendMessage("\xA7d\u{1F340} [Mi_Addon] \u30E2\u30E2\u304C\u5E78\u904B\u306E\u304A\u307E\u3058\u306A\u3044\u3092\u304B\u3051\u3066\u304F\u308C\u305F\uFF01\u3061\u3087\u3063\u3074\u308A\u904B\u304C\u826F\u304F\u306A\u3063\u305F\u6C17\u304C\u3059\u308B\u2026\xA7r");
+  });
+});
+var syuiloQuotes = [
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u3042\u3001\u3069\u3046\u3082\u3002Misskey\u306E\u958B\u767A\u3001\u4ECA\u65E5\u3082\u5143\u6C17\u306B\u3084\u3063\u3066\u307E\u3059\u3088\u3002\u300D\xA7r",
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u65B0\u6A5F\u80FD\u306E\u30A2\u30A4\u30C7\u30A2\u3001\u601D\u3044\u3064\u3044\u305F\u3089\u3059\u3050\u5B9F\u88C5\u3057\u3061\u3083\u3046\u30BF\u30A4\u30D7\u306A\u3093\u3067\u3059\u3088\u306D\u3002\u300D\xA7r",
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u30B5\u30FC\u30D0\u30FC\u304C\u843D\u3061\u3066\u306A\u3044\u304B\u3001\u3044\u3064\u3082\u5FC3\u306E\u3069\u3053\u304B\u3067\u6C17\u306B\u3057\u3066\u307E\u3059\u3002\u300D\xA7r",
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3001\u3044\u3063\u3071\u3044\u5897\u3048\u3066\u3046\u308C\u3057\u3044\u306A\u3042\u3002\u300D\xA7r",
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u30D0\u30B0\u5831\u544A\u306F\u3044\u3064\u3067\u3082\u6B53\u8FCE\u3067\u3059\u3002\u76F4\u305B\u308B\u304B\u306F\u5225\u3068\u3057\u3066\u3002\u300D\xA7r",
+  "\xA7b\u3057\u3085\u3044\u308D: \u300C\u305F\u307E\u306B\u306FMinecraft\u3067\u606F\u629C\u304D\u3059\u308B\u306E\u3082\u3044\u3044\u3082\u306E\u3067\u3059\u306D\u3002\u300D\xA7r"
+];
+var syuiloQuoteIndexMap = /* @__PURE__ */ new Map();
+var syuiloLastTalkTimeMap = /* @__PURE__ */ new Map();
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  if (event.target.typeId !== "mi:syuilo")
+    return;
+  const player = event.player;
+  const target = event.target;
+  const now = Date.now();
+  const lastTime = syuiloLastTalkTimeMap.get(player.id) || 0;
+  if (now - lastTime < 500)
+    return;
+  syuiloLastTalkTimeMap.set(player.id, now);
+  const nextIndex = syuiloQuoteIndexMap.get(player.id) || 0;
+  const quote = syuiloQuotes[nextIndex];
+  syuiloQuoteIndexMap.set(player.id, (nextIndex + 1) % syuiloQuotes.length);
+  system.run(() => {
+    player.sendMessage(quote);
+    const loc = target.location;
+    player.dimension.spawnParticle("minecraft:note_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
+  });
+});
 world.afterEvents.playerBreakBlock.subscribe((event) => {
   const player = event.player;
   const blockId = event.brokenBlockPermutation.type.id;
@@ -193,6 +242,49 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
   if (["minecraft:dirt", "minecraft:grass", "minecraft:grass_block"].includes(blockId))
     addAchievementCounter(player, "seichi");
   checkAchievementCounters(player);
+});
+var zabutonEntityIds = ["mi:zabuton_red", "mi:zabuton_blue", "mi:zabuton_green", "mi:zabuton_yellow"];
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  const target = event.target;
+  if (!zabutonEntityIds.includes(target.typeId))
+    return;
+  const itemStack = event.itemStack;
+  if (!itemStack || itemStack.typeId !== target.typeId)
+    return;
+  event.cancel = true;
+  const player = event.player;
+  system.run(() => {
+    const variantComponent = target.getComponent("minecraft:variant");
+    const currentLayer = variantComponent?.value || 1;
+    if (currentLayer >= 4)
+      return;
+    target.triggerEvent(`mi:set_layer_${currentLayer + 1}`);
+    if (player.gameMode !== "creative") {
+      const equippable = player.getComponent(EntityComponentTypes.Equippable);
+      if (itemStack.amount > 1) {
+        itemStack.amount -= 1;
+        equippable?.setEquipment("Mainhand", itemStack);
+      } else {
+        equippable?.setEquipment("Mainhand", void 0);
+      }
+    }
+  });
+});
+world.afterEvents.entityHurt.subscribe((event) => {
+  const hurtEntity = event.hurtEntity;
+  if (!zabutonEntityIds.includes(hurtEntity.typeId))
+    return;
+  const loc = hurtEntity.location;
+  const dimension = hurtEntity.dimension;
+  const variantComponent = hurtEntity.getComponent("minecraft:variant");
+  const layerCount = variantComponent?.value || 1;
+  system.run(() => {
+    try {
+      dimension.spawnItem(new ItemStack(hurtEntity.typeId, layerCount), loc);
+      hurtEntity.remove();
+    } catch (error) {
+    }
+  });
 });
 world.afterEvents.playerInteractWithBlock.subscribe((event) => {
   const blockId = event.block.typeId;

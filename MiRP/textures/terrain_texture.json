@@ -7,6 +7,18 @@
     },
     "tatami": {
       "textures": "textures/blocks/tatami"
+    },
+    "zabuton_red": {
+      "textures": "textures/blocks/zabuton/zabuton_red"
+    },
+    "zabuton_blue": {
+      "textures": "textures/blocks/zabuton/zabuton_blue"
+    },
+    "zabuton_green": {
+      "textures": "textures/blocks/zabuton/zabuton_green"
+    },
+    "zabuton_yellow": {
+      "textures": "textures/blocks/zabuton/zabuton_yellow"
     }
   }
 }

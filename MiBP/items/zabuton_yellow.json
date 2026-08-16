@@ -1,0 +1,20 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mi:zabuton_yellow",
+      "menu_category": {
+        "category": "construction",
+        "group": "itemGroup.name.carpet"
+      }
+    },
+    "components": {
+      "minecraft:icon": "zabuton_yellow",
+      "minecraft:display_name": { "value": "座布団(黄)" },
+      "minecraft:max_stack_size": 64,
+      "minecraft:entity_placer": {
+        "entity": "mi:zabuton_yellow"
+      }
+    }
+  }
+}

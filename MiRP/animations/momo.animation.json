@@ -1,0 +1,16 @@
+{
+  "format_version": "1.10.0",
+  "animations": {
+    "animation.momo.legs_walk": {
+      "loop": true,
+      "bones": {
+        "leftLeg": {
+          "rotation": ["variable.tcos0 * -1.4", -0.1, -0.1]
+        },
+        "rightLeg": {
+          "rotation": ["variable.tcos0 * 1.4", 0.1, 0.1]
+        }
+      }
+    }
+  }
+}

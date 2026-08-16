@@ -1,0 +1,35 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:momo",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entities/momo"
+      },
+      "geometry": {
+        "default": "geometry.momo"
+      },
+      "scripts": {
+        "pre_animation": [
+          "variable.tcos0 = Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed * 57.3;"
+        ],
+        "animate": [
+          "legs_walk"
+        ]
+      },
+      "animations": {
+        "legs_walk": "animation.momo.legs_walk"
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ],
+      "spawn_egg": {
+        "base_color": "#F2C14E",
+        "overlay_color": "#E85D75"
+      }
+    }
+  }
+}

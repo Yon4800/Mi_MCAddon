@@ -1,0 +1,10 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.mi_zabuton": {
+      "geometry": "query.variant <= 1 ? Geometry.layer1 : query.variant == 2 ? Geometry.layer2 : query.variant == 3 ? Geometry.layer3 : Geometry.layer4",
+      "materials": [ { "*": "Material.default" } ],
+      "textures": [ "Texture.default" ]
+    }
+  }
+}

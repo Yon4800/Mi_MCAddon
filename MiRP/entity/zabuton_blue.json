@@ -1,0 +1,17 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:zabuton_blue",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/blocks/zabuton/zabuton_blue" },
+      "geometry": {
+        "layer1": "geometry.mi_zabuton_1",
+        "layer2": "geometry.mi_zabuton_2",
+        "layer3": "geometry.mi_zabuton_3",
+        "layer4": "geometry.mi_zabuton_4"
+      },
+      "render_controllers": [ "controller.render.mi_zabuton" ]
+    }
+  }
+}

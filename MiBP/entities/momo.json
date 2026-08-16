@@ -1,0 +1,83 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mi:momo",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "mi:petting": {}
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "momo",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 8,
+        "max": 8
+      },
+      "minecraft:physics": {},
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 1.9
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:movement": {
+        "value": 0.2
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": false
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      },
+      "minecraft:interact": {
+        "interactions": [
+          {
+            "interact_text": "action.interact.pet",
+            "on_interact": {
+              "filters": {
+                "test": "is_family",
+                "subject": "other",
+                "value": "player"
+              },
+              "event": "mi:on_pet"
+            }
+          }
+        ]
+      },
+      "minecraft:behavior.panic": {
+        "priority": 1,
+        "speed_multiplier": 1.3
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 4,
+        "speed_multiplier": 0.6
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 5
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 6
+      }
+    },
+    "events": {
+      "mi:on_pet": {
+        "add": {
+          "component_groups": [
+            "mi:petting"
+          ]
+        }
+      }
+    }
+  }
+}
