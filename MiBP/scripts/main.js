@@ -194,37 +194,83 @@ ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u6
 function openNoteBoardUI(player, blockLoc) {
   const unreadCount = directMessages.filter((m) => m.recipient === player.name && !m.read).length;
   const dmBadge = unreadCount > 0 ? ` (${unreadCount}\u4EF6\u672A\u8AAD)` : "";
-  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
+  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B (\u30C6\u30AD\u30B9\u30C8\u5165\u529B)").button("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u304B\u3089\u30AF\u30A4\u30C3\u30AF\u6295\u7A3F").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
-      const modal = new ModalFormData().title("\u{1F4DD} \u65B0\u898F\u30CE\u30FC\u30C8\u306E\u6295\u7A3F").textField("\u3044\u307E\u306A\u306B\u3057\u3066\u308B\uFF1F (\u672C\u6587)", "\u4F8B: \u4ECA\u65E5\u306F\u30D6\u30E9\u30F3\u30C1\u30DE\u30A4\u30CB\u30F3\u30B0\u3067\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01");
-      showFormSafe(player, modal, (res) => {
-        if (res.canceled || !res.formValues)
-          return;
-        const text = String(res.formValues[0]).trim();
-        if (text) {
-          const newNote = {
-            id: `note_${Date.now()}`,
-            author: player.name,
-            instance: "local.misskey",
-            content: text,
-            timestamp: Date.now(),
-            reactions: {}
-          };
-          globalNotes.unshift(newNote);
-          if (globalNotes.length > 50)
-            globalNotes.pop();
-          player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-          world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text}\u300D\xA7r`);
-        }
-      });
+      openNewNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
-      openTimelineListUI(player, blockLoc);
+      openEmojiDeckQuickPostUI(player, blockLoc);
     } else if (response.selection === 2) {
+      openTimelineListUI(player, blockLoc);
+    } else if (response.selection === 3) {
       openDMHubUI(player, blockLoc);
     }
+  });
+}
+function openNewNoteModal(player, blockLoc) {
+  const emojiDeckOptions = ["(\u306A\u3057)", ...reactionOptions.map((o) => `${o.glyph} ${o.label}`)];
+  const modal = new ModalFormData().title("\u{1F4DD} \u65B0\u898F\u30CE\u30FC\u30C8\u306E\u6295\u7A3F").textField("\u3044\u307E\u306A\u306B\u3057\u3066\u308B\uFF1F (\u672C\u6587):", "\u4F8B: \u4ECA\u65E5\u306F\u30D6\u30E9\u30F3\u30C1\u30DE\u30A4\u30CB\u30F3\u30B0\u3067\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01").dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD (\u672B\u5C3E\u306B\u6DFB\u4ED8):", emojiDeckOptions, 0);
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues)
+      return;
+    let text = String(res.formValues[0]).trim();
+    const chosenEmojiIdx = Number(res.formValues[1]);
+    if (chosenEmojiIdx > 0) {
+      const attachedEmoji = reactionOptions[chosenEmojiIdx - 1].glyph;
+      text = text ? `${text} ${attachedEmoji}` : attachedEmoji;
+    }
+    if (text) {
+      for (const [key, glyph] of Object.entries(emojiMap)) {
+        if (text.includes(key)) {
+          text = text.split(key).join(glyph);
+        }
+      }
+      const newNote = {
+        id: `note_${Date.now()}`,
+        author: player.name,
+        instance: "local.misskey",
+        content: text,
+        timestamp: Date.now(),
+        reactions: {}
+      };
+      globalNotes.unshift(newNote);
+      if (globalNotes.length > 50)
+        globalNotes.pop();
+      player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+      world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text}\u300D\xA7r`);
+    }
+  });
+}
+function openEmojiDeckQuickPostUI(player, blockLoc) {
+  const form = new ActionFormData().title("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u30AF\u30A4\u30C3\u30AF\u6295\u7A3F").body("\u30BF\u30C3\u30D7\u3057\u305F\u7D75\u6587\u5B57\u304C\u305D\u306E\u307E\u307E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u306B\u5373\u5EA7\u306B\u6295\u7A3F\u3055\u308C\u307E\u3059:");
+  for (const opt of reactionOptions) {
+    form.button(`${opt.glyph} ${opt.label}`);
+  }
+  form.button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === void 0)
+      return;
+    if (res.selection >= reactionOptions.length) {
+      openNoteBoardUI(player, blockLoc);
+      return;
+    }
+    const chosen = reactionOptions[res.selection];
+    const newNote = {
+      id: `note_${Date.now()}`,
+      author: player.name,
+      instance: "local.misskey",
+      content: chosen.glyph,
+      timestamp: Date.now(),
+      reactions: {}
+    };
+    globalNotes.unshift(newNote);
+    if (globalNotes.length > 50)
+      globalNotes.pop();
+    player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+    world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u7D75\u6587\u5B57\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: ${chosen.glyph} (${chosen.label})\xA7r`);
   });
 }
 function getReactionSummary(note) {
