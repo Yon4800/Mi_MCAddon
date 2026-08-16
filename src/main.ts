@@ -254,6 +254,90 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
 }
 
 // Open Note Board UI with Emoji Deck support
+// Interactive Misskey Note Composer with Emoji Deck Palette
+function openNoteComposerUI(player: Player, blockLoc: { x: number, y: number, z: number }, currentDraft: string = "") {
+  const previewText = currentDraft ? `「${currentDraft}」` : "（まだ本文はありません）";
+
+  const form = new ActionFormData()
+    .title("📝 Misskey ノート作成エディタ")
+    .body(`【作成中のノート】\n${previewText}\n\n下の絵文字パレットをタップすると、本文に絵文字が挿入されます:`)
+    .button("⌨️ 文字を入力 / 書き足す")
+    .button("🚀 この内容でノートを投稿する");
+
+  // Emoji Deck Buttons (Palette)
+  for (const opt of reactionOptions) {
+    form.button(`${opt.glyph} ${opt.label} を挿入`);
+  }
+
+  form.button("🗑️ 下書きをクリア");
+  form.button("🔙 キャンセルして戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    let bIdx = 0;
+    const textInputBtn = bIdx++;
+    const postBtn = bIdx++;
+    const emojiStartIdx = bIdx;
+    const emojiEndIdx = emojiStartIdx + reactionOptions.length;
+    const clearBtn = emojiEndIdx;
+    const cancelBtn = clearBtn + 1;
+
+    if (res.selection === textInputBtn) {
+      // Input / Append text modal
+      const modal = new ModalFormData()
+        .title("⌨️ 本文の入力")
+        .textField("文章を入力してください (絵文字コード :blobcat: 等も使用可):", "例: 今日はダイヤ見つけた！", currentDraft);
+
+      showFormSafe(player, modal, (mRes) => {
+        if (mRes.canceled || !mRes.formValues) {
+          openNoteComposerUI(player, blockLoc, currentDraft);
+          return;
+        }
+        let inputVal = String(mRes.formValues[0]).trim();
+        for (const [key, glyph] of Object.entries(emojiMap)) {
+          if (inputVal.includes(key)) {
+            inputVal = inputVal.split(key).join(glyph);
+          }
+        }
+        openNoteComposerUI(player, blockLoc, inputVal);
+      });
+    } else if (res.selection === postBtn) {
+      // Post note
+      if (!currentDraft.trim()) {
+        player.sendMessage("§c⚠️ 本文が空です。文字を入力するか絵文字を挿入してください。§r");
+        openNoteComposerUI(player, blockLoc, currentDraft);
+        return;
+      }
+
+      const newNote: NoteItem = {
+        id: `note_${Date.now()}`,
+        author: player.name,
+        instance: "local.misskey",
+        content: currentDraft.trim(),
+        timestamp: Date.now(),
+        reactions: {}
+      };
+      globalNotes.unshift(newNote);
+      if (globalNotes.length > 50) globalNotes.pop();
+
+      player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+      world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${currentDraft.trim()}」§r`);
+    } else if (res.selection >= emojiStartIdx && res.selection < emojiEndIdx) {
+      // Clicked Emoji from Deck -> Append to draft
+      const chosen = reactionOptions[res.selection - emojiStartIdx];
+      const newDraft = currentDraft ? `${currentDraft} ${chosen.glyph}` : chosen.glyph;
+      openNoteComposerUI(player, blockLoc, newDraft);
+    } else if (res.selection === clearBtn) {
+      openNoteComposerUI(player, blockLoc, "");
+    } else {
+      openNoteBoardUI(player, blockLoc);
+    }
+  });
+}
+
+// Updated openNoteBoardUI
 function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
   const unreadCount = directMessages.filter(m => m.recipient === player.name && !m.read).length;
   const dmBadge = unreadCount > 0 ? ` (${unreadCount}件未読)` : "";
@@ -261,8 +345,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
   const form = new ActionFormData()
     .title("📋 Misskey ノートタイムライン")
     .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMを送受信しましょう！")
-    .button("📝 ノートを投稿する (テキスト入力)")
-    .button("🎨 絵文字デッキからクイック投稿")
+    .button("📝 ノートを作成する (絵文字デッキ対応)")
     .button("📜 タイムラインを見る / リアクション")
     .button(`✉️ ダイレクトメッセージ (DM)${dmBadge}`)
     .button("閉じる");
@@ -271,96 +354,12 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
     if (response.canceled || response.selection === undefined) return;
 
     if (response.selection === 0) {
-      // Post new note with text + optional emoji deck attach
-      openNewNoteModal(player, blockLoc);
+      openNoteComposerUI(player, blockLoc, "");
     } else if (response.selection === 1) {
-      // Quick Emoji Deck Post
-      openEmojiDeckQuickPostUI(player, blockLoc);
-    } else if (response.selection === 2) {
       openTimelineListUI(player, blockLoc);
-    } else if (response.selection === 3) {
+    } else if (response.selection === 2) {
       openDMHubUI(player, blockLoc);
     }
-  });
-}
-
-// Modal for posting text note with emoji deck picker
-function openNewNoteModal(player: Player, blockLoc: { x: number, y: number, z: number }) {
-  const emojiDeckOptions = ["(なし)", ...reactionOptions.map(o => `${o.glyph} ${o.label}`)];
-
-  const modal = new ModalFormData()
-    .title("📝 新規ノートの投稿")
-    .textField("いまなにしてる？ (本文):", "例: 今日はブランチマイニングでダイヤ見つけた！")
-    .dropdown("🎨 絵文字デッキ (末尾に添付):", emojiDeckOptions, 0);
-
-  showFormSafe(player, modal, (res) => {
-    if (res.canceled || !res.formValues) return;
-    let text = String(res.formValues[0]).trim();
-    const chosenEmojiIdx = Number(res.formValues[1]);
-
-    if (chosenEmojiIdx > 0) {
-      const attachedEmoji = reactionOptions[chosenEmojiIdx - 1].glyph;
-      text = text ? `${text} ${attachedEmoji}` : attachedEmoji;
-    }
-
-    if (text) {
-      // Replace emoji shortcodes (:blobcat: etc.)
-      for (const [key, glyph] of Object.entries(emojiMap)) {
-        if (text.includes(key)) {
-          text = text.split(key).join(glyph);
-        }
-      }
-
-      const newNote: NoteItem = {
-        id: `note_${Date.now()}`,
-        author: player.name,
-        instance: "local.misskey",
-        content: text,
-        timestamp: Date.now(),
-        reactions: {}
-      };
-      globalNotes.unshift(newNote);
-      if (globalNotes.length > 50) globalNotes.pop();
-
-      player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-      world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${text}」§r`);
-    }
-  });
-}
-
-// Quick Emoji Deck Post (1-tap instant emoji note post)
-function openEmojiDeckQuickPostUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
-  const form = new ActionFormData()
-    .title("🎨 絵文字デッキ クイック投稿")
-    .body("タップした絵文字がそのままタイムラインに即座に投稿されます:");
-
-  for (const opt of reactionOptions) {
-    form.button(`${opt.glyph} ${opt.label}`);
-  }
-  form.button("🔙 戻る");
-
-  showFormSafe(player, form, (res) => {
-    if (res.canceled || res.selection === undefined) return;
-    if (res.selection >= reactionOptions.length) {
-      openNoteBoardUI(player, blockLoc);
-      return;
-    }
-
-    const chosen = reactionOptions[res.selection];
-    const newNote: NoteItem = {
-      id: `note_${Date.now()}`,
-      author: player.name,
-      instance: "local.misskey",
-      content: chosen.glyph,
-      timestamp: Date.now(),
-      reactions: {}
-    };
-    globalNotes.unshift(newNote);
-    if (globalNotes.length > 50) globalNotes.pop();
-
-    player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-    player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
-    world.sendMessage(`§a📢 [${player.name}@local.misskey] が絵文字ノートを投稿しました: ${chosen.glyph} (${chosen.label})§r`);
   });
 }
 
