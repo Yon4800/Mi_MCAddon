@@ -164,6 +164,9 @@ function openNoteDetailUI(player, note, blockLoc) {
 
 \u{1F496} \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u4E00\u89A7:${myReactText}
 ${reactorsText}`).button(myReaction ? `\u{1F504} \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u5909\u66F4\u3059\u308B (${myReaction})` : "\u{1F496} \u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3059\u308B");
+  if (myReaction) {
+    form.button(`\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3059 (${myReaction})`);
+  }
   if (isAuthorOrOp) {
     form.button("\u{1F5D1}\uFE0F \u3053\u306E\u30CE\u30FC\u30C8\u3092\u524A\u9664\u3059\u308B");
   }
@@ -171,21 +174,43 @@ ${reactorsText}`).button(myReaction ? `\u{1F504} \u30EA\u30A2\u30AF\u30B7\u30E7\
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
-    if (response.selection === 0) {
+    let buttonIndex = 0;
+    const reactBtn = buttonIndex++;
+    const unreactBtn = myReaction ? buttonIndex++ : -1;
+    const deleteBtn = isAuthorOrOp ? buttonIndex++ : -1;
+    const backBtn = buttonIndex++;
+    if (response.selection === reactBtn) {
       const pickForm = new ActionFormData().title("\u{1F3A8} \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u7D75\u6587\u5B57\u3092\u9078\u629E").body(myReaction ? `\u73FE\u5728\u306E\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3: ${myReaction}
-\u5225\u306E\u7D75\u6587\u5B57\u3092\u9078\u3076\u3068\u4E0A\u66F8\u304D\u5909\u66F4\u3055\u308C\u307E\u3059:` : "\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u305F\u3044\u7D75\u6587\u5B57\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044:");
+\u5225\u306E\u7D75\u6587\u5B57\u3092\u9078\u3076\u3068\u5909\u66F4\u3055\u308C\u307E\u3059:` : "\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u305F\u3044\u7D75\u6587\u5B57\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044:");
+      if (myReaction) {
+        pickForm.button("\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3059\uFF08\u89E3\u9664\uFF09");
+      }
       for (const opt of reactionOptions) {
         pickForm.button(`${opt.glyph} ${opt.label}`);
       }
       showFormSafe(player, pickForm, (pRes) => {
         if (pRes.canceled || pRes.selection === void 0)
           return;
-        const chosen = reactionOptions[pRes.selection];
-        note.reactions[player.name] = chosen.glyph;
-        player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-        player.sendMessage(`\xA7d\u{1F496} ${note.author} \u306E\u30CE\u30FC\u30C8\u306B ${chosen.glyph} (${chosen.label}) \u3067\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        if (myReaction && pRes.selection === 0) {
+          delete note.reactions[player.name];
+          player.sendMessage("\xA7e\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3057\u307E\u3057\u305F\u3002\xA7r");
+          openNoteDetailUI(player, note, blockLoc);
+          return;
+        }
+        const optionIndex = myReaction ? pRes.selection - 1 : pRes.selection;
+        const chosen = reactionOptions[optionIndex];
+        if (chosen) {
+          note.reactions[player.name] = chosen.glyph;
+          player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+          player.sendMessage(`\xA7d\u{1F496} ${note.author} \u306E\u30CE\u30FC\u30C8\u306B ${chosen.glyph} (${chosen.label}) \u3067\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          openNoteDetailUI(player, note, blockLoc);
+        }
       });
-    } else if (response.selection === 1 && isAuthorOrOp) {
+    } else if (response.selection === unreactBtn) {
+      delete note.reactions[player.name];
+      player.sendMessage("\xA7e\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3057\u307E\u3057\u305F\u3002\xA7r");
+      openNoteDetailUI(player, note, blockLoc);
+    } else if (response.selection === deleteBtn) {
       const idx = globalNotes.findIndex((n) => n.id === note.id);
       if (idx !== -1) {
         globalNotes.splice(idx, 1);

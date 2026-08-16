@@ -225,6 +225,10 @@ function openNoteDetailUI(player: Player, note: NoteItem, blockLoc: { x: number,
     .body(`「${note.content}」\n\n💖 リアクション一覧:${myReactText}\n${reactorsText}`)
     .button(myReaction ? `🔄 リアクションを変更する (${myReaction})` : "💖 絵文字リアクションする");
 
+  if (myReaction) {
+    form.button(`❌ リアクションを取り消す (${myReaction})`);
+  }
+
   if (isAuthorOrOp) {
     form.button("🗑️ このノートを削除する");
   }
@@ -233,27 +237,51 @@ function openNoteDetailUI(player: Player, note: NoteItem, blockLoc: { x: number,
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === undefined) return;
 
-    if (response.selection === 0) {
+    let buttonIndex = 0;
+    const reactBtn = buttonIndex++;
+    const unreactBtn = myReaction ? buttonIndex++ : -1;
+    const deleteBtn = isAuthorOrOp ? buttonIndex++ : -1;
+    const backBtn = buttonIndex++;
+
+    if (response.selection === reactBtn) {
       // Emoji Picker
       const pickForm = new ActionFormData()
         .title("🎨 リアクション絵文字を選択")
-        .body(myReaction ? `現在のリアクション: ${myReaction}\n別の絵文字を選ぶと上書き変更されます:` : "リアクションしたい絵文字を選んでください:");
+        .body(myReaction ? `現在のリアクション: ${myReaction}\n別の絵文字を選ぶと変更されます:` : "リアクションしたい絵文字を選んでください:");
 
+      if (myReaction) {
+        pickForm.button("❌ リアクションを取り消す（解除）");
+      }
       for (const opt of reactionOptions) {
         pickForm.button(`${opt.glyph} ${opt.label}`);
       }
 
       showFormSafe(player, pickForm, (pRes) => {
         if (pRes.canceled || pRes.selection === undefined) return;
-        const chosen = reactionOptions[pRes.selection];
+        
+        if (myReaction && pRes.selection === 0) {
+          // Remove reaction
+          delete note.reactions[player.name];
+          player.sendMessage("§e❌ リアクションを取り消しました。§r");
+          openNoteDetailUI(player, note, blockLoc);
+          return;
+        }
 
-        // 1 reaction per player (overwrite)
-        note.reactions[player.name] = chosen.glyph;
-
-        player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-        player.sendMessage(`§d💖 ${note.author} のノートに ${chosen.glyph} (${chosen.label}) でリアクションしました！§r`);
+        const optionIndex = myReaction ? pRes.selection - 1 : pRes.selection;
+        const chosen = reactionOptions[optionIndex];
+        if (chosen) {
+          note.reactions[player.name] = chosen.glyph;
+          player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+          player.sendMessage(`§d💖 ${note.author} のノートに ${chosen.glyph} (${chosen.label}) でリアクションしました！§r`);
+          openNoteDetailUI(player, note, blockLoc);
+        }
       });
-    } else if (response.selection === 1 && isAuthorOrOp) {
+    } else if (response.selection === unreactBtn) {
+      // Remove reaction
+      delete note.reactions[player.name];
+      player.sendMessage("§e❌ リアクションを取り消しました。§r");
+      openNoteDetailUI(player, note, blockLoc);
+    } else if (response.selection === deleteBtn) {
       // Delete note
       const idx = globalNotes.findIndex(n => n.id === note.id);
       if (idx !== -1) {
