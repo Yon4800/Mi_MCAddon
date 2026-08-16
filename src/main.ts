@@ -254,86 +254,82 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
 }
 
 // Open Note Board UI with Emoji Deck support
-// Interactive Misskey Note Composer with Emoji Deck Palette
-function openNoteComposerUI(player: Player, blockLoc: { x: number, y: number, z: number }, currentDraft: string = "") {
-  const previewText = currentDraft ? `「${currentDraft}」` : "（まだ本文はありません）";
+// All-in-One Misskey Note Post Modal (Single-Screen Complete Experience)
+function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const emojiDeckList = [
+    "(なし)",
+    ...reactionOptions.map(o => `${o.glyph} ${o.label}`)
+  ];
 
-  const form = new ActionFormData()
-    .title("📝 Misskey ノート作成エディタ")
-    .body(`【作成中のノート】\n${previewText}\n\n下の絵文字パレットをタップすると、本文に絵文字が挿入されます:`)
-    .button("⌨️ 文字を入力 / 書き足す")
-    .button("🚀 この内容でノートを投稿する");
+  const placementOptions = [
+    "文章の末尾に絵文字を添付",
+    "文章の先頭に絵文字を配置",
+    "絵文字のみ投稿 (本文不要)"
+  ];
 
-  // Emoji Deck Buttons (Palette)
-  for (const opt of reactionOptions) {
-    form.button(`${opt.glyph} ${opt.label} を挿入`);
-  }
+  const modal = new ModalFormData()
+    .title("📝 Misskey ノート投稿")
+    .textField("いまなにしてる？ (本文入力):", "例: 今日はダイヤ見つけた！ (:blobcat: 等も可)")
+    .dropdown("🎨 絵文字デッキ ①:", emojiDeckList, 0)
+    .dropdown("🎨 絵文字デッキ ② (追加):", emojiDeckList, 0)
+    .dropdown("📍 絵文字の配置位置:", placementOptions, 0);
 
-  form.button("🗑️ 下書きをクリア");
-  form.button("🔙 キャンセルして戻る");
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues) return;
 
-  showFormSafe(player, form, (res) => {
-    if (res.canceled || res.selection === undefined) return;
+    let text = String(res.formValues[0]).trim();
+    const emoji1Idx = Number(res.formValues[1]);
+    const emoji2Idx = Number(res.formValues[2]);
+    const placementIdx = Number(res.formValues[3]);
 
-    let bIdx = 0;
-    const textInputBtn = bIdx++;
-    const postBtn = bIdx++;
-    const emojiStartIdx = bIdx;
-    const emojiEndIdx = emojiStartIdx + reactionOptions.length;
-    const clearBtn = emojiEndIdx;
-    const cancelBtn = clearBtn + 1;
+    const selectedEmojis: string[] = [];
+    if (emoji1Idx > 0) selectedEmojis.push(reactionOptions[emoji1Idx - 1].glyph);
+    if (emoji2Idx > 0) selectedEmojis.push(reactionOptions[emoji2Idx - 1].glyph);
 
-    if (res.selection === textInputBtn) {
-      // Input / Append text modal
-      const modal = new ModalFormData()
-        .title("⌨️ 本文の入力")
-        .textField("文章を入力してください (絵文字コード :blobcat: 等も使用可):", "例: 今日はダイヤ見つけた！", currentDraft);
+    const emojiStr = selectedEmojis.join(" ");
 
-      showFormSafe(player, modal, (mRes) => {
-        if (mRes.canceled || !mRes.formValues) {
-          openNoteComposerUI(player, blockLoc, currentDraft);
-          return;
-        }
-        let inputVal = String(mRes.formValues[0]).trim();
-        for (const [key, glyph] of Object.entries(emojiMap)) {
-          if (inputVal.includes(key)) {
-            inputVal = inputVal.split(key).join(glyph);
-          }
-        }
-        openNoteComposerUI(player, blockLoc, inputVal);
-      });
-    } else if (res.selection === postBtn) {
-      // Post note
-      if (!currentDraft.trim()) {
-        player.sendMessage("§c⚠️ 本文が空です。文字を入力するか絵文字を挿入してください。§r");
-        openNoteComposerUI(player, blockLoc, currentDraft);
+    // Handle placement
+    if (placementIdx === 2) {
+      // Emoji only
+      if (!emojiStr) {
+        player.sendMessage("§c⚠️ 絵文字が選択されていません。§r");
         return;
       }
-
-      const newNote: NoteItem = {
-        id: `note_${Date.now()}`,
-        author: player.name,
-        instance: "local.misskey",
-        content: currentDraft.trim(),
-        timestamp: Date.now(),
-        reactions: {}
-      };
-      globalNotes.unshift(newNote);
-      if (globalNotes.length > 50) globalNotes.pop();
-
-      player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-      player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
-      world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${currentDraft.trim()}」§r`);
-    } else if (res.selection >= emojiStartIdx && res.selection < emojiEndIdx) {
-      // Clicked Emoji from Deck -> Append to draft
-      const chosen = reactionOptions[res.selection - emojiStartIdx];
-      const newDraft = currentDraft ? `${currentDraft} ${chosen.glyph}` : chosen.glyph;
-      openNoteComposerUI(player, blockLoc, newDraft);
-    } else if (res.selection === clearBtn) {
-      openNoteComposerUI(player, blockLoc, "");
+      text = emojiStr;
+    } else if (placementIdx === 1) {
+      // Prepend emoji
+      text = emojiStr ? (text ? `${emojiStr} ${text}` : emojiStr) : text;
     } else {
-      openNoteBoardUI(player, blockLoc);
+      // Append emoji (default)
+      text = emojiStr ? (text ? `${text} ${emojiStr}` : emojiStr) : text;
     }
+
+    if (!text) {
+      player.sendMessage("§c⚠️ 本文または絵文字を入力してください。§r");
+      return;
+    }
+
+    // Auto-replace any shortcodes (:blobcat: etc.)
+    for (const [key, glyph] of Object.entries(emojiMap)) {
+      if (text.includes(key)) {
+        text = text.split(key).join(glyph);
+      }
+    }
+
+    const newNote: NoteItem = {
+      id: `note_${Date.now()}`,
+      author: player.name,
+      instance: "local.misskey",
+      content: text,
+      timestamp: Date.now(),
+      reactions: {}
+    };
+    globalNotes.unshift(newNote);
+    if (globalNotes.length > 50) globalNotes.pop();
+
+    player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+    world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${text}」§r`);
   });
 }
 
@@ -345,7 +341,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
   const form = new ActionFormData()
     .title("📋 Misskey ノートタイムライン")
     .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMを送受信しましょう！")
-    .button("📝 ノートを作成する (絵文字デッキ対応)")
+    .button("📝 ノートを投稿する (絵文字デッキ対応)")
     .button("📜 タイムラインを見る / リアクション")
     .button(`✉️ ダイレクトメッセージ (DM)${dmBadge}`)
     .button("閉じる");
@@ -354,7 +350,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
     if (response.canceled || response.selection === undefined) return;
 
     if (response.selection === 0) {
-      openNoteComposerUI(player, blockLoc, "");
+      openAllInOneNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
       openTimelineListUI(player, blockLoc);
     } else if (response.selection === 2) {
@@ -362,6 +358,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
     }
   });
 }
+
 
 function getReactionSummary(note: NoteItem): string {
   const counts: Record<string, number> = {};

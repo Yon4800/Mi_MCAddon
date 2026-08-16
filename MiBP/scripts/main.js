@@ -191,82 +191,75 @@ ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u6
     }
   });
 }
-function openNoteComposerUI(player, blockLoc, currentDraft = "") {
-  const previewText = currentDraft ? `\u300C${currentDraft}\u300D` : "\uFF08\u307E\u3060\u672C\u6587\u306F\u3042\u308A\u307E\u305B\u3093\uFF09";
-  const form = new ActionFormData().title("\u{1F4DD} Misskey \u30CE\u30FC\u30C8\u4F5C\u6210\u30A8\u30C7\u30A3\u30BF").body(`\u3010\u4F5C\u6210\u4E2D\u306E\u30CE\u30FC\u30C8\u3011
-${previewText}
-
-\u4E0B\u306E\u7D75\u6587\u5B57\u30D1\u30EC\u30C3\u30C8\u3092\u30BF\u30C3\u30D7\u3059\u308B\u3068\u3001\u672C\u6587\u306B\u7D75\u6587\u5B57\u304C\u633F\u5165\u3055\u308C\u307E\u3059:`).button("\u2328\uFE0F \u6587\u5B57\u3092\u5165\u529B / \u66F8\u304D\u8DB3\u3059").button("\u{1F680} \u3053\u306E\u5185\u5BB9\u3067\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B");
-  for (const opt of reactionOptions) {
-    form.button(`${opt.glyph} ${opt.label} \u3092\u633F\u5165`);
-  }
-  form.button("\u{1F5D1}\uFE0F \u4E0B\u66F8\u304D\u3092\u30AF\u30EA\u30A2");
-  form.button("\u{1F519} \u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u3066\u623B\u308B");
-  showFormSafe(player, form, (res) => {
-    if (res.canceled || res.selection === void 0)
+function openAllInOneNoteModal(player, blockLoc) {
+  const emojiDeckList = [
+    "(\u306A\u3057)",
+    ...reactionOptions.map((o) => `${o.glyph} ${o.label}`)
+  ];
+  const placementOptions = [
+    "\u6587\u7AE0\u306E\u672B\u5C3E\u306B\u7D75\u6587\u5B57\u3092\u6DFB\u4ED8",
+    "\u6587\u7AE0\u306E\u5148\u982D\u306B\u7D75\u6587\u5B57\u3092\u914D\u7F6E",
+    "\u7D75\u6587\u5B57\u306E\u307F\u6295\u7A3F (\u672C\u6587\u4E0D\u8981)"
+  ];
+  const modal = new ModalFormData().title("\u{1F4DD} Misskey \u30CE\u30FC\u30C8\u6295\u7A3F").textField("\u3044\u307E\u306A\u306B\u3057\u3066\u308B\uFF1F (\u672C\u6587\u5165\u529B):", "\u4F8B: \u4ECA\u65E5\u306F\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01 (:blobcat: \u7B49\u3082\u53EF)").dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2460:", emojiDeckList, 0).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2461 (\u8FFD\u52A0):", emojiDeckList, 0).dropdown("\u{1F4CD} \u7D75\u6587\u5B57\u306E\u914D\u7F6E\u4F4D\u7F6E:", placementOptions, 0);
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues)
       return;
-    let bIdx = 0;
-    const textInputBtn = bIdx++;
-    const postBtn = bIdx++;
-    const emojiStartIdx = bIdx;
-    const emojiEndIdx = emojiStartIdx + reactionOptions.length;
-    const clearBtn = emojiEndIdx;
-    const cancelBtn = clearBtn + 1;
-    if (res.selection === textInputBtn) {
-      const modal = new ModalFormData().title("\u2328\uFE0F \u672C\u6587\u306E\u5165\u529B").textField("\u6587\u7AE0\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u7D75\u6587\u5B57\u30B3\u30FC\u30C9 :blobcat: \u7B49\u3082\u4F7F\u7528\u53EF):", "\u4F8B: \u4ECA\u65E5\u306F\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01", currentDraft);
-      showFormSafe(player, modal, (mRes) => {
-        if (mRes.canceled || !mRes.formValues) {
-          openNoteComposerUI(player, blockLoc, currentDraft);
-          return;
-        }
-        let inputVal = String(mRes.formValues[0]).trim();
-        for (const [key, glyph] of Object.entries(emojiMap)) {
-          if (inputVal.includes(key)) {
-            inputVal = inputVal.split(key).join(glyph);
-          }
-        }
-        openNoteComposerUI(player, blockLoc, inputVal);
-      });
-    } else if (res.selection === postBtn) {
-      if (!currentDraft.trim()) {
-        player.sendMessage("\xA7c\u26A0\uFE0F \u672C\u6587\u304C\u7A7A\u3067\u3059\u3002\u6587\u5B57\u3092\u5165\u529B\u3059\u308B\u304B\u7D75\u6587\u5B57\u3092\u633F\u5165\u3057\u3066\u304F\u3060\u3055\u3044\u3002\xA7r");
-        openNoteComposerUI(player, blockLoc, currentDraft);
+    let text = String(res.formValues[0]).trim();
+    const emoji1Idx = Number(res.formValues[1]);
+    const emoji2Idx = Number(res.formValues[2]);
+    const placementIdx = Number(res.formValues[3]);
+    const selectedEmojis = [];
+    if (emoji1Idx > 0)
+      selectedEmojis.push(reactionOptions[emoji1Idx - 1].glyph);
+    if (emoji2Idx > 0)
+      selectedEmojis.push(reactionOptions[emoji2Idx - 1].glyph);
+    const emojiStr = selectedEmojis.join(" ");
+    if (placementIdx === 2) {
+      if (!emojiStr) {
+        player.sendMessage("\xA7c\u26A0\uFE0F \u7D75\u6587\u5B57\u304C\u9078\u629E\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002\xA7r");
         return;
       }
-      const newNote = {
-        id: `note_${Date.now()}`,
-        author: player.name,
-        instance: "local.misskey",
-        content: currentDraft.trim(),
-        timestamp: Date.now(),
-        reactions: {}
-      };
-      globalNotes.unshift(newNote);
-      if (globalNotes.length > 50)
-        globalNotes.pop();
-      player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
-      player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
-      world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${currentDraft.trim()}\u300D\xA7r`);
-    } else if (res.selection >= emojiStartIdx && res.selection < emojiEndIdx) {
-      const chosen = reactionOptions[res.selection - emojiStartIdx];
-      const newDraft = currentDraft ? `${currentDraft} ${chosen.glyph}` : chosen.glyph;
-      openNoteComposerUI(player, blockLoc, newDraft);
-    } else if (res.selection === clearBtn) {
-      openNoteComposerUI(player, blockLoc, "");
+      text = emojiStr;
+    } else if (placementIdx === 1) {
+      text = emojiStr ? text ? `${emojiStr} ${text}` : emojiStr : text;
     } else {
-      openNoteBoardUI(player, blockLoc);
+      text = emojiStr ? text ? `${text} ${emojiStr}` : emojiStr : text;
     }
+    if (!text) {
+      player.sendMessage("\xA7c\u26A0\uFE0F \u672C\u6587\u307E\u305F\u306F\u7D75\u6587\u5B57\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002\xA7r");
+      return;
+    }
+    for (const [key, glyph] of Object.entries(emojiMap)) {
+      if (text.includes(key)) {
+        text = text.split(key).join(glyph);
+      }
+    }
+    const newNote = {
+      id: `note_${Date.now()}`,
+      author: player.name,
+      instance: "local.misskey",
+      content: text,
+      timestamp: Date.now(),
+      reactions: {}
+    };
+    globalNotes.unshift(newNote);
+    if (globalNotes.length > 50)
+      globalNotes.pop();
+    player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+    world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text}\u300D\xA7r`);
   });
 }
 function openNoteBoardUI(player, blockLoc) {
   const unreadCount = directMessages.filter((m) => m.recipient === player.name && !m.read).length;
   const dmBadge = unreadCount > 0 ? ` (${unreadCount}\u4EF6\u672A\u8AAD)` : "";
-  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u4F5C\u6210\u3059\u308B (\u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u5BFE\u5FDC)").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
+  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B (\u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u5BFE\u5FDC)").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
-      openNoteComposerUI(player, blockLoc, "");
+      openAllInOneNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
       openTimelineListUI(player, blockLoc);
     } else if (response.selection === 2) {
