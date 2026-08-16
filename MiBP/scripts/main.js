@@ -128,6 +128,26 @@ function getBlockSafely(dimension, location) {
     return void 0;
   }
 }
+function getPlayersSafely(dimension, options) {
+  try {
+    return dimension.getPlayers(options);
+  } catch (error) {
+    return [];
+  }
+}
+function getEntitiesSafely(dimension, options) {
+  try {
+    return dimension.getEntities(options);
+  } catch (error) {
+    return [];
+  }
+}
+function spawnParticleSafely(dimension, particleId, location) {
+  try {
+    dimension.spawnParticle(particleId, location);
+  } catch (error) {
+  }
+}
 var emojiMap = {
   ":blobcat:": "\uE101",
   ":woneko:": "\uE102",
@@ -544,20 +564,25 @@ system.runInterval(() => {
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations = [];
   for (const car of cars) {
+    if (!car.isValid())
+      continue;
     const cLoc = car.location;
     const carId = car.id;
     if (accidentCarsMap.has(carId)) {
       const recoveryTime = accidentCarsMap.get(carId);
       if (now < recoveryTime) {
-        car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
-        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
-        overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        try {
+          car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
+        } catch (error) {
+        }
+        spawnParticleSafely(overworld, "minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+        spawnParticleSafely(overworld, "minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
         activeAccidentLocations.push(cLoc);
         continue;
       } else {
         accidentCarsMap.delete(carId);
-        overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        spawnParticleSafely(overworld, "minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+        const nearbyPlayers = getPlayersSafely(overworld, { location: cLoc, maxDistance: 32 });
         for (const p of nearbyPlayers) {
           p.sendMessage("\xA7a\u{1F527}\u{1F697} [Mi_Addon] \u8ECA\u4E21\u306E\u5FDC\u6025\u4FEE\u7406\u304C\u5B8C\u4E86\u3057\u3001\u4E8B\u6545\u73FE\u5834\u304C\u5FA9\u65E7\u3057\u307E\u3057\u305F\uFF01\xA7r");
         }
@@ -565,7 +590,7 @@ system.runInterval(() => {
     }
     const rideable = car.getComponent("minecraft:rideable");
     const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
-    const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    const isRidden = riders.length > 0 || getPlayersSafely(overworld, { location: cLoc, maxDistance: 2.5 }).length > 0;
     if (isRidden) {
       const viewDir2 = car.getViewDirection();
       let hasWallHit = false;
@@ -595,9 +620,9 @@ system.runInterval(() => {
           car.applyKnockback(-viewDir2.x, -viewDir2.z, 0.6, 0.2);
         } catch (e) {
         }
-        overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-        overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+        spawnParticleSafely(overworld, "minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+        spawnParticleSafely(overworld, "minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+        const nearbyPlayers = getPlayersSafely(overworld, { location: cLoc, maxDistance: 32 });
         for (const p of nearbyPlayers) {
           p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
         }
@@ -623,12 +648,12 @@ system.runInterval(() => {
         break;
       }
     }
-    const nearbyEntities = overworld.getEntities({
+    const nearbyEntities = getEntitiesSafely(overworld, {
       location: cLoc,
       maxDistance: 64,
       excludeTypes: ["minecraft:item"]
     });
-    const nearbyCars = overworld.getEntities({
+    const nearbyCars = getEntitiesSafely(overworld, {
       location: cLoc,
       maxDistance: 64,
       type: "mi:regretcar"
@@ -638,10 +663,10 @@ system.runInterval(() => {
     const isCongested = nearbyCars.length >= carJamThreshold || nearbyEntities.length >= entityJamThreshold;
     if (isNearAccident || isCongested) {
       car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+      spawnParticleSafely(overworld, "minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
     } else if (isSlope) {
       car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+      spawnParticleSafely(overworld, "minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
     }
   }
 }, 5);
