@@ -31,18 +31,40 @@ var syuiloQuoteIndexMap = /* @__PURE__ */ new Map();
 var syuiloLastTalkTimeMap = /* @__PURE__ */ new Map();
 var emojiMap = {
   ":blobcat:": "\uE101",
+  ":cat:": "\uE101",
+  ":1:": "\uE101",
   ":woneko:": "\uE102",
+  ":neko:": "\uE102",
+  ":2:": "\uE102",
   ":aichi:": "\uE103",
   ":blob_aichi:": "\uE103",
+  ":3:": "\uE103",
   ":mochocho:": "\uE104",
   ":baked_mochocho:": "\uE104",
+  ":bread:": "\uE104",
+  ":4:": "\uE104",
   ":ota:": "\uE105",
+  ":otaku:": "\uE105",
+  ":5:": "\uE105",
   ":otaku_cry:": "\uE106",
+  ":cry:": "\uE106",
+  ":6:": "\uE106",
   ":blebcat:": "\uE107",
+  ":7:": "\uE107",
   ":regretcar:": "\uE108",
+  ":car:": "\uE108",
+  ":8:": "\uE108",
   ":yosano:": "\uE109",
+  ":9:": "\uE109",
   ":tutinoko:": "\uE10A",
-  ":tinfoil:": "\uE10B"
+  ":10:": "\uE10A",
+  ":tinfoil:": "\uE10B",
+  ":foil:": "\uE10B",
+  ":11:": "\uE10B",
+  ":heart:": "\u2764\uFE0F",
+  ":good:": "\u{1F44D}",
+  ":tada:": "\u{1F389}",
+  ":bomb:": "\u{1F4A5}"
 };
 if (world.afterEvents?.chatSend) {
   world.afterEvents.chatSend.subscribe((event) => {
@@ -196,50 +218,54 @@ function openAllInOneNoteModal(player, blockLoc) {
     "(\u306A\u3057)",
     ...reactionOptions.map((o) => `${o.glyph} ${o.label}`)
   ];
-  const placementOptions = [
-    "\u6587\u7AE0\u306E\u672B\u5C3E\u306B\u7D75\u6587\u5B57\u3092\u6DFB\u4ED8",
-    "\u6587\u7AE0\u306E\u5148\u982D\u306B\u7D75\u6587\u5B57\u3092\u914D\u7F6E",
-    "\u7D75\u6587\u5B57\u306E\u307F\u6295\u7A3F (\u672C\u6587\u4E0D\u8981)"
-  ];
-  const modal = new ModalFormData().title("\u{1F4DD} Misskey \u30CE\u30FC\u30C8\u6295\u7A3F").textField("\u3044\u307E\u306A\u306B\u3057\u3066\u308B\uFF1F (\u672C\u6587\u5165\u529B):", "\u4F8B: \u4ECA\u65E5\u306F\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01 (:blobcat: \u7B49\u3082\u53EF)").dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2460:", emojiDeckList, 0).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2461 (\u8FFD\u52A0):", emojiDeckList, 0).dropdown("\u{1F4CD} \u7D75\u6587\u5B57\u306E\u914D\u7F6E\u4F4D\u7F6E:", placementOptions, 0);
+  const modal = new ModalFormData().title("\u{1F4DD} Misskey \u30CE\u30FC\u30C8\u6295\u7A3F").textField(
+    "\u672C\u6587 (\u6587\u7AE0\u4E2D\u306E\u597D\u304D\u306A\u5834\u6240\u306B {1} \u3084 {2} \u3068\u66F8\u304F\u3068\u7D75\u6587\u5B57\u304C\u633F\u5165\u3055\u308C\u307E\u3059):",
+    "\u4F8B: \u4ECA\u65E5\u306F {1} \u3068\u4E00\u7DD2\u306B {2} \u3092\u98DF\u3079\u305F\u3088\uFF01",
+    ""
+  ).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2460 (\u6587\u7AE0\u4E2D\u306E {1} \u306B\u633F\u5165):", emojiDeckList, 1).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2461 (\u6587\u7AE0\u4E2D\u306E {2} \u306B\u633F\u5165):", emojiDeckList, 4).dropdown("\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD \u2462 (\u6587\u7AE0\u4E2D\u306E {3} \u306B\u633F\u5165):", emojiDeckList, 0);
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues)
       return;
     let text = String(res.formValues[0]).trim();
     const emoji1Idx = Number(res.formValues[1]);
     const emoji2Idx = Number(res.formValues[2]);
-    const placementIdx = Number(res.formValues[3]);
-    const selectedEmojis = [];
-    if (emoji1Idx > 0)
-      selectedEmojis.push(reactionOptions[emoji1Idx - 1].glyph);
-    if (emoji2Idx > 0)
-      selectedEmojis.push(reactionOptions[emoji2Idx - 1].glyph);
-    const emojiStr = selectedEmojis.join(" ");
-    if (placementIdx === 2) {
-      if (!emojiStr) {
-        player.sendMessage("\xA7c\u26A0\uFE0F \u7D75\u6587\u5B57\u304C\u9078\u629E\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002\xA7r");
-        return;
-      }
-      text = emojiStr;
-    } else if (placementIdx === 1) {
-      text = emojiStr ? text ? `${emojiStr} ${text}` : emojiStr : text;
-    } else {
-      text = emojiStr ? text ? `${text} ${emojiStr}` : emojiStr : text;
+    const emoji3Idx = Number(res.formValues[3]);
+    const e1 = emoji1Idx > 0 ? reactionOptions[emoji1Idx - 1].glyph : "";
+    const e2 = emoji2Idx > 0 ? reactionOptions[emoji2Idx - 1].glyph : "";
+    const e3 = emoji3Idx > 0 ? reactionOptions[emoji3Idx - 1].glyph : "";
+    let hasPlaceholder = false;
+    if (text.includes("{1}")) {
+      text = text.split("{1}").join(e1);
+      hasPlaceholder = true;
     }
-    if (!text) {
-      player.sendMessage("\xA7c\u26A0\uFE0F \u672C\u6587\u307E\u305F\u306F\u7D75\u6587\u5B57\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002\xA7r");
-      return;
+    if (text.includes("{2}")) {
+      text = text.split("{2}").join(e2);
+      hasPlaceholder = true;
+    }
+    if (text.includes("{3}")) {
+      text = text.split("{3}").join(e3);
+      hasPlaceholder = true;
+    }
+    if (!hasPlaceholder) {
+      const selected = [e1, e2, e3].filter(Boolean);
+      if (selected.length > 0) {
+        text = text ? `${text} ${selected.join(" ")}` : selected.join(" ");
+      }
     }
     for (const [key, glyph] of Object.entries(emojiMap)) {
       if (text.includes(key)) {
         text = text.split(key).join(glyph);
       }
     }
+    if (!text.trim()) {
+      player.sendMessage("\xA7c\u26A0\uFE0F \u672C\u6587\u307E\u305F\u306F\u7D75\u6587\u5B57\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002\xA7r");
+      return;
+    }
     const newNote = {
       id: `note_${Date.now()}`,
       author: player.name,
       instance: "local.misskey",
-      content: text,
+      content: text.trim(),
       timestamp: Date.now(),
       reactions: {}
     };
@@ -248,7 +274,7 @@ function openAllInOneNoteModal(player, blockLoc) {
       globalNotes.pop();
     player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
     player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
-    world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text}\u300D\xA7r`);
+    world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text.trim()}\u300D\xA7r`);
   });
 }
 function openNoteBoardUI(player, blockLoc) {

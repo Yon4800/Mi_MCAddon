@@ -44,18 +44,40 @@ const syuiloLastTalkTimeMap = new Map<string, number>();
 // ----------------------------------------------------
 const emojiMap: Record<string, string> = {
   ":blobcat:": "",
+  ":cat:": "",
+  ":1:": "",
   ":woneko:": "",
+  ":neko:": "",
+  ":2:": "",
   ":aichi:": "",
   ":blob_aichi:": "",
+  ":3:": "",
   ":mochocho:": "",
   ":baked_mochocho:": "",
+  ":bread:": "",
+  ":4:": "",
   ":ota:": "",
+  ":otaku:": "",
+  ":5:": "",
   ":otaku_cry:": "",
+  ":cry:": "",
+  ":6:": "",
   ":blebcat:": "",
+  ":7:": "",
   ":regretcar:": "",
+  ":car:": "",
+  ":8:": "",
   ":yosano:": "",
+  ":9:": "",
   ":tutinoko:": "",
-  ":tinfoil:": ""
+  ":10:": "",
+  ":tinfoil:": "",
+  ":foil:": "",
+  ":11:": "",
+  ":heart:": "❤️",
+  ":good:": "👍",
+  ":tada:": "🎉",
+  ":bomb:": "💥"
 };
 
 if ((world.afterEvents as any)?.chatSend) {
@@ -254,25 +276,23 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
 }
 
 // Open Note Board UI with Emoji Deck support
-// All-in-One Misskey Note Post Modal (Single-Screen Complete Experience)
+// All-in-One Misskey Note Post Modal with Anywhere Insertion ({1}, {2}, {3} or :cat:, :1:)
 function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number, z: number }) {
   const emojiDeckList = [
     "(なし)",
     ...reactionOptions.map(o => `${o.glyph} ${o.label}`)
   ];
 
-  const placementOptions = [
-    "文章の末尾に絵文字を添付",
-    "文章の先頭に絵文字を配置",
-    "絵文字のみ投稿 (本文不要)"
-  ];
-
   const modal = new ModalFormData()
     .title("📝 Misskey ノート投稿")
-    .textField("いまなにしてる？ (本文入力):", "例: 今日はダイヤ見つけた！ (:blobcat: 等も可)")
-    .dropdown("🎨 絵文字デッキ ①:", emojiDeckList, 0)
-    .dropdown("🎨 絵文字デッキ ② (追加):", emojiDeckList, 0)
-    .dropdown("📍 絵文字の配置位置:", placementOptions, 0);
+    .textField(
+      "本文 (文章中の好きな場所に {1} や {2} と書くと絵文字が挿入されます):",
+      "例: 今日は {1} と一緒に {2} を食べたよ！",
+      ""
+    )
+    .dropdown("🎨 絵文字デッキ ① (文章中の {1} に挿入):", emojiDeckList, 1) // default blobcat
+    .dropdown("🎨 絵文字デッキ ② (文章中の {2} に挿入):", emojiDeckList, 4) // default mochocho
+    .dropdown("🎨 絵文字デッキ ③ (文章中の {3} に挿入):", emojiDeckList, 0);
 
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues) return;
@@ -280,47 +300,43 @@ function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number,
     let text = String(res.formValues[0]).trim();
     const emoji1Idx = Number(res.formValues[1]);
     const emoji2Idx = Number(res.formValues[2]);
-    const placementIdx = Number(res.formValues[3]);
+    const emoji3Idx = Number(res.formValues[3]);
 
-    const selectedEmojis: string[] = [];
-    if (emoji1Idx > 0) selectedEmojis.push(reactionOptions[emoji1Idx - 1].glyph);
-    if (emoji2Idx > 0) selectedEmojis.push(reactionOptions[emoji2Idx - 1].glyph);
+    const e1 = emoji1Idx > 0 ? reactionOptions[emoji1Idx - 1].glyph : "";
+    const e2 = emoji2Idx > 0 ? reactionOptions[emoji2Idx - 1].glyph : "";
+    const e3 = emoji3Idx > 0 ? reactionOptions[emoji3Idx - 1].glyph : "";
 
-    const emojiStr = selectedEmojis.join(" ");
+    // Check if user specified placeholders {1}, {2}, {3} in text
+    let hasPlaceholder = false;
+    if (text.includes("{1}")) { text = text.split("{1}").join(e1); hasPlaceholder = true; }
+    if (text.includes("{2}")) { text = text.split("{2}").join(e2); hasPlaceholder = true; }
+    if (text.includes("{3}")) { text = text.split("{3}").join(e3); hasPlaceholder = true; }
 
-    // Handle placement
-    if (placementIdx === 2) {
-      // Emoji only
-      if (!emojiStr) {
-        player.sendMessage("§c⚠️ 絵文字が選択されていません。§r");
-        return;
+    // If no placeholders used, append chosen emojis to end (if any)
+    if (!hasPlaceholder) {
+      const selected = [e1, e2, e3].filter(Boolean);
+      if (selected.length > 0) {
+        text = text ? `${text} ${selected.join(" ")}` : selected.join(" ");
       }
-      text = emojiStr;
-    } else if (placementIdx === 1) {
-      // Prepend emoji
-      text = emojiStr ? (text ? `${emojiStr} ${text}` : emojiStr) : text;
-    } else {
-      // Append emoji (default)
-      text = emojiStr ? (text ? `${text} ${emojiStr}` : emojiStr) : text;
     }
 
-    if (!text) {
-      player.sendMessage("§c⚠️ 本文または絵文字を入力してください。§r");
-      return;
-    }
-
-    // Auto-replace any shortcodes (:blobcat: etc.)
+    // Auto-replace any shortcodes (:blobcat:, :cat:, :1:, :foil:, :mochocho: etc.)
     for (const [key, glyph] of Object.entries(emojiMap)) {
       if (text.includes(key)) {
         text = text.split(key).join(glyph);
       }
     }
 
+    if (!text.trim()) {
+      player.sendMessage("§c⚠️ 本文または絵文字を入力してください。§r");
+      return;
+    }
+
     const newNote: NoteItem = {
       id: `note_${Date.now()}`,
       author: player.name,
       instance: "local.misskey",
-      content: text,
+      content: text.trim(),
       timestamp: Date.now(),
       reactions: {}
     };
@@ -329,7 +345,7 @@ function openAllInOneNoteModal(player: Player, blockLoc: { x: number, y: number,
 
     player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
     player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
-    world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${text}」§r`);
+    world.sendMessage(`§a📢 [${player.name}@local.misskey] がノートを投稿しました: 「${text.trim()}」§r`);
   });
 }
 
