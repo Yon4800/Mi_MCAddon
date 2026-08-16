@@ -175,9 +175,9 @@ function writeToAllFontDirs(fileName, data) {
 // 1. Build glyph_E1.png for k_emojis (Default / Fixed emojis on Page 225: \uE101..\uE1FF)
 // ----------------------------------------------------
 const fixedKOrder = [
-  'blobcat.png', 'woneko.png', 'aichi.png', 'mochocho.png',
+  'blobcat.png', 'neko_relax.png', 'aichi.png', 'mochocho.png',
   'ota.png', 'otaku_cry.png', 'blebcat.png', 'regretcar.png',
-  'yosano.png', 'tutinoko.png'
+  'yosano.png', 'tutinoko.png', 'tinfoil.png', 'neko_cry.png', 'neko_tired2.png'
 ];
 
 const kEmojiSlotMap = [];
