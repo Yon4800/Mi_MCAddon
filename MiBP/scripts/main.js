@@ -2,20 +2,25 @@
 import { world, system, ItemStack, EntityComponentTypes, Player } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
+var playerUIOpenLock = /* @__PURE__ */ new Map();
+function canOpenUI(player) {
+  const now = Date.now();
+  const lastTime = playerUIOpenLock.get(player.id) || 0;
+  if (now - lastTime < 600)
+    return false;
+  playerUIOpenLock.set(player.id, now);
+  return true;
+}
 function showFormSafe(player, form, onResponse) {
-  let attempts = 0;
-  const tryShow = () => {
+  system.runTimeout(() => {
     form.show(player).then((response) => {
-      if (response && response.cancelationReason === "userBusy" && attempts < 15) {
-        attempts++;
-        system.runTimeout(tryShow, 1);
+      if (response && response.cancelationReason === "userBusy") {
         return;
       }
       onResponse(response);
     }).catch(() => {
     });
-  };
-  system.runTimeout(tryShow, 1);
+  }, 1);
 }
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
@@ -348,6 +353,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const player = event.player;
   if (block.typeId === "mi:instance_server") {
     event.cancel = true;
+    if (!canOpenUI(player))
+      return;
     const loc = block.location;
     system.run(() => {
       openInstanceServerUI(player, loc);
@@ -356,6 +363,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   }
   if (block.typeId === "mi:note_board") {
     event.cancel = true;
+    if (!canOpenUI(player))
+      return;
     const loc = block.location;
     system.run(() => {
       openNoteBoardUI(player, loc);
@@ -438,6 +447,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     return;
   if (itemStack && itemStack.typeId === "mi:reaction_wand") {
     event.cancel = true;
+    if (!canOpenUI(player))
+      return;
     const tLoc = target.location;
     const targetName = target.nameTag || target.typeId.replace("mi:", "").replace("minecraft:", "");
     system.run(() => {

@@ -4,21 +4,27 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 
 // ----------------------------------------------------
-// Safe UI Form display helper with automatic busy-retry loop
+// UI Multi-Stack Prevention & Safe Form Display System
 // ----------------------------------------------------
+const playerUIOpenLock = new Map<string, number>(); // playerId -> last open timestamp (ms)
+
+function canOpenUI(player: Player): boolean {
+  const now = Date.now();
+  const lastTime = playerUIOpenLock.get(player.id) || 0;
+  if (now - lastTime < 600) return false; // Block duplicate triggers within 600ms
+  playerUIOpenLock.set(player.id, now);
+  return true;
+}
+
 function showFormSafe(player: Player, form: any, onResponse: (response: any) => void) {
-  let attempts = 0;
-  const tryShow = () => {
+  system.runTimeout(() => {
     form.show(player as any).then((response: any) => {
-      if (response && response.cancelationReason === "userBusy" && attempts < 15) {
-        attempts++;
-        system.runTimeout(tryShow, 1);
-        return;
+      if (response && response.cancelationReason === "userBusy") {
+        return; // Don't loop-stack; user will just click once clearly
       }
       onResponse(response);
     }).catch(() => {});
-  };
-  system.runTimeout(tryShow, 1);
+  }, 1);
 }
 
 // ----------------------------------------------------
@@ -442,7 +448,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const player = event.player;
 
   if (block.typeId === "mi:instance_server") {
-    event.cancel = true; // Prevent item-use / block place conflicts
+    event.cancel = true;
+    if (!canOpenUI(player)) return;
     const loc = block.location;
     system.run(() => {
       openInstanceServerUI(player, loc);
@@ -451,7 +458,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   }
 
   if (block.typeId === "mi:note_board") {
-    event.cancel = true; // Prevent item-use / block place conflicts
+    event.cancel = true;
+    if (!canOpenUI(player)) return;
     const loc = block.location;
     system.run(() => {
       openNoteBoardUI(player, loc);
@@ -552,6 +560,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   // Reaction Wand usage
   if (itemStack && itemStack.typeId === "mi:reaction_wand") {
     event.cancel = true;
+    if (!canOpenUI(player)) return;
     const tLoc = target.location;
     const targetName = target.nameTag || target.typeId.replace("mi:", "").replace("minecraft:", "");
     system.run(() => {
