@@ -21,6 +21,23 @@ interface InstanceData {
   federatedWith: string[];
 }
 
+
+// Safe UI Form display helper with automatic busy-retry loop
+function showFormSafe(player: Player, form: any, onResponse: (response: any) => void) {
+  let attempts = 0;
+  const tryShow = () => {
+    form.show(player as any).then((response: any) => {
+      if (response && response.cancelationReason === "userBusy" && attempts < 10) {
+        attempts++;
+        system.runTimeout(tryShow, 2);
+        return;
+      }
+      onResponse(response);
+    }).catch(() => {});
+  };
+  system.runTimeout(tryShow, 1);
+}
+
 // Global Fediverse State
 const globalNotes: NoteItem[] = [
   {
@@ -75,7 +92,7 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
     .button("📊 Fediverse 統計を見る")
     .button("閉じる");
 
-  form.show(player as any).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === undefined) return;
 
     if (response.selection === 0) {
@@ -84,7 +101,7 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
         .title("🏛️ インスタンス名の設定")
         .textField("インスタンスのドメイン名を入力してください", "例: my-home.misskey", inst!.name);
 
-      modal.show(player as any).then((res) => {
+      showFormSafe(player, modal, (res) => {
         if (res.canceled || !res.formValues) return;
         const newName = String(res.formValues[0]).trim();
         if (newName) {
@@ -100,14 +117,14 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
         .button("➕ 新しいインスタンスと連合を結ぶ")
         .button("戻る");
 
-      fedForm.show(player as any).then((fRes) => {
+      showFormSafe(player, fedForm, (fRes) => {
         if (fRes.canceled || fRes.selection === undefined) return;
         if (fRes.selection === 0) {
           const connectModal = new ModalFormData()
             .title("➕ 連合先インスタンスの追加")
             .textField("接続先ドメイン名を入力", "例: friend-base.misskey");
 
-          connectModal.show(player as any).then((cRes) => {
+          showFormSafe(player, connectModal, (cRes) => {
             if (cRes.canceled || !cRes.formValues) return;
             const target = String(cRes.formValues[0]).trim();
             if (target && !inst!.federatedWith.includes(target)) {
@@ -133,7 +150,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
     .button("📜 タイムラインを見る / リアクション")
     .button("閉じる");
 
-  form.show(player as any).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === undefined) return;
 
     if (response.selection === 0) {
@@ -142,7 +159,7 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
         .title("📝 新規ノートの投稿")
         .textField("いまなにしてる？ (本文)", "例: 今日はブランチマイニングでダイヤ見つけた！");
 
-      modal.show(player as any).then((res) => {
+      showFormSafe(player, modal, (res) => {
         if (res.canceled || !res.formValues) return;
         const text = String(res.formValues[0]).trim();
         if (text) {
@@ -180,7 +197,7 @@ function openTimelineListUI(player: Player, blockLoc: { x: number, y: number, z:
   }
   form.button("🔙 戻る");
 
-  form.show(player as any).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === undefined) return;
     if (response.selection >= globalNotes.length) return;
 
@@ -198,7 +215,7 @@ function openNoteDetailUI(player: Player, note: NoteItem, blockLoc: { x: number,
     .button("💖 このノートに絵文字リアクションする")
     .button("🔙 タイムラインに戻る");
 
-  form.show(player as any).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === undefined) return;
 
     if (response.selection === 0) {
@@ -210,7 +227,7 @@ function openNoteDetailUI(player: Player, note: NoteItem, blockLoc: { x: number,
         pickForm.button(`${opt.glyph} ${opt.label}`);
       }
 
-      pickForm.show(player as any).then((pRes) => {
+      showFormSafe(player, pickForm, (pRes) => {
         if (pRes.canceled || pRes.selection === undefined) return;
         const chosen = reactionOptions[pRes.selection];
 

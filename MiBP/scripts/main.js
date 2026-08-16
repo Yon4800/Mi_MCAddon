@@ -2,6 +2,21 @@
 import { world, system, ItemStack, EntityComponentTypes, Player } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
+function showFormSafe(player, form, onResponse) {
+  let attempts = 0;
+  const tryShow = () => {
+    form.show(player).then((response) => {
+      if (response && response.cancelationReason === "userBusy" && attempts < 10) {
+        attempts++;
+        system.runTimeout(tryShow, 2);
+        return;
+      }
+      onResponse(response);
+    }).catch(() => {
+    });
+  };
+  system.runTimeout(tryShow, 1);
+}
 var globalNotes = [
   {
     id: "note_1",
@@ -43,12 +58,12 @@ function openInstanceServerUI(player, blockLoc) {
   const form = new ActionFormData().title(`\u{1F3DB}\uFE0F \u30A4\u30F3\u30B9\u30BF\u30F3\u30B9: @${inst.name}`).body(`\u7BA1\u7406\u8005: ${inst.owner}
 \u9023\u5408\u5148\u30B5\u30FC\u30D0\u30FC\u6570: ${inst.federatedWith.length} \u62E0\u70B9
 \u96FB\u6CE2\u30D0\u30D5: ${inst.federatedWith.length > 0 ? "\u26A1 \u7A3C\u50CD\u4E2D (\u79FB\u52D5\u901F\u5EA6 / \u63A1\u6398\u901F\u5EA6)" : "\u{1F4A4} \u672A\u63A5\u7D9A"}`).button("\u{1F4DD} \u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u540D\u3092\u5909\u66F4\u3059\u308B").button("\u{1F310} \u9023\u5408\uFF08Federation\uFF09\u7BA1\u7406").button("\u{1F4CA} Fediverse \u7D71\u8A08\u3092\u898B\u308B").button("\u9589\u3058\u308B");
-  form.show(player).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
       const modal = new ModalFormData().title("\u{1F3DB}\uFE0F \u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u540D\u306E\u8A2D\u5B9A").textField("\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u306E\u30C9\u30E1\u30A4\u30F3\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044", "\u4F8B: my-home.misskey", inst.name);
-      modal.show(player).then((res) => {
+      showFormSafe(player, modal, (res) => {
         if (res.canceled || !res.formValues)
           return;
         const newName = String(res.formValues[0]).trim();
@@ -60,12 +75,12 @@ function openInstanceServerUI(player, blockLoc) {
     } else if (response.selection === 1) {
       const fedForm = new ActionFormData().title("\u{1F310} \u9023\u5408\uFF08Federation\uFF09\u7BA1\u7406").body(`\u73FE\u5728\u306E\u9023\u5408\u5148:
 ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u65B0\u3057\u3044\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u3068\u9023\u5408\u3092\u7D50\u3076").button("\u623B\u308B");
-      fedForm.show(player).then((fRes) => {
+      showFormSafe(player, fedForm, (fRes) => {
         if (fRes.canceled || fRes.selection === void 0)
           return;
         if (fRes.selection === 0) {
           const connectModal = new ModalFormData().title("\u2795 \u9023\u5408\u5148\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u306E\u8FFD\u52A0").textField("\u63A5\u7D9A\u5148\u30C9\u30E1\u30A4\u30F3\u540D\u3092\u5165\u529B", "\u4F8B: friend-base.misskey");
-          connectModal.show(player).then((cRes) => {
+          showFormSafe(player, connectModal, (cRes) => {
             if (cRes.canceled || !cRes.formValues)
               return;
             const target = String(cRes.formValues[0]).trim();
@@ -84,12 +99,12 @@ ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u6
 }
 function openNoteBoardUI(player, blockLoc) {
   const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u9001\u308A\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button("\u9589\u3058\u308B");
-  form.show(player).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
       const modal = new ModalFormData().title("\u{1F4DD} \u65B0\u898F\u30CE\u30FC\u30C8\u306E\u6295\u7A3F").textField("\u3044\u307E\u306A\u306B\u3057\u3066\u308B\uFF1F (\u672C\u6587)", "\u4F8B: \u4ECA\u65E5\u306F\u30D6\u30E9\u30F3\u30C1\u30DE\u30A4\u30CB\u30F3\u30B0\u3067\u30C0\u30A4\u30E4\u898B\u3064\u3051\u305F\uFF01");
-      modal.show(player).then((res) => {
+      showFormSafe(player, modal, (res) => {
         if (res.canceled || !res.formValues)
           return;
         const text = String(res.formValues[0]).trim();
@@ -122,7 +137,7 @@ function openTimelineListUI(player, blockLoc) {
 ${reactSummary || "\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306A\u3057"}`);
   }
   form.button("\u{1F519} \u623B\u308B");
-  form.show(player).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection >= globalNotes.length)
@@ -137,7 +152,7 @@ function openNoteDetailUI(player, note, blockLoc) {
 
 \u{1F496} \u73FE\u5728\u306E\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3:
 ${reactSummary || "\u307E\u3060\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306F\u3042\u308A\u307E\u305B\u3093"}`).button("\u{1F496} \u3053\u306E\u30CE\u30FC\u30C8\u306B\u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3059\u308B").button("\u{1F519} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u306B\u623B\u308B");
-  form.show(player).then((response) => {
+  showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
     if (response.selection === 0) {
@@ -145,7 +160,7 @@ ${reactSummary || "\u307E\u3060\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306F\u3042\
       for (const opt of reactionOptions) {
         pickForm.button(`${opt.glyph} ${opt.label}`);
       }
-      pickForm.show(player).then((pRes) => {
+      showFormSafe(player, pickForm, (pRes) => {
         if (pRes.canceled || pRes.selection === void 0)
           return;
         const chosen = reactionOptions[pRes.selection];
