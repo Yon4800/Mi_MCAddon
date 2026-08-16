@@ -186,21 +186,28 @@ if (world.afterEvents?.chatSend) {
 }
 var momoLuckCooldownMap = /* @__PURE__ */ new Map();
 var MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1e3;
-world.afterEvents.playerInteractWithEntity.subscribe((event) => {
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   if (event.target.typeId !== "mi:momo")
     return;
   const player = event.player;
+  const target = event.target;
   const now = Date.now();
   const lastLuckTime = momoLuckCooldownMap.get(player.id) || 0;
   system.run(() => {
     if (now - lastLuckTime < MOMO_LUCK_COOLDOWN_MS) {
       player.sendMessage("\xA7d\u30E2\u30E2: \u300C\u306A\u3067\u306A\u3067\u3001\u3042\u308A\u304C\u3068\u3046\u306A\u306E\u266A\u300D\xA7r");
+      player.dimension.spawnParticle("minecraft:heart_particle", { x: target.location.x, y: target.location.y + 1.2, z: target.location.z });
       return;
     }
     momoLuckCooldownMap.set(player.id, now);
-    player.addEffect("luck", 600, { amplifier: 0 });
+    try {
+      player.addEffect("village_hero", 6e3, { amplifier: 0 });
+      player.addEffect("regeneration", 200, { amplifier: 0 });
+    } catch (e) {
+    }
     player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1, z: player.location.z });
-    player.sendMessage("\xA7d\u{1F340} [Mi_Addon] \u30E2\u30E2\u304C\u5E78\u904B\u306E\u304A\u307E\u3058\u306A\u3044\u3092\u304B\u3051\u3066\u304F\u308C\u305F\uFF01\u3061\u3087\u3063\u3074\u308A\u904B\u304C\u826F\u304F\u306A\u3063\u305F\u6C17\u304C\u3059\u308B\u2026\xA7r");
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+    player.sendMessage("\xA7d\u{1F340} [Mi_Addon] \u30E2\u30E2\u304C\u5E78\u904B\u306E\u304A\u307E\u3058\u306A\u3044\u3092\u304B\u3051\u3066\u304F\u308C\u305F\uFF01(\u6751\u306E\u82F1\u96C4\uFF06\u518D\u751F\u52B9\u679C)\xA7r");
   });
 });
 var syuiloQuotes = [
@@ -229,7 +236,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   system.run(() => {
     player.sendMessage(quote);
     const loc = target.location;
-    player.dimension.spawnParticle("minecraft:note_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
     player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
   });
 });

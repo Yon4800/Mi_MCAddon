@@ -231,23 +231,30 @@ if ((world.afterEvents as any)?.chatSend) {
 const momoLuckCooldownMap = new Map<string, number>(); // playerId -> last luck timestamp (ms)
 const MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1000;
 
-world.afterEvents.playerInteractWithEntity.subscribe((event) => {
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   if (event.target.typeId !== "mi:momo") return;
 
   const player = event.player;
+  const target = event.target;
   const now = Date.now();
   const lastLuckTime = momoLuckCooldownMap.get(player.id) || 0;
 
   system.run(() => {
     if (now - lastLuckTime < MOMO_LUCK_COOLDOWN_MS) {
       player.sendMessage("§dモモ: 「なでなで、ありがとうなの♪」§r");
+      player.dimension.spawnParticle("minecraft:heart_particle", { x: target.location.x, y: target.location.y + 1.2, z: target.location.z });
       return;
     }
 
     momoLuckCooldownMap.set(player.id, now);
-    player.addEffect("luck", 600, { amplifier: 0 });
+    try {
+      player.addEffect("village_hero", 6000, { amplifier: 0 }); // 5 minutes Village Hero (Lucky discount)
+      player.addEffect("regeneration", 200, { amplifier: 0 });   // 10s Regen
+    } catch (e) { }
+
     player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1, z: player.location.z });
-    player.sendMessage("§d🍀 [Mi_Addon] モモが幸運のおまじないをかけてくれた！ちょっぴり運が良くなった気がする…§r");
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+    player.sendMessage("§d🍀 [Mi_Addon] モモが幸運のおまじないをかけてくれた！(村の英雄＆再生効果)§r");
   });
 });
 
@@ -282,7 +289,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   system.run(() => {
     player.sendMessage(quote);
     const loc = target.location;
-    player.dimension.spawnParticle("minecraft:note_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
     player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
   });
 });
