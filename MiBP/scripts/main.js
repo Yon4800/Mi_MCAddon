@@ -192,7 +192,9 @@ ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u6
   });
 }
 function openNoteBoardUI(player, blockLoc) {
-  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u9001\u308A\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button("\u9589\u3058\u308B");
+  const unreadCount = directMessages.filter((m) => m.recipient === player.name && !m.read).length;
+  const dmBadge = unreadCount > 0 ? ` (${unreadCount}\u4EF6\u672A\u8AAD)` : "";
+  const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0)
       return;
@@ -220,6 +222,8 @@ function openNoteBoardUI(player, blockLoc) {
       });
     } else if (response.selection === 1) {
       openTimelineListUI(player, blockLoc);
+    } else if (response.selection === 2) {
+      openDMHubUI(player, blockLoc);
     }
   });
 }
@@ -348,6 +352,187 @@ function openReactionWandUI(player, targetName, targetLoc, targetEntity) {
     world.sendMessage(`\xA7d\u2728 [${player.name}] \u304C ${targetName} \u306B ${chosen.glyph} (${chosen.label}) \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u8D08\u308A\u307E\u3057\u305F\uFF01\xA7r`);
   });
 }
+var directMessages = [];
+function openDMHubUI(player, blockLoc) {
+  const myDMs = directMessages.filter((m) => m.recipient === player.name || m.sender === player.name);
+  const unreadCount = directMessages.filter((m) => m.recipient === player.name && !m.read).length;
+  const form = new ActionFormData().title("\u2709\uFE0F Misskey \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)").body(`\u3042\u306A\u305F\u5B9B\u3066\u306E\u672A\u8AADDM: ${unreadCount} \u4EF6
+\u76F8\u624B\u3092\u9078\u3093\u3067\u30D7\u30E9\u30A4\u30D9\u30FC\u30C8\u306A\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u9001\u4FE1\u30FB\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002`).button("\u{1F4DD} \u65B0\u3057\u3044DM\u3092\u9001\u4FE1\u3059\u308B").button(`\u{1F4EC} \u53D7\u4FE1\u30C8\u30EC\u30A4\u3092\u898B\u308B (${unreadCount}\u4EF6\u672A\u8AAD)`).button("\u{1F4E4} \u9001\u4FE1\u6E08\u307F\u30E1\u30C3\u30BB\u30FC\u30B8").button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === void 0)
+      return;
+    if (response.selection === 0) {
+      openSendDMUI(player, blockLoc);
+    } else if (response.selection === 1) {
+      openDMInboxUI(player, blockLoc);
+    } else if (response.selection === 2) {
+      openDMSentBoxUI(player, blockLoc);
+    } else if (response.selection === 3 && blockLoc) {
+      openNoteBoardUI(player, blockLoc);
+    }
+  });
+}
+function openSendDMUI(player, blockLoc, defaultTarget) {
+  const allPlayers = world.getAllPlayers().map((p) => p.name).filter((name) => name !== player.name);
+  if (allPlayers.length === 0 && !defaultTarget) {
+    player.sendMessage("\xA7c\u26A0\uFE0F \u73FE\u5728\u30EF\u30FC\u30EB\u30C9\u5185\u306B\u4ED6\u306E\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u3044\u307E\u305B\u3093\u3002\xA7r");
+    return;
+  }
+  const targetList = defaultTarget && !allPlayers.includes(defaultTarget) ? [defaultTarget, ...allPlayers] : allPlayers.length > 0 ? allPlayers : [defaultTarget || ""];
+  const modal = new ModalFormData().title("\u{1F4DD} DM\uFF08\u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8\uFF09\u306E\u9001\u4FE1").dropdown("\u9001\u4FE1\u5148\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u9078\u629E:", targetList, 0).textField("\u30E1\u30C3\u30BB\u30FC\u30B8\u672C\u6587\u3092\u5165\u529B (\u7D75\u6587\u5B57\u30B3\u30FC\u30C9\u3082\u4F7F\u7528\u53EF):", "\u4F8B: \u3042\u3068\u3067\u62E0\u70B9\u306B\u6765\u3066\uFF01 :blobcat:");
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues)
+      return;
+    const targetIndex = Number(res.formValues[0]);
+    const targetName = targetList[targetIndex];
+    let msgText = String(res.formValues[1]).trim();
+    if (!targetName || !msgText) {
+      player.sendMessage("\xA7c\u26A0\uFE0F \u9001\u4FE1\u5148\u307E\u305F\u306F\u672C\u6587\u304C\u7A7A\u3067\u3059\u3002\xA7r");
+      return;
+    }
+    for (const [key, glyph] of Object.entries(emojiMap)) {
+      if (msgText.includes(key)) {
+        msgText = msgText.split(key).join(glyph);
+      }
+    }
+    const newDM = {
+      id: `dm_${Date.now()}_${Math.floor(Math.random() * 1e3)}`,
+      sender: player.name,
+      recipient: targetName,
+      content: msgText,
+      timestamp: Date.now(),
+      read: false
+    };
+    directMessages.unshift(newDM);
+    if (directMessages.length > 100)
+      directMessages.pop();
+    player.sendMessage(`\xA7a\u2709\uFE0F [@${targetName}] \u306BDM\u3092\u9001\u4FE1\u3057\u307E\u3057\u305F: \u300C${msgText}\u300D\xA7r`);
+    const recipientPlayer = world.getAllPlayers().find((p) => p.name === targetName);
+    if (recipientPlayer) {
+      recipientPlayer.sendMessage(`\xA7d\u{1F4EC} [Misskey DM from @${player.name}]: \xA7f${msgText}\xA7r`);
+      recipientPlayer.dimension.spawnParticle("minecraft:heart_particle", {
+        x: recipientPlayer.location.x,
+        y: recipientPlayer.location.y + 1.8,
+        z: recipientPlayer.location.z
+      });
+      recipientPlayer.dimension.spawnParticle("minecraft:villager_happy", {
+        x: recipientPlayer.location.x,
+        y: recipientPlayer.location.y + 2,
+        z: recipientPlayer.location.z
+      });
+    }
+  });
+}
+function openDMInboxUI(player, blockLoc) {
+  const inbox = directMessages.filter((m) => m.recipient === player.name);
+  const form = new ActionFormData().title("\u{1F4EC} DM \u53D7\u4FE1\u30C8\u30EC\u30A4").body(inbox.length === 0 ? "\u53D7\u4FE1\u3057\u305F\u30E1\u30C3\u30BB\u30FC\u30B8\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : "\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u9078\u629E\u3057\u3066\u8A73\u7D30\u78BA\u8A8D\u30FB\u8FD4\u4FE1\u30FB\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u304C\u3067\u304D\u307E\u3059:");
+  for (const dm of inbox) {
+    const unreadBadge = dm.read ? "" : "\xA7e[\u672A\u8AAD]\xA7r ";
+    const reactBadge = dm.reaction ? ` [${dm.reaction}]` : "";
+    form.button(`${unreadBadge}@${dm.sender}: ${dm.content.substring(0, 15)}...${reactBadge}`);
+  }
+  form.button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === void 0)
+      return;
+    if (response.selection >= inbox.length) {
+      openDMHubUI(player, blockLoc);
+      return;
+    }
+    const selectedDM = inbox[response.selection];
+    selectedDM.read = true;
+    openDMDetailUI(player, selectedDM, blockLoc, true);
+  });
+}
+function openDMSentBoxUI(player, blockLoc) {
+  const sentBox = directMessages.filter((m) => m.sender === player.name);
+  const form = new ActionFormData().title("\u{1F4E4} \u9001\u4FE1\u6E08\u307F DM \u4E00\u89A7").body(sentBox.length === 0 ? "\u9001\u4FE1\u3057\u305F\u30E1\u30C3\u30BB\u30FC\u30B8\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : "\u9001\u4FE1\u3057\u305F\u30E1\u30C3\u30BB\u30FC\u30B8\u4E00\u89A7:");
+  for (const dm of sentBox) {
+    const reactBadge = dm.reaction ? ` [\u76F8\u624B\u306E\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3: ${dm.reaction}]` : "";
+    form.button(`To @${dm.recipient}: ${dm.content.substring(0, 18)}...${reactBadge}`);
+  }
+  form.button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === void 0)
+      return;
+    if (response.selection >= sentBox.length) {
+      openDMHubUI(player, blockLoc);
+      return;
+    }
+    const selectedDM = sentBox[response.selection];
+    openDMDetailUI(player, selectedDM, blockLoc, false);
+  });
+}
+function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
+  const reactInfo = dm.reaction ? `
+\u{1F496} \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3: ${dm.reaction}` : "";
+  const form = new ActionFormData().title(`\u2709\uFE0F DM: @${dm.sender} \u2192 @${dm.recipient}`).body(`\u5DEE\u51FA\u4EBA: @${dm.sender}
+\u5B9B\u5148: @${dm.recipient}
+
+\u300C${dm.content}\u300D${reactInfo}`);
+  if (isInbox) {
+    form.button("\u{1F4AC} \u3053\u306EDM\u306B\u8FD4\u4FE1\u3059\u308B");
+    form.button(dm.reaction ? `\u{1F504} \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u5909\u66F4\u3059\u308B (${dm.reaction})` : "\u{1F496} \u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3059\u308B");
+    if (dm.reaction) {
+      form.button("\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3059");
+    }
+  }
+  form.button("\u{1F5D1}\uFE0F \u3053\u306EDM\u3092\u524A\u9664\u3059\u308B");
+  form.button("\u{1F519} \u4E00\u89A7\u306B\u623B\u308B");
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === void 0)
+      return;
+    if (isInbox) {
+      let bIdx = 0;
+      const replyBtn = bIdx++;
+      const reactBtn = bIdx++;
+      const unreactBtn = dm.reaction ? bIdx++ : -1;
+      const delBtn = bIdx++;
+      if (response.selection === replyBtn) {
+        openSendDMUI(player, blockLoc, dm.sender);
+      } else if (response.selection === reactBtn) {
+        const pickForm = new ActionFormData().title("\u{1F3A8} DM\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u9078\u629E");
+        for (const opt of reactionOptions) {
+          pickForm.button(`${opt.glyph} ${opt.label}`);
+        }
+        showFormSafe(player, pickForm, (pRes) => {
+          if (pRes.canceled || pRes.selection === void 0)
+            return;
+          const chosen = reactionOptions[pRes.selection];
+          dm.reaction = chosen.glyph;
+          player.sendMessage(`\xA7d\u{1F496} @${dm.sender} \u304B\u3089\u306EDM\u306B ${chosen.glyph} \u3067\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          const senderPlayer = world.getAllPlayers().find((p) => p.name === dm.sender);
+          if (senderPlayer) {
+            senderPlayer.sendMessage(`\xA7d\u{1F496} [@${player.name}] \u304C\u3042\u306A\u305F\u306EDM\u306B ${chosen.glyph} \u3067\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          }
+          openDMDetailUI(player, dm, blockLoc, isInbox);
+        });
+      } else if (response.selection === unreactBtn) {
+        delete dm.reaction;
+        player.sendMessage("\xA7e\u274C DM\u306E\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3057\u307E\u3057\u305F\u3002\xA7r");
+        openDMDetailUI(player, dm, blockLoc, isInbox);
+      } else if (response.selection === delBtn) {
+        const idx = directMessages.findIndex((m) => m.id === dm.id);
+        if (idx !== -1)
+          directMessages.splice(idx, 1);
+        player.sendMessage("\xA7e\u{1F5D1}\uFE0F DM\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002\xA7r");
+        openDMInboxUI(player, blockLoc);
+      } else {
+        openDMInboxUI(player, blockLoc);
+      }
+    } else {
+      if (response.selection === 0) {
+        const idx = directMessages.findIndex((m) => m.id === dm.id);
+        if (idx !== -1)
+          directMessages.splice(idx, 1);
+        player.sendMessage("\xA7e\u{1F5D1}\uFE0F \u9001\u4FE1\u6E08\u307FDM\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002\xA7r");
+        openDMSentBoxUI(player, blockLoc);
+      } else {
+        openDMSentBoxUI(player, blockLoc);
+      }
+    }
+  });
+}
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
@@ -445,6 +630,15 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const itemStack = event.itemStack;
   if (!target)
     return;
+  if (target instanceof Player && player.isSneaking) {
+    event.cancel = true;
+    if (!canOpenUI(player))
+      return;
+    system.run(() => {
+      openSendDMUI(player, void 0, target.name);
+    });
+    return;
+  }
   if (itemStack && itemStack.typeId === "mi:reaction_wand") {
     event.cancel = true;
     if (!canOpenUI(player))

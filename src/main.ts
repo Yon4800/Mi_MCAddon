@@ -254,11 +254,15 @@ function openInstanceServerUI(player: Player, blockLoc: { x: number, y: number, 
 }
 
 function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: number }) {
+  const unreadCount = directMessages.filter(m => m.recipient === player.name && !m.read).length;
+  const dmBadge = unreadCount > 0 ? ` (${unreadCount}件未読)` : "";
+
   const form = new ActionFormData()
     .title("📋 Misskey ノートタイムライン")
-    .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、リアクションを送りましょう！")
+    .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMを送受信しましょう！")
     .button("📝 ノートを投稿する")
     .button("📜 タイムラインを見る / リアクション")
+    .button(`✉️ ダイレクトメッセージ (DM)${dmBadge}`)
     .button("閉じる");
 
   showFormSafe(player, form, (response) => {
@@ -290,6 +294,8 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
       });
     } else if (response.selection === 1) {
       openTimelineListUI(player, blockLoc);
+    } else if (response.selection === 2) {
+      openDMHubUI(player, blockLoc);
     }
   });
 }
@@ -441,6 +447,248 @@ function openReactionWandUI(player: Player, targetName: string, targetLoc: { x: 
 }
 
 // ----------------------------------------------------
+// 0.65. Misskey Direct Message (DM) & Private Chat System
+// ----------------------------------------------------
+interface DirectMessage {
+  id: string;
+  sender: string;
+  recipient: string;
+  content: string;
+  timestamp: number;
+  read: boolean;
+  reaction?: string;
+}
+
+// Global In-Memory DM Store (playerId/playerName -> messages)
+const directMessages: DirectMessage[] = [];
+
+// Open DM Hub UI
+function openDMHubUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const myDMs = directMessages.filter(m => m.recipient === player.name || m.sender === player.name);
+  const unreadCount = directMessages.filter(m => m.recipient === player.name && !m.read).length;
+
+  const form = new ActionFormData()
+    .title("✉️ Misskey ダイレクトメッセージ (DM)")
+    .body(`あなた宛ての未読DM: ${unreadCount} 件\n相手を選んでプライベートなメッセージを送信・確認できます。`)
+    .button("📝 新しいDMを送信する")
+    .button(`📬 受信トレイを見る (${unreadCount}件未読)`)
+    .button("📤 送信済みメッセージ")
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (response.selection === 0) {
+      // Send new DM
+      openSendDMUI(player, blockLoc);
+    } else if (response.selection === 1) {
+      // Inbox
+      openDMInboxUI(player, blockLoc);
+    } else if (response.selection === 2) {
+      // Sent box
+      openDMSentBoxUI(player, blockLoc);
+    } else if (response.selection === 3 && blockLoc) {
+      openNoteBoardUI(player, blockLoc);
+    }
+  });
+}
+
+// Send new DM UI
+function openSendDMUI(player: Player, blockLoc?: { x: number, y: number, z: number }, defaultTarget?: string) {
+  const allPlayers = world.getAllPlayers().map(p => p.name).filter(name => name !== player.name);
+
+  if (allPlayers.length === 0 && !defaultTarget) {
+    player.sendMessage("§c⚠️ 現在ワールド内に他のプレイヤーがいません。§r");
+    return;
+  }
+
+  const targetList = defaultTarget && !allPlayers.includes(defaultTarget) ? [defaultTarget, ...allPlayers] : (allPlayers.length > 0 ? allPlayers : [defaultTarget || ""]);
+
+  const modal = new ModalFormData()
+    .title("📝 DM（ダイレクトメッセージ）の送信")
+    .dropdown("送信先プレイヤーを選択:", targetList, 0)
+    .textField("メッセージ本文を入力 (絵文字コードも使用可):", "例: あとで拠点に来て！ :blobcat:");
+
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues) return;
+
+    const targetIndex = Number(res.formValues[0]);
+    const targetName = targetList[targetIndex];
+    let msgText = String(res.formValues[1]).trim();
+
+    if (!targetName || !msgText) {
+      player.sendMessage("§c⚠️ 送信先または本文が空です。§r");
+      return;
+    }
+
+    // Replace emoji shortcodes
+    for (const [key, glyph] of Object.entries(emojiMap)) {
+      if (msgText.includes(key)) {
+        msgText = msgText.split(key).join(glyph);
+      }
+    }
+
+    const newDM: DirectMessage = {
+      id: `dm_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      sender: player.name,
+      recipient: targetName,
+      content: msgText,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    directMessages.unshift(newDM);
+    if (directMessages.length > 100) directMessages.pop();
+
+    player.sendMessage(`§a✉️ [@${targetName}] にDMを送信しました: 「${msgText}」§r`);
+
+    // Notify recipient if online
+    const recipientPlayer = world.getAllPlayers().find(p => p.name === targetName);
+    if (recipientPlayer) {
+      recipientPlayer.sendMessage(`§d📬 [Misskey DM from @${player.name}]: §f${msgText}§r`);
+      recipientPlayer.dimension.spawnParticle("minecraft:heart_particle", {
+        x: recipientPlayer.location.x,
+        y: recipientPlayer.location.y + 1.8,
+        z: recipientPlayer.location.z
+      });
+      recipientPlayer.dimension.spawnParticle("minecraft:villager_happy", {
+        x: recipientPlayer.location.x,
+        y: recipientPlayer.location.y + 2.0,
+        z: recipientPlayer.location.z
+      });
+    }
+  });
+}
+
+// Inbox UI
+function openDMInboxUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const inbox = directMessages.filter(m => m.recipient === player.name);
+
+  const form = new ActionFormData()
+    .title("📬 DM 受信トレイ")
+    .body(inbox.length === 0 ? "受信したメッセージはありません。" : "メッセージを選択して詳細確認・返信・リアクションができます:");
+
+  for (const dm of inbox) {
+    const unreadBadge = dm.read ? "" : "§e[未読]§r ";
+    const reactBadge = dm.reaction ? ` [${dm.reaction}]` : "";
+    form.button(`${unreadBadge}@${dm.sender}: ${dm.content.substring(0, 15)}...${reactBadge}`);
+  }
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === undefined) return;
+    if (response.selection >= inbox.length) {
+      openDMHubUI(player, blockLoc);
+      return;
+    }
+
+    const selectedDM = inbox[response.selection];
+    selectedDM.read = true; // Mark as read
+    openDMDetailUI(player, selectedDM, blockLoc, true);
+  });
+}
+
+// Sent box UI
+function openDMSentBoxUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const sentBox = directMessages.filter(m => m.sender === player.name);
+
+  const form = new ActionFormData()
+    .title("📤 送信済み DM 一覧")
+    .body(sentBox.length === 0 ? "送信したメッセージはありません。" : "送信したメッセージ一覧:");
+
+  for (const dm of sentBox) {
+    const reactBadge = dm.reaction ? ` [相手のリアクション: ${dm.reaction}]` : "";
+    form.button(`To @${dm.recipient}: ${dm.content.substring(0, 18)}...${reactBadge}`);
+  }
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === undefined) return;
+    if (response.selection >= sentBox.length) {
+      openDMHubUI(player, blockLoc);
+      return;
+    }
+
+    const selectedDM = sentBox[response.selection];
+    openDMDetailUI(player, selectedDM, blockLoc, false);
+  });
+}
+
+// DM Detail UI with reply & reaction
+function openDMDetailUI(player: Player, dm: DirectMessage, blockLoc?: { x: number, y: number, z: number }, isInbox: boolean = true) {
+  const reactInfo = dm.reaction ? `\n💖 リアクション: ${dm.reaction}` : "";
+  const form = new ActionFormData()
+    .title(`✉️ DM: @${dm.sender} → @${dm.recipient}`)
+    .body(`差出人: @${dm.sender}\n宛先: @${dm.recipient}\n\n「${dm.content}」${reactInfo}`);
+
+  if (isInbox) {
+    form.button("💬 このDMに返信する");
+    form.button(dm.reaction ? `🔄 リアクションを変更する (${dm.reaction})` : "💖 絵文字リアクションする");
+    if (dm.reaction) {
+      form.button("❌ リアクションを取り消す");
+    }
+  }
+  form.button("🗑️ このDMを削除する");
+  form.button("🔙 一覧に戻る");
+
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (isInbox) {
+      let bIdx = 0;
+      const replyBtn = bIdx++;
+      const reactBtn = bIdx++;
+      const unreactBtn = dm.reaction ? bIdx++ : -1;
+      const delBtn = bIdx++;
+
+      if (response.selection === replyBtn) {
+        openSendDMUI(player, blockLoc, dm.sender);
+      } else if (response.selection === reactBtn) {
+        const pickForm = new ActionFormData()
+          .title("🎨 DMリアクションを選択");
+        for (const opt of reactionOptions) {
+          pickForm.button(`${opt.glyph} ${opt.label}`);
+        }
+        showFormSafe(player, pickForm, (pRes) => {
+          if (pRes.canceled || pRes.selection === undefined) return;
+          const chosen = reactionOptions[pRes.selection];
+          dm.reaction = chosen.glyph;
+          player.sendMessage(`§d💖 @${dm.sender} からのDMに ${chosen.glyph} でリアクションしました！§r`);
+
+          // Notify sender if online
+          const senderPlayer = world.getAllPlayers().find(p => p.name === dm.sender);
+          if (senderPlayer) {
+            senderPlayer.sendMessage(`§d💖 [@${player.name}] があなたのDMに ${chosen.glyph} でリアクションしました！§r`);
+          }
+          openDMDetailUI(player, dm, blockLoc, isInbox);
+        });
+      } else if (response.selection === unreactBtn) {
+        delete dm.reaction;
+        player.sendMessage("§e❌ DMのリアクションを取り消しました。§r");
+        openDMDetailUI(player, dm, blockLoc, isInbox);
+      } else if (response.selection === delBtn) {
+        const idx = directMessages.findIndex(m => m.id === dm.id);
+        if (idx !== -1) directMessages.splice(idx, 1);
+        player.sendMessage("§e🗑️ DMを削除しました。§r");
+        openDMInboxUI(player, blockLoc);
+      } else {
+        openDMInboxUI(player, blockLoc);
+      }
+    } else {
+      // Sent box actions
+      if (response.selection === 0) {
+        const idx = directMessages.findIndex(m => m.id === dm.id);
+        if (idx !== -1) directMessages.splice(idx, 1);
+        player.sendMessage("§e🗑️ 送信済みDMを削除しました。§r");
+        openDMSentBoxUI(player, blockLoc);
+      } else {
+        openDMSentBoxUI(player, blockLoc);
+      }
+    }
+  });
+}
+
+// ----------------------------------------------------
 // 0.7. Block Interaction for Fediverse (Single-Click Instant UI with event.cancel)
 // ----------------------------------------------------
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
@@ -556,6 +804,17 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const itemStack = event.itemStack;
 
   if (!target) return;
+
+
+  // Player-to-Player Direct DM shortcut (Shift + Right Click another player)
+  if (target instanceof Player && player.isSneaking) {
+    event.cancel = true;
+    if (!canOpenUI(player)) return;
+    system.run(() => {
+      openSendDMUI(player, undefined, target.name);
+    });
+    return;
+  }
 
   // Reaction Wand usage
   if (itemStack && itemStack.typeId === "mi:reaction_wand") {
