@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mi:tatami",
+      "menu_category": {
+        "category": "construction",
+        "group": "itemGroup.name.planks"
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 0.6
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 3.0
+      },
+      "minecraft:flammable": {
+        "catch_chance_modifier": 60,
+        "destroy_chance_modifier": 20
+      },
+      "minecraft:map_color": "#C9B27C"
+    }
+  }
+}

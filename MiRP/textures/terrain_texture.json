@@ -4,6 +4,9 @@
   "texture_data": {
     "tin_foil_block": {
       "textures": "textures/blocks/tin_foil_block"
+    },
+    "tatami": {
+      "textures": "textures/blocks/tatami"
     }
   }
 }
