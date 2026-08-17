@@ -874,13 +874,18 @@ function openDMDetailUI(player: Player, dm: DirectMessage, blockLoc?: { x: numbe
 }
 
 // ----------------------------------------------------
-// 0.9. Pudding & Nekomimi Pudding Gimmicks (Bounce & Eat)
+// 0.9. Pudding & Nekomimi Pudding Gimmicks (Silent & Smooth)
 // ----------------------------------------------------
 const puddingBounceMap = new Map<string, number>(); // posKey -> bounceCount
 const playerLastBounceTimeMap = new Map<string, number>(); // playerId -> timestamp
+const playerPuddingEatLock = new Map<string, number>(); // playerId -> last eat time (ms)
 
-// Eat Pudding Interaction
 function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
+  const now = Date.now();
+  const lastEat = playerPuddingEatLock.get(player.id) || 0;
+  if (now - lastEat < 500) return; // Debounce duplicate triggers
+  playerPuddingEatLock.set(player.id, now);
+
   const loc = block.location;
   const dim = player.dimension;
 
@@ -890,7 +895,6 @@ function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
     dim.spawnParticle("minecraft:villager_happy", { x: loc.x + 0.5, y: loc.y + 0.8, z: loc.z + 0.5 });
 
     if (isNekomimi) {
-      // Equip 3D Cat Ears
       try {
         const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
         if (equippable) {
@@ -898,12 +902,10 @@ function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
         }
       } catch (e) { }
 
-      player.addEffect("speed", 6000, { amplifier: 0 }); // 5 minutes speed
-      player.addEffect("slow_falling", 1200, { amplifier: 0 }); // 1 minute slow falling (cat landing)
-      player.sendMessage("§d🐱🍮 [Mi_Addon] 猫耳プリンを食べたら、頭にかわいい猫耳が生えてきた！(移動速度UP＆身軽さ)§r");
+      player.addEffect("speed", 6000, { amplifier: 0 }); // 5m Speed
+      player.addEffect("slow_falling", 1200, { amplifier: 0 }); // 1m Slow Falling
     } else {
       player.addEffect("regeneration", 200, { amplifier: 0 });
-      player.sendMessage("§e🍮 [Mi_Addon] ぷるぷるの甘いプリンを美味しく完食した！§r");
     }
   });
 }
@@ -914,6 +916,19 @@ function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
+
+
+  if (block.typeId === "mi:pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, false);
+    return;
+  }
+
+  if (block.typeId === "mi:nekomimi_pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, true);
+    return;
+  }
 
 
   if (block.typeId === "mi:pudding") {
@@ -1557,6 +1572,42 @@ system.runInterval(() => {
           p.sendMessage("§c🍮💥 [Mi_Addon] プリンの上でポヨンポヨン跳ねすぎて、プリンが崩れてしまった！§r");
         } else {
           p.sendMessage(`§e🍮 ポヨン！ (耐久度: ${5 - count}/5)§r`);
+        }
+      }
+    } catch (e) { }
+  }
+
+
+  // E. Pudding Poyon-Poyon Bounce & Break Gimmick (Silent)
+  for (const p of players) {
+    const pLoc = p.location;
+    const pId = p.id;
+    const now = Date.now();
+    const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
+    if (now - lastBounce < 350) continue;
+
+    const bx = Math.floor(pLoc.x);
+    const by = Math.floor(pLoc.y - 0.2);
+    const bz = Math.floor(pLoc.z);
+
+    try {
+      const b = overworld.getBlock({ x: bx, y: by, z: bz });
+      if (b && (b.typeId === "mi:pudding" || b.typeId === "mi:nekomimi_pudding")) {
+        playerLastBounceTimeMap.set(pId, now);
+
+        const posKey = `${bx},${by},${bz}`;
+        const count = (puddingBounceMap.get(posKey) || 0) + 1;
+        puddingBounceMap.set(posKey, count);
+
+        // Silent Poyon-Poyon Bounce upward
+        p.applyKnockback(0, 0, 0, 0.75);
+        overworld.spawnParticle("minecraft:slime_particle", { x: bx + 0.5, y: by + 0.7, z: bz + 0.5 });
+
+        if (count >= 5) {
+          puddingBounceMap.delete(posKey);
+          b.setType("minecraft:air");
+          overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
+          overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
         }
       }
     } catch (e) { }

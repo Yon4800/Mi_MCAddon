@@ -677,7 +677,13 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
 }
 var puddingBounceMap = /* @__PURE__ */ new Map();
 var playerLastBounceTimeMap = /* @__PURE__ */ new Map();
+var playerPuddingEatLock = /* @__PURE__ */ new Map();
 function handlePuddingEat(player, block, isNekomimi) {
+  const now = Date.now();
+  const lastEat = playerPuddingEatLock.get(player.id) || 0;
+  if (now - lastEat < 500)
+    return;
+  playerPuddingEatLock.set(player.id, now);
   const loc = block.location;
   const dim = player.dimension;
   system.run(() => {
@@ -694,16 +700,24 @@ function handlePuddingEat(player, block, isNekomimi) {
       }
       player.addEffect("speed", 6e3, { amplifier: 0 });
       player.addEffect("slow_falling", 1200, { amplifier: 0 });
-      player.sendMessage("\xA7d\u{1F431}\u{1F36E} [Mi_Addon] \u732B\u8033\u30D7\u30EA\u30F3\u3092\u98DF\u3079\u305F\u3089\u3001\u982D\u306B\u304B\u308F\u3044\u3044\u732B\u8033\u304C\u751F\u3048\u3066\u304D\u305F\uFF01(\u79FB\u52D5\u901F\u5EA6UP\uFF06\u8EAB\u8EFD\u3055)\xA7r");
     } else {
       player.addEffect("regeneration", 200, { amplifier: 0 });
-      player.sendMessage("\xA7e\u{1F36E} [Mi_Addon] \u3077\u308B\u3077\u308B\u306E\u7518\u3044\u30D7\u30EA\u30F3\u3092\u7F8E\u5473\u3057\u304F\u5B8C\u98DF\u3057\u305F\uFF01\xA7r");
     }
   });
 }
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
+  if (block.typeId === "mi:pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, false);
+    return;
+  }
+  if (block.typeId === "mi:nekomimi_pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, true);
+    return;
+  }
   if (block.typeId === "mi:pudding") {
     event.cancel = true;
     handlePuddingEat(player, block, false);
@@ -1244,6 +1258,35 @@ system.runInterval(() => {
           p.sendMessage("\xA7c\u{1F36E}\u{1F4A5} [Mi_Addon] \u30D7\u30EA\u30F3\u306E\u4E0A\u3067\u30DD\u30E8\u30F3\u30DD\u30E8\u30F3\u8DF3\u306D\u3059\u304E\u3066\u3001\u30D7\u30EA\u30F3\u304C\u5D29\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
         } else {
           p.sendMessage(`\xA7e\u{1F36E} \u30DD\u30E8\u30F3\uFF01 (\u8010\u4E45\u5EA6: ${5 - count}/5)\xA7r`);
+        }
+      }
+    } catch (e) {
+    }
+  }
+  for (const p of players) {
+    const pLoc = p.location;
+    const pId = p.id;
+    const now2 = Date.now();
+    const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
+    if (now2 - lastBounce < 350)
+      continue;
+    const bx = Math.floor(pLoc.x);
+    const by = Math.floor(pLoc.y - 0.2);
+    const bz = Math.floor(pLoc.z);
+    try {
+      const b = overworld.getBlock({ x: bx, y: by, z: bz });
+      if (b && (b.typeId === "mi:pudding" || b.typeId === "mi:nekomimi_pudding")) {
+        playerLastBounceTimeMap.set(pId, now2);
+        const posKey = `${bx},${by},${bz}`;
+        const count = (puddingBounceMap.get(posKey) || 0) + 1;
+        puddingBounceMap.set(posKey, count);
+        p.applyKnockback(0, 0, 0, 0.75);
+        overworld.spawnParticle("minecraft:slime_particle", { x: bx + 0.5, y: by + 0.7, z: bz + 0.5 });
+        if (count >= 5) {
+          puddingBounceMap.delete(posKey);
+          b.setType("minecraft:air");
+          overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
+          overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
         }
       }
     } catch (e) {
