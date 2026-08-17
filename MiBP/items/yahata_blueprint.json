@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mi:yahata_blueprint",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "yahata_blueprint",
+      "minecraft:display_name": {
+        "value": "item.mi:yahata_blueprint.name"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true
+    }
+  }
+}

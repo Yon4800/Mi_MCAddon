@@ -902,6 +902,157 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
 });
 
 // ----------------------------------------------------
+// 0.8. 官営八幡製鉄所 (Ruined Steelworks) Generator
+// ----------------------------------------------------
+const generatedSteelworksLocations: { x: number, z: number }[] = [];
+
+function generateYahataSteelworks(dimension: any, origin: { x: number, y: number, z: number }): boolean {
+  const ox = Math.floor(origin.x);
+  const oy = Math.floor(origin.y);
+  const oz = Math.floor(origin.z);
+
+  // 1. Foundation & Floor (18 x 18 Cobblestone / Deepslate Bricks)
+  for (let dx = -8; dx <= 9; dx++) {
+    for (let dz = -8; dz <= 9; dz++) {
+      for (let dy = -2; dy <= 0; dy++) {
+        const block = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+        if (block) {
+          const type = (dx + dz) % 3 === 0 ? "minecraft:cracked_deepslate_bricks" : "minecraft:deepslate_bricks";
+          block.setType(type);
+        }
+      }
+    }
+  }
+
+  // 2. Brick Walls & Ruined Pillars
+  for (let dy = 1; dy <= 8; dy++) {
+    for (let dx = -8; dx <= 9; dx++) {
+      for (let dz = -8; dz <= 9; dz++) {
+        const isWall = (dx === -8 || dx === 9 || dz === -8 || dz === 9);
+        const isPillar = (dx === -8 || dx === 9 || dx === 0) && (dz === -8 || dz === 9 || dz === 0);
+
+        if (isPillar) {
+          const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+          if (b) b.setType("minecraft:deepslate_bricks");
+        } else if (isWall) {
+          // Semi-ruined brick wall with holes
+          const isWindow = (dy >= 3 && dy <= 5) && (Math.abs(dx) % 4 === 2 || Math.abs(dz) % 4 === 2);
+          const isDecayed = (dx + dy + dz) % 7 === 0;
+          const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+          if (b) {
+            if (isWindow) {
+              b.setType("minecraft:iron_bars");
+            } else if (!isDecayed) {
+              b.setType((dx + dy) % 2 === 0 ? "minecraft:bricks" : "minecraft:mud_bricks");
+            } else {
+              b.setType("minecraft:air");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Great Smelting Chimney (赤レンガの大煙突: 高度 +16, 頂上にキャンプファイヤー)
+  const cx = ox - 5;
+  const cz = oz - 5;
+  for (let dy = 1; dy <= 16; dy++) {
+    for (let cdx = -1; cdx <= 1; cdx++) {
+      for (let cdz = -1; cdz <= 1; cdz++) {
+        const b = dimension.getBlock({ x: cx + cdx, y: oy + dy, z: cz + cdz });
+        if (b) {
+          const isHollow = (cdx === 0 && cdz === 0 && dy < 16);
+          if (isHollow) {
+            b.setType("minecraft:air");
+          } else if (dy === 16 && cdx === 0 && cdz === 0) {
+            b.setType("minecraft:campfire"); // Smoke billowing
+          } else {
+            b.setType("minecraft:bricks");
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Central Blast Furnace & Smelting Trough (巨大高炉 & 溶鉱炉)
+  const fx = ox + 3;
+  const fz = oz + 3;
+  for (let dy = 1; dy <= 4; dy++) {
+    for (let fdx = -2; fdx <= 2; fdx++) {
+      for (let fdz = -2; fdz <= 2; fdz++) {
+        const b = dimension.getBlock({ x: fx + fdx, y: oy + dy, z: fz + fdz });
+        if (b) {
+          if (fdx === 0 && fdz === 0 && dy === 1) {
+            b.setType("minecraft:lava"); // Molten iron
+          } else if (dy === 2 && (Math.abs(fdx) === 1 || Math.abs(fdz) === 1)) {
+            b.setType("minecraft:blast_furnace");
+          } else if (dy === 3 && fdx === 0 && fdz === 0) {
+            b.setType("minecraft:hopper");
+          } else if (Math.abs(fdx) === 2 || Math.abs(fdz) === 2) {
+            b.setType("minecraft:iron_block");
+          } else {
+            b.setType("minecraft:deepslate_bricks");
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Pipe Network & Iron Bars
+  for (let pz = -4; pz <= 4; pz++) {
+    const pipeB = dimension.getBlock({ x: ox, y: oy + 6, z: oz + pz });
+    if (pipeB) pipeB.setType("minecraft:iron_bars");
+  }
+
+  // 6. Treasure Chests (産業革命のお宝チェスト)
+  const chest1 = dimension.getBlock({ x: ox - 3, y: oy + 1, z: oz + 4 });
+  if (chest1) {
+    chest1.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (chest1 as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 16));
+          inv.addItem(new ItemStack("minecraft:raw_iron", 24));
+          inv.addItem(new ItemStack("minecraft:coal", 32));
+          inv.addItem(new ItemStack("minecraft:blast_furnace", 2));
+          inv.addItem(new ItemStack("mi:ecology_server", 1));
+          inv.addItem(new ItemStack("mi:machida", 2));
+          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  const chest2 = dimension.getBlock({ x: cx + 2, y: oy + 1, z: cz + 2 });
+  if (chest2) {
+    chest2.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (chest2 as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:iron_block", 3));
+          inv.addItem(new ItemStack("mi:blob_aichi", 2));
+          inv.addItem(new ItemStack("mi:sanjuu", 2));
+          inv.addItem(new ItemStack("mi:gif", 2));
+          inv.addItem(new ItemStack("mi:silenthill", 2));
+          inv.addItem(new ItemStack("minecraft:golden_apple", 1));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  // 7. Spawn Ambient Particles & Monster Guards
+  for (let i = 0; i < 3; i++) {
+    try {
+      dimension.spawnEntity("mi:blebcat", { x: ox + (i - 1) * 3, y: oy + 1, z: oz + (i - 1) * 3 });
+    } catch (e) { }
+  }
+
+  return true;
+}
+
+// ----------------------------------------------------
 // 1. Rare Mob Drops
 // ----------------------------------------------------
 world.afterEvents.entityDie.subscribe((event) => {
@@ -1449,5 +1600,82 @@ system.runInterval(() => {
     }
   }
 }, 5);
+
+
+// ----------------------------------------------------
+// 0.85. Yahata Blueprint Item Use & Natural World Generation
+// ----------------------------------------------------
+world.afterEvents.itemUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+
+  if (itemStack.typeId === "mi:yahata_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 8),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 8)
+    };
+
+    player.sendMessage("§e🏭 [官営八幡製鉄所] 設計図を展開し、歴史ある製鉄所廃墟を建設中...！§r");
+    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+
+    system.runTimeout(() => {
+      generateYahataSteelworks(dim, targetLoc);
+      player.sendMessage("§a✨ 官営八幡製鉄所の遺構（廃墟ダンジョン）が目の前に現れました！§r");
+      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
+    }, 5);
+  }
+});
+
+// Periodic Random Natural Generation around exploring players
+let worldGenTick = 0;
+system.runInterval(() => {
+  worldGenTick++;
+  if (worldGenTick % 200 !== 0) return; // Check every 10 seconds
+
+  const overworld = world.getDimension("overworld");
+  const players = overworld.getPlayers();
+
+  for (const p of players) {
+    const pLoc = p.location;
+    const chunkX = Math.floor(pLoc.x / 64) * 64;
+    const chunkZ = Math.floor(pLoc.z / 64) * 64;
+
+    // Check if steelworks already generated near this 64x64 chunk
+    let alreadyExists = false;
+    for (const loc of generatedSteelworksLocations) {
+      const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
+      if (distSq < 160000) { // 400m minimum spacing
+        alreadyExists = true;
+        break;
+      }
+    }
+
+    if (!alreadyExists && Math.random() < 0.15) { // 15% chance per chunk
+      const genX = chunkX + Math.floor(Math.random() * 32) + 16;
+      const genZ = chunkZ + Math.floor(Math.random() * 32) + 16;
+
+      // Find surface ground
+      try {
+        let surfaceY = Math.floor(pLoc.y);
+        for (let y = 120; y >= 60; y--) {
+          const b = overworld.getBlock({ x: genX, y, z: genZ });
+          if (b && !b.isAir && !b.isLiquid) {
+            surfaceY = y + 1;
+            break;
+          }
+        }
+
+        generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
+        generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
+        console.warn(`[Mi_Addon] Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+      } catch (e) { }
+    }
+  }
+}, 20);
 
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");

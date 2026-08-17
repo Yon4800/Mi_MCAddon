@@ -62,3 +62,5 @@ action.hint.exit.mi:zabuton_yellow=Press SHIFT to get up
 tile.mi:instance_server.name=Instance Server
 tile.mi:note_board.name=Misskey Note Board
 item.mi:reaction_wand.name=Reaction Wand
+
+item.mi:yahata_blueprint.name=Yahata Steelworks Blueprint

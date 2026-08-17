@@ -65,3 +65,5 @@ action.hint.exit.mi:zabuton_yellow=シフトで立ち上がる
 tile.mi:instance_server.name=インスタンスサーバー
 tile.mi:note_board.name=Misskey ノート掲示板
 item.mi:reaction_wand.name=リアクションワンド
+
+item.mi:yahata_blueprint.name=八幡製鉄所の設計図

@@ -94,6 +94,9 @@
     },
     "reaction_wand": {
       "textures": "textures/items/reaction_wand"
+    },
+    "yahata_blueprint": {
+      "textures": "textures/items/yahata_blueprint"
     }
   }
 }

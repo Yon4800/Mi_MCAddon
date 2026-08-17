@@ -699,6 +699,139 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     return;
   }
 });
+var generatedSteelworksLocations = [];
+function generateYahataSteelworks(dimension, origin) {
+  const ox = Math.floor(origin.x);
+  const oy = Math.floor(origin.y);
+  const oz = Math.floor(origin.z);
+  for (let dx = -8; dx <= 9; dx++) {
+    for (let dz = -8; dz <= 9; dz++) {
+      for (let dy = -2; dy <= 0; dy++) {
+        const block = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+        if (block) {
+          const type = (dx + dz) % 3 === 0 ? "minecraft:cracked_deepslate_bricks" : "minecraft:deepslate_bricks";
+          block.setType(type);
+        }
+      }
+    }
+  }
+  for (let dy = 1; dy <= 8; dy++) {
+    for (let dx = -8; dx <= 9; dx++) {
+      for (let dz = -8; dz <= 9; dz++) {
+        const isWall = dx === -8 || dx === 9 || dz === -8 || dz === 9;
+        const isPillar = (dx === -8 || dx === 9 || dx === 0) && (dz === -8 || dz === 9 || dz === 0);
+        if (isPillar) {
+          const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+          if (b)
+            b.setType("minecraft:deepslate_bricks");
+        } else if (isWall) {
+          const isWindow = dy >= 3 && dy <= 5 && (Math.abs(dx) % 4 === 2 || Math.abs(dz) % 4 === 2);
+          const isDecayed = (dx + dy + dz) % 7 === 0;
+          const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+          if (b) {
+            if (isWindow) {
+              b.setType("minecraft:iron_bars");
+            } else if (!isDecayed) {
+              b.setType((dx + dy) % 2 === 0 ? "minecraft:bricks" : "minecraft:mud_bricks");
+            } else {
+              b.setType("minecraft:air");
+            }
+          }
+        }
+      }
+    }
+  }
+  const cx = ox - 5;
+  const cz = oz - 5;
+  for (let dy = 1; dy <= 16; dy++) {
+    for (let cdx = -1; cdx <= 1; cdx++) {
+      for (let cdz = -1; cdz <= 1; cdz++) {
+        const b = dimension.getBlock({ x: cx + cdx, y: oy + dy, z: cz + cdz });
+        if (b) {
+          const isHollow = cdx === 0 && cdz === 0 && dy < 16;
+          if (isHollow) {
+            b.setType("minecraft:air");
+          } else if (dy === 16 && cdx === 0 && cdz === 0) {
+            b.setType("minecraft:campfire");
+          } else {
+            b.setType("minecraft:bricks");
+          }
+        }
+      }
+    }
+  }
+  const fx = ox + 3;
+  const fz = oz + 3;
+  for (let dy = 1; dy <= 4; dy++) {
+    for (let fdx = -2; fdx <= 2; fdx++) {
+      for (let fdz = -2; fdz <= 2; fdz++) {
+        const b = dimension.getBlock({ x: fx + fdx, y: oy + dy, z: fz + fdz });
+        if (b) {
+          if (fdx === 0 && fdz === 0 && dy === 1) {
+            b.setType("minecraft:lava");
+          } else if (dy === 2 && (Math.abs(fdx) === 1 || Math.abs(fdz) === 1)) {
+            b.setType("minecraft:blast_furnace");
+          } else if (dy === 3 && fdx === 0 && fdz === 0) {
+            b.setType("minecraft:hopper");
+          } else if (Math.abs(fdx) === 2 || Math.abs(fdz) === 2) {
+            b.setType("minecraft:iron_block");
+          } else {
+            b.setType("minecraft:deepslate_bricks");
+          }
+        }
+      }
+    }
+  }
+  for (let pz = -4; pz <= 4; pz++) {
+    const pipeB = dimension.getBlock({ x: ox, y: oy + 6, z: oz + pz });
+    if (pipeB)
+      pipeB.setType("minecraft:iron_bars");
+  }
+  const chest1 = dimension.getBlock({ x: ox - 3, y: oy + 1, z: oz + 4 });
+  if (chest1) {
+    chest1.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = chest1.getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 16));
+          inv.addItem(new ItemStack("minecraft:raw_iron", 24));
+          inv.addItem(new ItemStack("minecraft:coal", 32));
+          inv.addItem(new ItemStack("minecraft:blast_furnace", 2));
+          inv.addItem(new ItemStack("mi:ecology_server", 1));
+          inv.addItem(new ItemStack("mi:machida", 2));
+          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
+        }
+      } catch (e) {
+      }
+    }, 2);
+  }
+  const chest2 = dimension.getBlock({ x: cx + 2, y: oy + 1, z: cz + 2 });
+  if (chest2) {
+    chest2.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = chest2.getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:iron_block", 3));
+          inv.addItem(new ItemStack("mi:blob_aichi", 2));
+          inv.addItem(new ItemStack("mi:sanjuu", 2));
+          inv.addItem(new ItemStack("mi:gif", 2));
+          inv.addItem(new ItemStack("mi:silenthill", 2));
+          inv.addItem(new ItemStack("minecraft:golden_apple", 1));
+        }
+      } catch (e) {
+      }
+    }, 2);
+  }
+  for (let i = 0; i < 3; i++) {
+    try {
+      dimension.spawnEntity("mi:blebcat", { x: ox + (i - 1) * 3, y: oy + 1, z: oz + (i - 1) * 3 });
+    } catch (e) {
+    }
+  }
+  return true;
+}
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
   if (!deadEntity)
@@ -1152,4 +1285,64 @@ system.runInterval(() => {
     }
   }
 }, 5);
+world.afterEvents.itemUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+  if (itemStack.typeId === "mi:yahata_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 8),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 8)
+    };
+    player.sendMessage("\xA7e\u{1F3ED} [\u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u6B74\u53F2\u3042\u308B\u88FD\u9244\u6240\u5EC3\u589F\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
+    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+    system.runTimeout(() => {
+      generateYahataSteelworks(dim, targetLoc);
+      player.sendMessage("\xA7a\u2728 \u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240\u306E\u907A\u69CB\uFF08\u5EC3\u589F\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u304C\u76EE\u306E\u524D\u306B\u73FE\u308C\u307E\u3057\u305F\uFF01\xA7r");
+      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
+    }, 5);
+  }
+});
+var worldGenTick = 0;
+system.runInterval(() => {
+  worldGenTick++;
+  if (worldGenTick % 200 !== 0)
+    return;
+  const overworld = world.getDimension("overworld");
+  const players = overworld.getPlayers();
+  for (const p of players) {
+    const pLoc = p.location;
+    const chunkX = Math.floor(pLoc.x / 64) * 64;
+    const chunkZ = Math.floor(pLoc.z / 64) * 64;
+    let alreadyExists = false;
+    for (const loc of generatedSteelworksLocations) {
+      const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
+      if (distSq < 16e4) {
+        alreadyExists = true;
+        break;
+      }
+    }
+    if (!alreadyExists && Math.random() < 0.15) {
+      const genX = chunkX + Math.floor(Math.random() * 32) + 16;
+      const genZ = chunkZ + Math.floor(Math.random() * 32) + 16;
+      try {
+        let surfaceY = Math.floor(pLoc.y);
+        for (let y = 120; y >= 60; y--) {
+          const b = overworld.getBlock({ x: genX, y, z: genZ });
+          if (b && !b.isAir && !b.isLiquid) {
+            surfaceY = y + 1;
+            break;
+          }
+        }
+        generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
+        generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
+        console.warn(`[Mi_Addon] Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+      } catch (e) {
+      }
+    }
+  }
+}, 20);
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
