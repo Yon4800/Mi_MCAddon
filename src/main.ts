@@ -874,11 +874,59 @@ function openDMDetailUI(player: Player, dm: DirectMessage, blockLoc?: { x: numbe
 }
 
 // ----------------------------------------------------
+// 0.9. Pudding & Nekomimi Pudding Gimmicks (Bounce & Eat)
+// ----------------------------------------------------
+const puddingBounceMap = new Map<string, number>(); // posKey -> bounceCount
+const playerLastBounceTimeMap = new Map<string, number>(); // playerId -> timestamp
+
+// Eat Pudding Interaction
+function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
+  const loc = block.location;
+  const dim = player.dimension;
+
+  system.run(() => {
+    block.setType("minecraft:air");
+    dim.spawnParticle("minecraft:heart_particle", { x: loc.x + 0.5, y: loc.y + 0.6, z: loc.z + 0.5 });
+    dim.spawnParticle("minecraft:villager_happy", { x: loc.x + 0.5, y: loc.y + 0.8, z: loc.z + 0.5 });
+
+    if (isNekomimi) {
+      // Equip 3D Cat Ears
+      try {
+        const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+        if (equippable) {
+          equippable.setEquipment("Head" as any, new ItemStack("mi:nekomimi_ears", 1));
+        }
+      } catch (e) { }
+
+      player.addEffect("speed", 6000, { amplifier: 0 }); // 5 minutes speed
+      player.addEffect("slow_falling", 1200, { amplifier: 0 }); // 1 minute slow falling (cat landing)
+      player.sendMessage("§d🐱🍮 [Mi_Addon] 猫耳プリンを食べたら、頭にかわいい猫耳が生えてきた！(移動速度UP＆身軽さ)§r");
+    } else {
+      player.addEffect("regeneration", 200, { amplifier: 0 });
+      player.sendMessage("§e🍮 [Mi_Addon] ぷるぷるの甘いプリンを美味しく完食した！§r");
+    }
+  });
+}
+
+// ----------------------------------------------------
 // 0.7. Block Interaction for Fediverse (Single-Click Instant UI with event.cancel)
 // ----------------------------------------------------
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
+
+
+  if (block.typeId === "mi:pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, false);
+    return;
+  }
+
+  if (block.typeId === "mi:nekomimi_pudding") {
+    event.cancel = true;
+    handlePuddingEat(player, block, true);
+    return;
+  }
 
   if (block.typeId === "mi:instance_server") {
     event.cancel = true;
@@ -1471,6 +1519,47 @@ system.runInterval(() => {
       woneko.addEffect("strength", 40, { amplifier: 1, showParticles: true });
       overworld.spawnParticle("minecraft:villager_angry", { x: loc.x, y: loc.y + 1, z: loc.z });
     }
+  }
+
+
+  // E. Pudding Poyon-Poyon Bounce & Break Gimmick
+  for (const p of players) {
+    const pLoc = p.location;
+    const pId = p.id;
+    const now = Date.now();
+    const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
+    if (now - lastBounce < 350) continue; // Bounce cooldown 0.35s
+
+    // Check block under feet
+    const bx = Math.floor(pLoc.x);
+    const by = Math.floor(pLoc.y - 0.2);
+    const bz = Math.floor(pLoc.z);
+
+    try {
+      const b = overworld.getBlock({ x: bx, y: by, z: bz });
+      if (b && (b.typeId === "mi:pudding" || b.typeId === "mi:nekomimi_pudding")) {
+        playerLastBounceTimeMap.set(pId, now);
+
+        const posKey = `${bx},${by},${bz}`;
+        const count = (puddingBounceMap.get(posKey) || 0) + 1;
+        puddingBounceMap.set(posKey, count);
+
+        // Apply Poyon-Poyon Bounce upward
+        p.applyKnockback(0, 0, 0, 0.75);
+        overworld.spawnParticle("minecraft:slime_particle", { x: bx + 0.5, y: by + 0.7, z: bz + 0.5 });
+
+        if (count >= 5) {
+          // Collapse / break pudding!
+          puddingBounceMap.delete(posKey);
+          b.setType("minecraft:air");
+          overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
+          overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
+          p.sendMessage("§c🍮💥 [Mi_Addon] プリンの上でポヨンポヨン跳ねすぎて、プリンが崩れてしまった！§r");
+        } else {
+          p.sendMessage(`§e🍮 ポヨン！ (耐久度: ${5 - count}/5)§r`);
+        }
+      }
+    } catch (e) { }
   }
 
   // D. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick

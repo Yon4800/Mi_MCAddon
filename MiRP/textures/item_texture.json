@@ -97,6 +97,15 @@
     },
     "yahata_blueprint": {
       "textures": "textures/items/yahata_blueprint"
+    },
+    "pudding": {
+      "textures": "textures/items/pudding"
+    },
+    "nekomimi_pudding": {
+      "textures": "textures/items/nekomimi_pudding"
+    },
+    "nekomimi_ears": {
+      "textures": "textures/items/nekomimi_ears"
     }
   }
 }

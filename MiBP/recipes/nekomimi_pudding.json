@@ -1,0 +1,23 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mi:nekomimi_pudding_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "ingredients": [
+      {
+        "item": "mi:pudding"
+      },
+      {
+        "item": "mi:silenthill"
+      }
+    ],
+    "result": {
+      "item": "mi:nekomimi_pudding",
+      "count": 1
+    }
+  }
+}

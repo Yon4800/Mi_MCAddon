@@ -64,3 +64,7 @@ tile.mi:note_board.name=Misskey Note Board
 item.mi:reaction_wand.name=Reaction Wand
 
 item.mi:yahata_blueprint.name=Yahata Steelworks Blueprint
+
+tile.mi:pudding.name=Pudding
+tile.mi:nekomimi_pudding.name=Nekomimi Pudding
+item.mi:nekomimi_ears.name=Cat Ears

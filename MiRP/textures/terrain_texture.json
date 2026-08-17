@@ -25,6 +25,12 @@
     },
     "note_board": {
       "textures": "textures/blocks/note_board"
+    },
+    "pudding": {
+      "textures": "textures/blocks/pudding"
+    },
+    "nekomimi_pudding": {
+      "textures": "textures/blocks/nekomimi_pudding"
     }
   }
 }

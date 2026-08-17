@@ -14,5 +14,13 @@
   "mi:note_board": {
     "sound": "wood",
     "textures": "note_board"
+  },
+  "mi:pudding": {
+    "sound": "slime",
+    "textures": "pudding"
+  },
+  "mi:nekomimi_pudding": {
+    "sound": "slime",
+    "textures": "nekomimi_pudding"
   }
 }

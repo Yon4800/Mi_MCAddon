@@ -67,3 +67,7 @@ tile.mi:note_board.name=Misskey ノート掲示板
 item.mi:reaction_wand.name=リアクションワンド
 
 item.mi:yahata_blueprint.name=八幡製鉄所の設計図
+
+tile.mi:pudding.name=プリン
+tile.mi:nekomimi_pudding.name=猫耳プリン
+item.mi:nekomimi_ears.name=猫耳
