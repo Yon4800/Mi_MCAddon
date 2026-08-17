@@ -8,6 +8,13 @@
       }
     },
     "components": {
+      "minecraft:geometry": "geometry.pudding",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "pudding",
+          "render_method": "alpha_test"
+        }
+      },
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.2
       },
@@ -17,26 +24,26 @@
       "minecraft:map_color": "#FFDF5F",
       "minecraft:collision_box": {
         "origin": [
-          -6,
+          -8,
           0,
-          -6
+          -8
         ],
         "size": [
-          12,
-          8,
-          12
+          16,
+          10,
+          16
         ]
       },
       "minecraft:selection_box": {
         "origin": [
-          -6,
+          -8,
           0,
-          -6
+          -8
         ],
         "size": [
-          12,
-          8,
-          12
+          16,
+          10,
+          16
         ]
       }
     }

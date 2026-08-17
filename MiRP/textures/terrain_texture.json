@@ -30,7 +30,7 @@
       "textures": "textures/blocks/pudding"
     },
     "nekomimi_pudding": {
-      "textures": "textures/blocks/nekomimi_pudding"
+      "textures": "textures/blocks/pudding"
     }
   }
 }
