@@ -782,7 +782,7 @@ function generateYahataSteelworks(dimension, origin) {
             if (isWindow) {
               b.setType("minecraft:iron_bars");
             } else if (!isDecayed) {
-              b.setType((dx + dy) % 2 === 0 ? "minecraft:bricks" : "minecraft:mud_bricks");
+              b.setType((dx + dy) % 2 === 0 ? "minecraft:brick_block" : "minecraft:mud_bricks");
             } else {
               b.setType("minecraft:air");
             }
@@ -804,7 +804,7 @@ function generateYahataSteelworks(dimension, origin) {
           } else if (dy === 16 && cdx === 0 && cdz === 0) {
             b.setType("minecraft:campfire");
           } else {
-            b.setType("minecraft:bricks");
+            b.setType("minecraft:brick_block");
           }
         }
       }
