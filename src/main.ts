@@ -1537,47 +1537,6 @@ system.runInterval(() => {
   }
 
 
-  // E. Pudding Poyon-Poyon Bounce & Break Gimmick
-  for (const p of players) {
-    const pLoc = p.location;
-    const pId = p.id;
-    const now = Date.now();
-    const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
-    if (now - lastBounce < 350) continue; // Bounce cooldown 0.35s
-
-    // Check block under feet
-    const bx = Math.floor(pLoc.x);
-    const by = Math.floor(pLoc.y - 0.2);
-    const bz = Math.floor(pLoc.z);
-
-    try {
-      const b = overworld.getBlock({ x: bx, y: by, z: bz });
-      if (b && (b.typeId === "mi:pudding" || b.typeId === "mi:nekomimi_pudding")) {
-        playerLastBounceTimeMap.set(pId, now);
-
-        const posKey = `${bx},${by},${bz}`;
-        const count = (puddingBounceMap.get(posKey) || 0) + 1;
-        puddingBounceMap.set(posKey, count);
-
-        // Apply Poyon-Poyon Bounce upward
-        p.applyKnockback(0, 0, 0, 0.75);
-        overworld.spawnParticle("minecraft:slime_particle", { x: bx + 0.5, y: by + 0.7, z: bz + 0.5 });
-
-        if (count >= 5) {
-          // Collapse / break pudding!
-          puddingBounceMap.delete(posKey);
-          b.setType("minecraft:air");
-          overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
-          overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
-          p.sendMessage("§c🍮💥 [Mi_Addon] プリンの上でポヨンポヨン跳ねすぎて、プリンが崩れてしまった！§r");
-        } else {
-          p.sendMessage(`§e🍮 ポヨン！ (耐久度: ${5 - count}/5)§r`);
-        }
-      }
-    } catch (e) { }
-  }
-
-
   // E. Pudding Poyon-Poyon Bounce & Break Gimmick (Silent)
   for (const p of players) {
     const pLoc = p.location;

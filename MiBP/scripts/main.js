@@ -1255,38 +1255,6 @@ system.runInterval(() => {
           b.setType("minecraft:air");
           overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
           overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
-          p.sendMessage("\xA7c\u{1F36E}\u{1F4A5} [Mi_Addon] \u30D7\u30EA\u30F3\u306E\u4E0A\u3067\u30DD\u30E8\u30F3\u30DD\u30E8\u30F3\u8DF3\u306D\u3059\u304E\u3066\u3001\u30D7\u30EA\u30F3\u304C\u5D29\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
-        } else {
-          p.sendMessage(`\xA7e\u{1F36E} \u30DD\u30E8\u30F3\uFF01 (\u8010\u4E45\u5EA6: ${5 - count}/5)\xA7r`);
-        }
-      }
-    } catch (e) {
-    }
-  }
-  for (const p of players) {
-    const pLoc = p.location;
-    const pId = p.id;
-    const now2 = Date.now();
-    const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
-    if (now2 - lastBounce < 350)
-      continue;
-    const bx = Math.floor(pLoc.x);
-    const by = Math.floor(pLoc.y - 0.2);
-    const bz = Math.floor(pLoc.z);
-    try {
-      const b = overworld.getBlock({ x: bx, y: by, z: bz });
-      if (b && (b.typeId === "mi:pudding" || b.typeId === "mi:nekomimi_pudding")) {
-        playerLastBounceTimeMap.set(pId, now2);
-        const posKey = `${bx},${by},${bz}`;
-        const count = (puddingBounceMap.get(posKey) || 0) + 1;
-        puddingBounceMap.set(posKey, count);
-        p.applyKnockback(0, 0, 0, 0.75);
-        overworld.spawnParticle("minecraft:slime_particle", { x: bx + 0.5, y: by + 0.7, z: bz + 0.5 });
-        if (count >= 5) {
-          puddingBounceMap.delete(posKey);
-          b.setType("minecraft:air");
-          overworld.spawnParticle("minecraft:smoke_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
-          overworld.spawnParticle("minecraft:lava_particle", { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 });
         }
       }
     } catch (e) {
