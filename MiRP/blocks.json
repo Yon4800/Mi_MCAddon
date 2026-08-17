@@ -16,11 +16,9 @@
     "textures": "note_board"
   },
   "mi:pudding": {
-    "sound": "slime",
-    "textures": "pudding"
+    "sound": "slime"
   },
   "mi:nekomimi_pudding": {
-    "sound": "slime",
-    "textures": "pudding"
+    "sound": "slime"
   }
 }
