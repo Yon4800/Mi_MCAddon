@@ -1841,6 +1841,7 @@ system.runInterval(() => {
   }
 }, 20);
 var murakamiLastSkillTimeMap = /* @__PURE__ */ new Map();
+var murakamiPhase2AnnouncedSet = /* @__PURE__ */ new Set();
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
   let murakamiBosses = [];
@@ -1852,6 +1853,14 @@ system.runInterval(() => {
   for (const boss of murakamiBosses) {
     if (!boss.isValid())
       continue;
+    const healthComp = boss.getComponent(EntityComponentTypes.Health);
+    if (!healthComp)
+      continue;
+    const currentHp = healthComp.currentValue;
+    const maxHp = healthComp.effectiveMax;
+    const isEnraged = currentHp <= maxHp * 0.5;
+    if (!isEnraged)
+      continue;
     const bLoc = boss.location;
     const nearbyPlayers = overworld.getPlayers().filter((p) => {
       const pLoc = p.location;
@@ -1860,28 +1869,43 @@ system.runInterval(() => {
     });
     if (nearbyPlayers.length === 0)
       continue;
+    if (!murakamiPhase2AnnouncedSet.has(boss.id)) {
+      murakamiPhase2AnnouncedSet.add(boss.id);
+      for (const p of nearbyPlayers) {
+        p.sendMessage("\xA7c\u{1F525} [\u6751\u4E0A\u3055\u3093] \u300C\u3050\u306C\u306C\u2026\u3084\u308B\u306A\u2026\uFF01 \u3060\u304C\u3053\u3053\u304B\u3089\u304C\u672C\u756A\u3060\uFF01\uFF01\u300D\xA7r");
+      }
+    }
     const lastSkill = murakamiLastSkillTimeMap.get(boss.id) || 0;
-    if (now - lastSkill >= 18e3) {
+    if (now - lastSkill >= 2e4) {
       murakamiLastSkillTimeMap.set(boss.id, now);
       for (const p of nearbyPlayers) {
         p.sendMessage("\xA7c\u26A1 [\u6751\u4E0A\u3055\u3093] \u300C\u767D\u9B3C\u591C\u884C\uFF08\u306F\u3063\u304D\u3084\u3053\u3046\uFF09\u306E\u59CB\u307E\u308A\u3060\u2026\uFF01 \u6211\u304C\u8907\u88FD\u4F53\u3069\u3082\u3088\u3001\u4FB5\u5165\u8005\u3092\u55B0\u3089\u3044\u5C3D\u304F\u305B\uFF01\uFF01\u300D\xA7r");
       }
-      overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
-      overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
-      overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+      try {
+        overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
+        overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
+        overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+      } catch (e) {
+      }
       for (const p of nearbyPlayers) {
         const pLoc = p.location;
         const dist = Math.sqrt(Math.pow(pLoc.x - bLoc.x, 2) + Math.pow(pLoc.z - bLoc.z, 2));
         if (dist <= 10) {
           const kx = (pLoc.x - bLoc.x) / (dist || 1);
           const kz = (pLoc.z - bLoc.z) / (dist || 1);
-          p.applyKnockback(kx, kz, 1.6, 0.6);
-          p.applyDamage(3);
+          try {
+            p.applyKnockback(kx, kz, 1.6, 0.6);
+            p.applyDamage(3);
+          } catch (e) {
+          }
         }
       }
-      boss.addEffect("strength", 200, { amplifier: 0 });
-      boss.addEffect("resistance", 160, { amplifier: 1 });
-      boss.addEffect("speed", 300, { amplifier: 1 });
+      try {
+        boss.addEffect("strength", 200, { amplifier: 0 });
+        boss.addEffect("resistance", 160, { amplifier: 1 });
+        boss.addEffect("speed", 300, { amplifier: 1 });
+      } catch (e) {
+      }
       const summonCount = 6 + nearbyPlayers.length * 3;
       for (let i = 0; i < summonCount; i++) {
         const sx = bLoc.x + (Math.random() * 8 - 4);

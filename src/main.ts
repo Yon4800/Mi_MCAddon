@@ -2273,9 +2273,10 @@ system.runInterval(() => {
 
 
 // ----------------------------------------------------
-// 0.86. Boss: Murakami-san Special Skill "白鬼夜行 (Night of the White Phantoms)"
+// 0.86. Boss: Murakami-san Phase 2 "白鬼夜行 (Night of the White Phantoms)" (Triggers when HP <= 50%)
 // ----------------------------------------------------
 const murakamiLastSkillTimeMap = new Map<string, number>(); // entityId -> timestamp
+const murakamiPhase2AnnouncedSet = new Set<string>(); // entityId -> boolean
 
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");
@@ -2288,6 +2289,17 @@ system.runInterval(() => {
 
   for (const boss of murakamiBosses) {
     if (!boss.isValid()) continue;
+
+    // Check Boss Health: Only trigger 白鬼夜行 when HP <= 50% (<= 175 HP)
+    const healthComp = boss.getComponent(EntityComponentTypes.Health) as EntityHealthComponent;
+    if (!healthComp) continue;
+
+    const currentHp = healthComp.currentValue;
+    const maxHp = healthComp.effectiveMax;
+    const isEnraged = currentHp <= (maxHp * 0.5); // 50% HP or lower
+
+    if (!isEnraged) continue; // Do not use 白鬼夜行 at full health!
+
     const bLoc = boss.location;
 
     // Find nearby players within 24 blocks
@@ -2299,8 +2311,16 @@ system.runInterval(() => {
 
     if (nearbyPlayers.length === 0) continue;
 
+    // First time entering Phase 2 Announcement
+    if (!murakamiPhase2AnnouncedSet.has(boss.id)) {
+      murakamiPhase2AnnouncedSet.add(boss.id);
+      for (const p of nearbyPlayers) {
+        p.sendMessage("§c🔥 [村上さん] 「ぐぬぬ…やるな…！ だがここからが本番だ！！」§r");
+      }
+    }
+
     const lastSkill = murakamiLastSkillTimeMap.get(boss.id) || 0;
-    if (now - lastSkill >= 18000) { // Every 18 seconds
+    if (now - lastSkill >= 20000) { // Every 20 seconds during Phase 2
       murakamiLastSkillTimeMap.set(boss.id, now);
 
       // ⚡ Announce "白鬼夜行"
@@ -2309,9 +2329,11 @@ system.runInterval(() => {
       }
 
       // Visual & Sound Effects
-      overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
-      overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
-      overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+      try {
+        overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
+        overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
+        overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+      } catch (e) { }
 
       // 1. Shockwave Attack: Knockback all nearby players
       for (const p of nearbyPlayers) {
@@ -2320,15 +2342,19 @@ system.runInterval(() => {
         if (dist <= 10) {
           const kx = (pLoc.x - bLoc.x) / (dist || 1);
           const kz = (pLoc.z - bLoc.z) / (dist || 1);
-          p.applyKnockback(kx, kz, 1.6, 0.6);
-          p.applyDamage(3);
+          try {
+            p.applyKnockback(kx, kz, 1.6, 0.6);
+            p.applyDamage(3);
+          } catch (e) { }
         }
       }
 
-      // 2. Buff Murakami-san
-      boss.addEffect("strength", 200, { amplifier: 0 }); // Strength I (10s)
-      boss.addEffect("resistance", 160, { amplifier: 1 }); // Resistance II (8s)
-      boss.addEffect("speed", 300, { amplifier: 1 }); // Speed II
+      // 2. Buff Murakami-san in Enraged State
+      try {
+        boss.addEffect("strength", 200, { amplifier: 0 }); // Strength I (10s)
+        boss.addEffect("resistance", 160, { amplifier: 1 }); // Resistance II (8s)
+        boss.addEffect("speed", 300, { amplifier: 1 }); // Speed II
+      } catch (e) { }
 
       // 3. Summon White Phantoms (村上ツチノコ複製体 + 暴走研究者 + blebcat)
       const summonCount = 6 + (nearbyPlayers.length * 3);
@@ -2353,7 +2379,6 @@ system.runInterval(() => {
     }
   }
 }, 20);
-
 
 // ----------------------------------------------------
 // 0.85. Blueprint Item Handlers (Misskey HQ & Yahata Steelworks)
