@@ -977,22 +977,6 @@ function generateMisskeyHQ(dimension, origin) {
   setB(-7, 2, 1, "mi:instance_server");
   setB(-7, 1, 0, "minecraft:bookshelf");
   setB(-7, 1, 1, "minecraft:bookshelf");
-  const lobbyChest = dimension.getBlock({ x: ox - 6, y: oy + 1, z: oz - 5 });
-  if (lobbyChest) {
-    lobbyChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = lobbyChest.getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("minecraft:bread", 16));
-          inv.addItem(new ItemStack("minecraft:cookie", 8));
-          inv.addItem(new ItemStack("mi:pudding", 4));
-          inv.addItem(new ItemStack("mi:reaction_wand", 1));
-        }
-      } catch (e) {
-      }
-    }, 2);
-  }
   for (let dx = -5; dx <= -2; dx++) {
     setB(dx, 6, -3, "minecraft:birch_planks");
     setB(dx, 6, -2, "minecraft:birch_planks");

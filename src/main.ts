@@ -1243,23 +1243,6 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(-7, 1, 0, "minecraft:bookshelf");
   setB(-7, 1, 1, "minecraft:bookshelf");
 
-  // Lobby Welcome Chest
-  const lobbyChest = dimension.getBlock({ x: ox - 6, y: oy + 1, z: oz - 5 });
-  if (lobbyChest) {
-    lobbyChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = (lobbyChest as any).getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("minecraft:bread", 16));
-          inv.addItem(new ItemStack("minecraft:cookie", 8));
-          inv.addItem(new ItemStack("mi:pudding", 4));
-          inv.addItem(new ItemStack("mi:reaction_wand", 1));
-        }
-      } catch (e) { }
-    }, 2);
-  }
-
   // === 2F: Developer Room (Solid Planks Desks, PCs, Monitors, Bio Server Prototype, Whiteboard) ===
   // Desk Island 1 (Solid flat table)
   for (let dx = -5; dx <= -2; dx++) {
