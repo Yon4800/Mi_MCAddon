@@ -1302,24 +1302,6 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(-7, 6, 2, "minecraft:bookshelf");
   setB(-7, 7, 2, "minecraft:bookshelf");
 
-  // Developer Supplies Chest
-  const devChest = dimension.getBlock({ x: ox + 1, y: oy + 6, z: oz - 2 });
-  if (devChest) {
-    devChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = (devChest as any).getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("mi:ota", 1));
-          inv.addItem(new ItemStack("mi:otaku_cry", 1));
-          inv.addItem(new ItemStack("mi:baked_mochocho", 8));
-          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
-          inv.addItem(new ItemStack("minecraft:iron_ingot", 12));
-        }
-      } catch (e) { }
-    }, 2);
-  }
-
   // === 3F: Server Room & Meeting Room (Bio Server Rows & Solid Conference Table) ===
   for (let pz = -6; pz <= 3; pz++) {
     for (let py = 11; py <= 14; py++) {
