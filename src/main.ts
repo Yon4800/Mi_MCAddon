@@ -2356,13 +2356,13 @@ system.runInterval(() => {
           const kx = (pLoc.x - bLoc.x) / (dist || 1);
           const kz = (pLoc.z - bLoc.z) / (dist || 1);
           p.applyKnockback(kx, kz, 1.6, 0.6);
-          p.applyDamage(6);
+          p.applyDamage(3);
         }
       }
 
       // 2. Buff Murakami-san
-      boss.addEffect("strength", 300, { amplifier: 1 }); // Strength II (15s)
-      boss.addEffect("resistance", 200, { amplifier: 2 }); // Resistance III (10s)
+      boss.addEffect("strength", 200, { amplifier: 0 }); // Strength I (10s)
+      boss.addEffect("resistance", 160, { amplifier: 1 }); // Resistance II (8s)
       boss.addEffect("speed", 300, { amplifier: 1 }); // Speed II
 
       // 3. Summon White Phantoms (村上ツチノコ複製体 + 暴走研究者 + blebcat)

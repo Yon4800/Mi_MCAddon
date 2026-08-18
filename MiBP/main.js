@@ -1887,11 +1887,11 @@ system.runInterval(() => {
           const kx = (pLoc.x - bLoc.x) / (dist || 1);
           const kz = (pLoc.z - bLoc.z) / (dist || 1);
           p.applyKnockback(kx, kz, 1.6, 0.6);
-          p.applyDamage(6);
+          p.applyDamage(3);
         }
       }
-      boss.addEffect("strength", 300, { amplifier: 1 });
-      boss.addEffect("resistance", 200, { amplifier: 2 });
+      boss.addEffect("strength", 200, { amplifier: 0 });
+      boss.addEffect("resistance", 160, { amplifier: 1 });
       boss.addEffect("speed", 300, { amplifier: 1 });
       const summonCount = 6 + nearbyPlayers.length * 3;
       for (let i = 0; i < summonCount; i++) {
