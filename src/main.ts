@@ -2641,7 +2641,7 @@ system.runInterval(() => {
       } catch (e) { }
 
       // 3. Summon White Phantoms (村上ツチノコ複製体 + 暴走研究者 + blebcat)
-      const summonCount = 3 + nearbyPlayers.length;
+      const summonCount = 7 + (nearbyPlayers.length * 2);
       for (let i = 0; i < summonCount; i++) {
         const sx = bLoc.x + (Math.random() * 8 - 4);
         const sz = bLoc.z + (Math.random() * 8 - 4);

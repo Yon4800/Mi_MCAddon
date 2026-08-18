@@ -2056,7 +2056,7 @@ system.runInterval(() => {
         boss.addEffect("speed", 300, { amplifier: 1 });
       } catch (e) {
       }
-      const summonCount = 3 + nearbyPlayers.length;
+      const summonCount = 7 + nearbyPlayers.length * 2;
       for (let i = 0; i < summonCount; i++) {
         const sx = bLoc.x + (Math.random() * 8 - 4);
         const sz = bLoc.z + (Math.random() * 8 - 4);

@@ -10,7 +10,7 @@
         "default": "textures/entities/murakami3"
       },
       "geometry": {
-        "default": "geometry.humanoid"
+        "default": "geometry.humanoid.player64"
       },
       "scripts": {
         "pre_animation": [
