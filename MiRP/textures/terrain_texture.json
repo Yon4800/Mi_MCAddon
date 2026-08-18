@@ -31,6 +31,18 @@
     },
     "nekomimi_pudding": {
       "textures": "textures/blocks/pudding"
+    },
+    "ecology_server": {
+      "textures": "textures/blocks/ecology_server"
+    },
+    "desktop_pc": {
+      "textures": "textures/blocks/desktop_pc"
+    },
+    "laptop_pc": {
+      "textures": "textures/blocks/laptop_pc"
+    },
+    "display_monitor": {
+      "textures": "textures/blocks/display_monitor"
     }
   }
 }

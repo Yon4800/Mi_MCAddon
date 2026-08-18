@@ -106,6 +106,9 @@
     },
     "nekomimi_ears": {
       "textures": "textures/items/nekomimi_ears"
+    },
+    "hq_blueprint": {
+      "textures": "textures/items/hq_blueprint"
     }
   }
 }

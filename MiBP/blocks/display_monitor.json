@@ -1,0 +1,52 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mi:display_monitor",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:geometry": "geometry.display_monitor",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "display_monitor",
+          "render_method": "alpha_test"
+        }
+      },
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 0.5
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 2
+      },
+      "minecraft:map_color": "#1E2430",
+      "minecraft:light_emission": 3,
+      "minecraft:collision_box": {
+        "origin": [
+          -8,
+          0,
+          -4
+        ],
+        "size": [
+          16,
+          14,
+          8
+        ]
+      },
+      "minecraft:selection_box": {
+        "origin": [
+          -8,
+          0,
+          -4
+        ],
+        "size": [
+          16,
+          14,
+          8
+        ]
+      }
+    }
+  }
+}

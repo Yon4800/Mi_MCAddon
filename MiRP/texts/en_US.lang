@@ -68,3 +68,10 @@ item.mi:yahata_blueprint.name=Yahata Steelworks Blueprint
 tile.mi:pudding.name=Pudding
 tile.mi:nekomimi_pudding.name=Nekomimi Pudding
 item.mi:nekomimi_ears.name=Cat Ears
+
+tile.mi:ecology_server_block.name=Ecology Server
+tile.mi:desktop_pc.name=Desktop PC
+tile.mi:laptop_pc.name=Laptop PC
+tile.mi:display_monitor.name=Display Monitor
+item.mi:hq_blueprint.name=Misskey HQ Blueprint
+

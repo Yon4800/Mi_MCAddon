@@ -20,5 +20,17 @@
   },
   "mi:nekomimi_pudding": {
     "sound": "slime"
+  },
+  "mi:ecology_server_block": {
+    "sound": "metal"
+  },
+  "mi:desktop_pc": {
+    "sound": "stone"
+  },
+  "mi:laptop_pc": {
+    "sound": "metal"
+  },
+  "mi:display_monitor": {
+    "sound": "stone"
   }
 }

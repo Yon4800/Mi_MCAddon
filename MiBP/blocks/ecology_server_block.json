@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mi:ecology_server_block",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:geometry": "geometry.ecology_server",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "ecology_server",
+          "render_method": "alpha_test"
+        }
+      },
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 1.5
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "minecraft:map_color": "#20C880",
+      "minecraft:light_emission": 4
+    }
+  }
+}

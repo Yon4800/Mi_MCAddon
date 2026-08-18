@@ -1,0 +1,52 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mi:laptop_pc",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:geometry": "geometry.laptop_pc",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "laptop_pc",
+          "render_method": "alpha_test"
+        }
+      },
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 0.5
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 2
+      },
+      "minecraft:map_color": "#C0C8D0",
+      "minecraft:light_emission": 2,
+      "minecraft:collision_box": {
+        "origin": [
+          -5,
+          0,
+          -4
+        ],
+        "size": [
+          10,
+          8,
+          8
+        ]
+      },
+      "minecraft:selection_box": {
+        "origin": [
+          -5,
+          0,
+          -4
+        ],
+        "size": [
+          10,
+          8,
+          8
+        ]
+      }
+    }
+  }
+}

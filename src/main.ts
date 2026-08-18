@@ -148,29 +148,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 
   if (target.typeId === "mi:syuilo") {
     event.cancel = true;
-    const now = Date.now();
-    const lastTime = syuiloLastTalkTimeMap.get(player.id) || 0;
-    if (now - lastTime < 500) return;
-    syuiloLastTalkTimeMap.set(player.id, now);
-
-    const syuiloQuotes = [
-      "§bしゅいろ: 「あ、どうも。Misskeyの開発、今日も元気にやってますよ。」§r",
-      "§bしゅいろ: 「新機能のアイデア、思いついたらすぐ実装しちゃうタイプなんですよね。」§r",
-      "§bしゅいろ: 「サーバーが落ちてないか、いつも心のどこかで気にしてます。」§r",
-      "§bしゅいろ: 「絵文字リアクション、いっぱい増えてうれしいなあ。」§r",
-      "§bしゅいろ: 「バグ報告はいつでも歓迎です。直せるかは別として。」§r",
-      "§bしゅいろ: 「たまにはMinecraftで息抜きするのもいいものですね。」§r"
-    ];
-
-    const nextIndex = syuiloQuoteIndexMap.get(player.id) || 0;
-    const quote = syuiloQuotes[nextIndex];
-    syuiloQuoteIndexMap.set(player.id, (nextIndex + 1) % syuiloQuotes.length);
-
+    if (!canOpenUI(player)) return;
     system.run(() => {
-      player.sendMessage(quote);
-      const loc = target.location;
-      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
-      player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
+      openSyuiloDialogUI(player, target);
     });
     return;
   }
@@ -1116,6 +1096,416 @@ function generateYahataSteelworks(dimension: any, origin: { x: number, y: number
 }
 
 // ----------------------------------------------------
+// 0.85. Misskey 開発所 (Misskey HQ Skyscraper) Generator
+// ----------------------------------------------------
+let lastMisskeyHQLocation: { x: number, y: number, z: number, dimensionId: string } | null = null;
+
+function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: number }): boolean {
+  const ox = Math.floor(origin.x);
+  const oy = Math.floor(origin.y);
+  const oz = Math.floor(origin.z);
+
+  // Helper safe block placer
+  const setB = (dx: number, dy: number, dz: number, type: string) => {
+    try {
+      const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
+      if (b) b.setType(type);
+    } catch (e) { }
+  };
+
+  // 1. Foundation & Interior Air Clear (17x17 footprint, height 28)
+  for (let dx = -8; dx <= 8; dx++) {
+    for (let dz = -8; dz <= 8; dz++) {
+      setB(dx, -1, dz, "minecraft:deepslate_bricks");
+      setB(dx, 0, dz, (dx + dz) % 2 === 0 ? "minecraft:quartz_block" : "minecraft:deepslate_tiles");
+
+      for (let dy = 1; dy <= 22; dy++) {
+        setB(dx, dy, dz, "minecraft:air");
+      }
+    }
+  }
+
+  // 2. Pillars, Walls & Modern Glass Curtain
+  for (let dy = 1; dy <= 21; dy++) {
+    for (let dx = -8; dx <= 8; dx++) {
+      for (let dz = -8; dz <= 8; dz++) {
+        const isCorner = (dx === -8 || dx === 8) && (dz === -8 || dz === 8);
+        const isPillar = isCorner || ((dx === 0 || dz === 0) && (dx === -8 || dx === 8 || dz === -8 || dz === 8));
+        const isOuterWall = (dx === -8 || dx === 8 || dz === -8 || dz === 8);
+
+        if (isPillar) {
+          setB(dx, dy, dz, "minecraft:quartz_pillar");
+        } else if (isOuterWall) {
+          // Entrance Door on South (z = -8, x = -1..1, y = 1..3)
+          if (dz === -8 && Math.abs(dx) <= 1 && dy <= 3) {
+            setB(dx, dy, dz, "minecraft:air");
+          } else {
+            // Modern glass curtain wall
+            const isWindowFloor = (dy >= 2 && dy <= 4) || (dy >= 7 && dy <= 9) || (dy >= 12 && dy <= 14) || (dy >= 17 && dy <= 19);
+            if (isWindowFloor && Math.abs(dx) !== 8 && Math.abs(dz) !== 8) {
+              setB(dx, dy, dz, "minecraft:light_blue_stained_glass");
+            } else {
+              setB(dx, dy, dz, "minecraft:white_concrete");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Floors & Ceilings
+  const floorLevels = [
+    { y: 5, type: "minecraft:light_gray_concrete" }, // 2F Dev Office Floor
+    { y: 10, type: "minecraft:smooth_stone" },       // 3F Server Room Floor
+    { y: 15, type: "minecraft:red_wool" },          // 4F President Room Floor
+    { y: 21, type: "minecraft:quartz_block" }       // Rooftop Floor
+  ];
+
+  for (const fl of floorLevels) {
+    for (let dx = -7; dx <= 7; dx++) {
+      for (let dz = -7; dz <= 7; dz++) {
+        const isStairHole = (dx >= 4 && dx <= 6 && dz >= 4 && dz <= 6);
+        if (!isStairHole) {
+          setB(dx, fl.y, dz, fl.type);
+        }
+      }
+    }
+  }
+
+  // Ceiling Lights (Sea Lanterns)
+  for (const ly of [5, 10, 15]) {
+    setB(-4, ly, -4, "minecraft:sea_lantern");
+    setB(-4, ly, 4, "minecraft:sea_lantern");
+    setB(4, ly, -4, "minecraft:sea_lantern");
+    setB(0, ly, 0, "minecraft:sea_lantern");
+  }
+
+  // 4. Central Inter-Floor Staircase (dx: 4..6, dz: 4..6)
+  for (let dy = 1; dy <= 21; dy++) {
+    const stairStep = (dy - 1) % 5;
+    const currentZ = 4 + (stairStep % 3);
+    const currentX = 5;
+    setB(currentX, dy, currentZ, "minecraft:quartz_stairs");
+    setB(currentX - 1, dy, currentZ, "minecraft:quartz_block");
+  }
+
+  // ----------------------------------------------------
+  // 5. Floor Furnishing & Gimmicks
+  // ----------------------------------------------------
+
+  // === 1F: Entrance Lobby (Reception, Lounge, Note Board, Instance Server) ===
+  for (let rx = -4; rx <= -1; rx++) {
+    setB(rx, 1, -4, "minecraft:smooth_quartz_stairs");
+  }
+  setB(-3, 2, -4, "mi:desktop_pc"); // Reception Desktop PC
+  setB(-2, 1, -5, "minecraft:birch_stairs"); // Receptionist Chair
+
+  // Waiting Lounge (Sofas & Zabutons)
+  for (let lz = -4; lz <= -1; lz++) {
+    setB(3, 1, lz, "minecraft:oak_stairs");
+  }
+  setB(4, 1, -3, "mi:zabuton_blue");
+  setB(4, 1, -2, "mi:zabuton_red");
+  setB(2, 1, -3, "minecraft:flower_pot");
+
+  // Lobby Fediverse Wall
+  setB(-7, 2, 0, "mi:note_board");
+  setB(-7, 2, 1, "mi:instance_server");
+  setB(-7, 1, 0, "minecraft:bookshelf");
+  setB(-7, 1, 1, "minecraft:bookshelf");
+
+  // Lobby Welcome Chest
+  const lobbyChest = dimension.getBlock({ x: ox - 6, y: oy + 1, z: oz - 5 });
+  if (lobbyChest) {
+    lobbyChest.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (lobbyChest as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:bread", 16));
+          inv.addItem(new ItemStack("minecraft:cookie", 8));
+          inv.addItem(new ItemStack("mi:pudding", 4));
+          inv.addItem(new ItemStack("mi:reaction_wand", 1));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  // === 2F: Developer Room (Desks, Desktop/Laptop PCs, Display Monitors, Bio Server Prototype, Whiteboard) ===
+  for (let dx = -5; dx <= -2; dx++) {
+    setB(dx, 6, -3, "minecraft:birch_slab");
+    setB(dx, 6, -1, "minecraft:birch_slab");
+  }
+  setB(-5, 7, -3, "mi:display_monitor"); // Dual monitor setup
+  setB(-4, 7, -3, "mi:desktop_pc");
+  setB(-3, 7, -3, "mi:laptop_pc");
+  setB(-2, 7, -3, "mi:display_monitor");
+  setB(-4, 7, -1, "mi:laptop_pc");
+  setB(-3, 7, -1, "mi:desktop_pc");
+  setB(-2, 7, -1, "mi:display_monitor");
+  setB(-4, 6, -4, "minecraft:dark_oak_stairs"); // Chairs
+  setB(-3, 6, -4, "minecraft:dark_oak_stairs");
+  setB(-4, 6, 0, "minecraft:dark_oak_stairs");
+  setB(-3, 6, 0, "minecraft:dark_oak_stairs");
+
+  // Desk Island 2
+  for (let dx = -5; dx <= -2; dx++) {
+    setB(dx, 6, 2, "minecraft:birch_slab");
+  }
+  setB(-5, 7, 2, "mi:display_monitor");
+  setB(-4, 7, 2, "mi:desktop_pc");
+  setB(-3, 7, 2, "mi:laptop_pc");
+  setB(-2, 7, 2, "mi:display_monitor");
+  setB(-4, 6, 1, "minecraft:dark_oak_stairs");
+  setB(-3, 6, 1, "minecraft:dark_oak_stairs");
+
+  // Ecology Server Prototype in Dev Room
+  setB(1, 6, -4, "mi:ecology_server_block");
+  setB(1, 7, -4, "mi:ecology_server_block");
+
+  // Whiteboard & Bookshelves
+  setB(-7, 7, -1, "minecraft:white_concrete");
+  setB(-7, 7, 0, "minecraft:white_concrete");
+  setB(-7, 7, 1, "minecraft:white_concrete");
+  setB(-7, 8, -1, "minecraft:white_concrete");
+  setB(-7, 8, 0, "minecraft:white_concrete");
+  setB(-7, 8, 1, "minecraft:white_concrete");
+  setB(-7, 6, -2, "minecraft:bookshelf");
+  setB(-7, 7, -2, "minecraft:bookshelf");
+  setB(-7, 6, 2, "minecraft:bookshelf");
+  setB(-7, 7, 2, "minecraft:bookshelf");
+
+  // Developer Supplies Chest
+  const devChest = dimension.getBlock({ x: ox + 1, y: oy + 6, z: oz - 2 });
+  if (devChest) {
+    devChest.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (devChest as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("mi:ota", 1));
+          inv.addItem(new ItemStack("mi:otaku_cry", 1));
+          inv.addItem(new ItemStack("mi:baked_mochocho", 8));
+          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 12));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  // === 3F: Server Room & Meeting Room (Bio Server Rows & Conference Table) ===
+  for (let pz = -6; pz <= 3; pz++) {
+    for (let py = 11; py <= 14; py++) {
+      setB(0, py, pz, "minecraft:glass_pane");
+    }
+  }
+
+  // Server Room (Two Rows of Ecology Servers & Instance Servers)
+  for (let sz = -5; sz <= 2; sz += 2) {
+    setB(-5, 11, sz, "mi:ecology_server_block");
+    setB(-5, 12, sz, "mi:ecology_server_block");
+    setB(-3, 11, sz, "mi:ecology_server_block");
+    setB(-3, 12, sz, "mi:ecology_server_block");
+    setB(-4, 13, sz, "minecraft:iron_bars");
+  }
+  setB(-6, 11, -3, "mi:instance_server");
+  setB(-6, 11, 0, "mi:instance_server");
+
+  // Meeting Room (Conference Table with Laptops)
+  for (let mz = -4; mz <= 1; mz++) {
+    setB(3, 11, mz, "minecraft:dark_oak_slab");
+    setB(4, 11, mz, "minecraft:dark_oak_slab");
+    if (mz % 2 === 0) {
+      setB(3, 12, mz, "mi:laptop_pc");
+      setB(4, 12, mz, "mi:laptop_pc");
+    }
+    setB(2, 11, mz, "minecraft:birch_stairs");
+    setB(5, 11, mz, "minecraft:birch_stairs");
+  }
+
+  // Presentation Screen
+  for (let sz = -3; sz <= 0; sz++) {
+    for (let sy = 12; sy <= 14; sy++) {
+      setB(7, sy, sz, "minecraft:black_concrete");
+    }
+  }
+
+  // Server Admin Chest
+  const serverChest = dimension.getBlock({ x: ox - 6, y: oy + 11, z: oz + 4 });
+  if (serverChest) {
+    serverChest.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (serverChest as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("mi:ecology_server", 2));
+          inv.addItem(new ItemStack("mi:machida", 4));
+          inv.addItem(new ItemStack("mi:blob_aichi", 3));
+          inv.addItem(new ItemStack("mi:sanjuu", 3));
+          inv.addItem(new ItemStack("mi:gif", 3));
+          inv.addItem(new ItemStack("mi:silenthill", 3));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  // === 4F: President / Boss Room (Spacious Luxury Boss Arena) ===
+  setB(0, 20, 0, "minecraft:sea_lantern");
+  setB(0, 19, 0, "minecraft:end_rod");
+  setB(-1, 19, 0, "minecraft:end_rod");
+  setB(1, 19, 0, "minecraft:end_rod");
+  setB(0, 19, -1, "minecraft:end_rod");
+  setB(0, 19, 1, "minecraft:end_rod");
+
+  // Executive President Desk
+  setB(-1, 16, 4, "minecraft:dark_oak_stairs");
+  setB(0, 16, 4, "minecraft:dark_oak_slab");
+  setB(1, 16, 4, "minecraft:dark_oak_stairs");
+  setB(-1, 17, 4, "mi:display_monitor"); // President Sub Monitor
+  setB(0, 17, 4, "mi:desktop_pc");       // President Desktop PC
+  setB(1, 17, 4, "mi:display_monitor");  // President Sub Monitor 2
+  setB(0, 16, 5, "minecraft:dark_oak_stairs"); // President Chair
+
+  // President's Custom Ecology Server Pillars
+  setB(-4, 16, 5, "mi:ecology_server_block");
+  setB(-4, 17, 5, "mi:ecology_server_block");
+  setB(-4, 18, 5, "mi:ecology_server_block");
+
+  // Executive Safe & Vault Treasure
+  setB(4, 16, 4, "minecraft:gold_block");
+  setB(4, 17, 4, "minecraft:iron_block");
+  setB(5, 16, 4, "minecraft:diamond_block");
+  setB(5, 17, 4, "minecraft:gold_block");
+
+  const safeChest = dimension.getBlock({ x: ox + 4, y: oy + 16, z: oz + 5 });
+  if (safeChest) {
+    safeChest.setType("minecraft:chest");
+    system.runTimeout(() => {
+      try {
+        const inv = (safeChest as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:netherite_ingot", 1));
+          inv.addItem(new ItemStack("minecraft:diamond", 8));
+          inv.addItem(new ItemStack("minecraft:golden_apple", 3));
+          inv.addItem(new ItemStack("mi:kanagawa", 1));
+          inv.addItem(new ItemStack("mi:bunchou", 2));
+          inv.addItem(new ItemStack("mi:nekomimi_pudding", 2));
+        }
+      } catch (e) { }
+    }, 2);
+  }
+
+  // === Rooftop Deck & Fediverse Antenna (y = 22..28) ===
+  for (let rx = -8; rx <= 8; rx++) {
+    for (let rz = -8; rz <= 8; rz++) {
+      const isEdge = (rx === -8 || rx === 8 || rz === -8 || rz === 8);
+      if (isEdge) {
+        setB(rx, 22, rz, "minecraft:iron_bars");
+      }
+    }
+  }
+
+  // Helipad "H" Marking
+  for (let hx = -3; hx <= 3; hx++) {
+    for (let hz = -3; hz <= 3; hz++) {
+      const isH = (Math.abs(hx) === 2 && Math.abs(hz) <= 2) || (hz === 0 && Math.abs(hx) <= 2);
+      setB(hx, 21, hz, isH ? "minecraft:yellow_concrete" : "minecraft:gray_concrete");
+    }
+  }
+
+  // Fediverse Broadcasting Antenna Tower
+  for (let ay = 22; ay <= 26; ay++) {
+    setB(0, ay, 0, "minecraft:iron_bars");
+  }
+  setB(0, 27, 0, "minecraft:sea_lantern");
+  setB(0, 28, 0, "minecraft:lightning_rod");
+
+  lastMisskeyHQLocation = { x: ox, y: oy, z: oz, dimensionId: dimension.id };
+  return true;
+}
+
+// ----------------------------------------------------
+// 0.86. Syuilo NPC Dialog & Misskey HQ Guide
+// ----------------------------------------------------
+function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
+  const form = new ActionFormData()
+    .title("🏢 しゅいろさん (Misskey)")
+    .body("「やあ！ Misskey MC Addonへようこそ！\n何かお手伝いできることはありますか？」")
+    .button("💬 世間話をする (開発トーク)")
+    .button("🏢 Misskey開発所（本社ビル）に行きたい！")
+    .button("📜 開発所の設計図をもらう")
+    .button("またね");
+
+  showFormSafe(player, form, (response) => {
+    if (response.canceled || response.selection === undefined) return;
+
+    if (response.selection === 0) {
+      // 💬 Casual dev talk
+      const syuiloQuotes = [
+        "§bしゅいろ: 「あ、どうも。Misskeyの開発、今日も元気にやってますよ。」§r",
+        "§bしゅいろ: 「新機能のアイデア、思いついたらすぐ実装しちゃうタイプなんですよね。」§r",
+        "§bしゅいろ: 「サーバーが落ちてないか、いつも心のどこかで気にしてます。」§r",
+        "§bしゅいろ: 「絵文字リアクション、いっぱい増えてうれしいなあ。」§r",
+        "§bしゅいろ: 「バグ報告はいつでも歓迎です。直せるかは別として。」§r",
+        "§bしゅいろ: 「たまにはMinecraftで息抜きするのもいいものですね。」§r"
+      ];
+      const nextIndex = syuiloQuoteIndexMap.get(player.id) || 0;
+      const quote = syuiloQuotes[nextIndex];
+      syuiloQuoteIndexMap.set(player.id, (nextIndex + 1) % syuiloQuotes.length);
+
+      player.sendMessage(quote);
+      const loc = syuiloEntity.location;
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+      player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
+    } else if (response.selection === 1) {
+      // 🏢 Visit Misskey HQ
+      const dim = player.dimension;
+      let hqLoc = lastMisskeyHQLocation;
+
+      if (!hqLoc || hqLoc.dimensionId !== dim.id) {
+        const pLoc = player.location;
+        const genLoc = {
+          x: Math.floor(pLoc.x + 24),
+          y: Math.floor(pLoc.y),
+          z: Math.floor(pLoc.z + 24)
+        };
+        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所ですね！ すぐ近くにオフィスを用意しましたよ。案内しますね！」§r");
+        dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+
+        generateMisskeyHQ(dim, genLoc);
+        hqLoc = lastMisskeyHQLocation!;
+      } else {
+        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所ですね！ エントランスへお連れします！」§r");
+      }
+
+      // Teleport player to HQ Entrance
+      system.runTimeout(() => {
+        try {
+          player.teleport({ x: hqLoc!.x + 0.5, y: hqLoc!.y + 1, z: hqLoc!.z - 6.5 }, {
+            dimension: dim
+          });
+          player.dimension.spawnParticle("minecraft:totem_particle", { x: hqLoc!.x, y: hqLoc!.y + 1.5, z: hqLoc!.z - 6 });
+          player.sendMessage("§a✨ [Misskey開発所] 本社ビル（1F エントランスロビー）に到着しました！§r");
+          player.sendMessage("§7💡 2F: 開発室 | 3F: サーバー室 & 会議室 | 4F: 社長室 (ボス部屋) | 屋上: アンテナ§r");
+        } catch (e) { }
+      }, 5);
+    } else if (response.selection === 2) {
+      // 📜 Give Blueprint
+      player.sendMessage("§b🏢 しゅいろ: 「いつでも好きな場所にMisskey開発所を建てられる設計図です！ どうぞ！」§r");
+      try {
+        const inv = (player as any).getComponent("minecraft:inventory")?.container;
+        if (inv) {
+          inv.addItem(new ItemStack("mi:hq_blueprint", 1));
+        } else {
+          player.dimension.spawnItem(new ItemStack("mi:hq_blueprint", 1), player.location);
+        }
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      } catch (e) { }
+    }
+  });
+}
+
+// ----------------------------------------------------
 // 1. Rare Mob Drops
 // ----------------------------------------------------
 world.afterEvents.entityDie.subscribe((event) => {
@@ -1726,6 +2116,28 @@ world.afterEvents.itemUse.subscribe((event) => {
       generateYahataSteelworks(dim, targetLoc);
       player.sendMessage("§a✨ 官営八幡製鉄所の遺構（廃墟ダンジョン）が目の前に現れました！§r");
       dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
+    }, 5);
+  }
+
+  if (itemStack.typeId === "mi:hq_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 12),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 12)
+    };
+
+    player.sendMessage("§b🏢 [Misskey開発所] 設計図を展開し、本社ビル（1F〜4F・屋上）を建築中...！§r");
+    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+
+    system.runTimeout(() => {
+      generateMisskeyHQ(dim, targetLoc);
+      player.sendMessage("§a✨ Misskey開発所（本社ビル）が堂々完成しました！§r");
+      player.sendMessage("§7💡 1F: ロビー | 2F: 開発室 | 3F: サーバールーム & 会議室 | 4F: 社長室 (ボス部屋) | 屋上: 連合アンテナ§r");
+      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 5, z: targetLoc.z });
     }, 5);
   }
 });

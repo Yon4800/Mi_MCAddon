@@ -71,3 +71,10 @@ item.mi:yahata_blueprint.name=八幡製鉄所の設計図
 tile.mi:pudding.name=プリン
 tile.mi:nekomimi_pudding.name=猫耳プリン
 item.mi:nekomimi_ears.name=猫耳
+
+tile.mi:ecology_server_block.name=生体サーバー
+tile.mi:desktop_pc.name=デスクトップPC
+tile.mi:laptop_pc.name=ノートPC
+tile.mi:display_monitor.name=ディスプレイ
+item.mi:hq_blueprint.name=Misskey開発所の設計図
+
