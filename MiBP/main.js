@@ -1832,20 +1832,30 @@ system.runInterval(() => {
       }
     }
     if (!alreadyExists && Math.random() < 0.15) {
-      const genX = chunkX + Math.floor(Math.random() * 32) + 16;
-      const genZ = chunkZ + Math.floor(Math.random() * 32) + 16;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 24 + Math.random() * 16;
+      const genX = Math.floor(pLoc.x + Math.cos(angle) * dist);
+      const genZ = Math.floor(pLoc.z + Math.sin(angle) * dist);
       try {
         let surfaceY = Math.floor(pLoc.y);
-        for (let y = 120; y >= 60; y--) {
-          const b = overworld.getBlock({ x: genX, y, z: genZ });
-          if (b && !b.isAir && !b.isLiquid) {
-            surfaceY = y + 1;
+        let foundGround = false;
+        for (let y = Math.min(120, Math.floor(pLoc.y) + 15); y >= Math.max(50, Math.floor(pLoc.y) - 15); y--) {
+          try {
+            const b = overworld.getBlock({ x: genX, y, z: genZ });
+            if (b && !b.isAir && !b.isLiquid) {
+              surfaceY = y + 1;
+              foundGround = true;
+              break;
+            }
+          } catch (e) {
             break;
           }
         }
-        generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
-        generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
-        console.warn(`[Mi_Addon] Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+        if (foundGround) {
+          generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
+          generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
+          console.warn(`[Mi_Addon] Safely Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+        }
       } catch (e) {
       }
     }
