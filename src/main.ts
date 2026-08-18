@@ -1898,13 +1898,19 @@ world.afterEvents.entityHurt.subscribe((event) => {
     } catch (e) { }
   }
 
-  // 2. Misskey Researcher Debuff Attack (mi:researcher)
+  // 2. Misskey Researcher Dangerous Chemical & Wave Debuff Attack (mi:researcher)
   if (attacker && attacker.typeId === "mi:researcher" && hurtEntity instanceof Player) {
     try {
-      hurtEntity.addEffect("slowness", 100, { amplifier: 0, showParticles: true }); // Slowness I (5s)
-      hurtEntity.addEffect("weakness", 100, { amplifier: 0, showParticles: true }); // Weakness I (5s)
+      hurtEntity.addEffect("slowness", 160, { amplifier: 1, showParticles: true }); // Slowness II (8s)
+      hurtEntity.addEffect("weakness", 160, { amplifier: 1, showParticles: true }); // Weakness II (8s)
+      hurtEntity.addEffect("nausea", 120, { amplifier: 0, showParticles: true });   // Nausea (6s)
+      hurtEntity.addEffect("darkness", 100, { amplifier: 0, showParticles: true }); // Darkness (5s)
+
       const pLoc = hurtEntity.location;
-      hurtEntity.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1.0, z: pLoc.z });
+      const dim = hurtEntity.dimension;
+      dim.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1.0, z: pLoc.z });
+      dim.spawnParticle("minecraft:mobspell_emitter", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+      dim.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
     } catch (e) { }
   }
 

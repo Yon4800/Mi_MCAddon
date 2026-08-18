@@ -1528,10 +1528,15 @@ world.afterEvents.entityHurt.subscribe((event) => {
   }
   if (attacker && attacker.typeId === "mi:researcher" && hurtEntity instanceof Player) {
     try {
-      hurtEntity.addEffect("slowness", 100, { amplifier: 0, showParticles: true });
-      hurtEntity.addEffect("weakness", 100, { amplifier: 0, showParticles: true });
+      hurtEntity.addEffect("slowness", 160, { amplifier: 1, showParticles: true });
+      hurtEntity.addEffect("weakness", 160, { amplifier: 1, showParticles: true });
+      hurtEntity.addEffect("nausea", 120, { amplifier: 0, showParticles: true });
+      hurtEntity.addEffect("darkness", 100, { amplifier: 0, showParticles: true });
       const pLoc = hurtEntity.location;
-      hurtEntity.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+      const dim = hurtEntity.dimension;
+      dim.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+      dim.spawnParticle("minecraft:mobspell_emitter", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+      dim.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
     } catch (e) {
     }
   }
