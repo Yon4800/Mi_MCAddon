@@ -2078,36 +2078,56 @@ system.runInterval(() => {
       }
     } catch (e) { }
   }
-
-  // D. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick
+  // D. Regretcar Wall Crash (Accident), Slopes & Traffic Jam Gimmick (Safe Loaded-Chunk Guarded)
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations: { x: number, y: number, z: number }[] = [];
 
   for (const car of cars) {
+    if (!car.isValid()) continue;
+
     const cLoc = car.location;
     const carId = car.id;
+
+    // Skip cars that are in unloaded or faraway chunks (Must be within 48m of an active player)
+    let playerNearby = false;
+    for (const p of players) {
+      const pLoc = p.location;
+      const distSq = Math.pow(pLoc.x - cLoc.x, 2) + Math.pow(pLoc.y - cLoc.y, 2) + Math.pow(pLoc.z - cLoc.z, 2);
+      if (distSq <= 2304) { // 48m
+        playerNearby = true;
+        break;
+      }
+    }
+    if (!playerNearby) continue;
 
     if (accidentCarsMap.has(carId)) {
       const recoveryTime = accidentCarsMap.get(carId)!;
       if (now < recoveryTime) {
-        car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
-        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
-        overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        try {
+          car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
+          overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+          overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        } catch (e) { }
         activeAccidentLocations.push(cLoc);
         continue;
       } else {
         accidentCarsMap.delete(carId);
-        overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-        for (const p of nearbyPlayers) {
-          p.sendMessage("§a🔧🚗 [Mi_Addon] 車両の応急修理が完了し、事故現場が復旧しました！§r");
-        }
+        try {
+          overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("§a🔧🚗 [Mi_Addon] 車両の応急修理が完了し、事故現場が復旧しました！§r");
+          }
+        } catch (e) { }
       }
     }
 
     const rideable = car.getComponent("minecraft:rideable") as any;
     const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
-    const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    let isRidden = false;
+    try {
+      isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    } catch (e) { }
 
     if (isRidden) {
       const viewDir = car.getViewDirection();
@@ -2139,37 +2159,37 @@ system.runInterval(() => {
 
         try {
           car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
+          }
         } catch (e) { }
-
-        overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-        overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-        for (const p of nearbyPlayers) {
-          p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
-        }
         continue;
       }
     }
 
     let isSlope = false;
-    const viewDir = car.getViewDirection();
-    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
-    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
-    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+    try {
+      const viewDir = car.getViewDirection();
+      const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+      const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
+      const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2.0), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2.0) });
 
-    const currentTypeId = groundBlockCurrent?.typeId || "";
-    const frontTypeId = groundBlockFront?.typeId || "";
-    const stepTypeId = stepBlockFront?.typeId || "";
+      const currentTypeId = groundBlockCurrent?.typeId || "";
+      const frontTypeId = groundBlockFront?.typeId || "";
+      const stepTypeId = stepBlockFront?.typeId || "";
 
-    if (
-      currentTypeId.includes("slab") || currentTypeId.includes("stairs") ||
-      frontTypeId.includes("slab") || frontTypeId.includes("stairs") ||
-      (stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid) ||
-      (groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId)
-    ) {
-      isSlope = true;
-    }
+      if (
+        currentTypeId.includes("slab") || currentTypeId.includes("stairs") ||
+        frontTypeId.includes("slab") || frontTypeId.includes("stairs") ||
+        (stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid) ||
+        (groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId)
+      ) {
+        isSlope = true;
+      }
+    } catch (e) { }
 
     let isNearAccident = false;
     for (const accLoc of activeAccidentLocations) {
@@ -2180,93 +2200,27 @@ system.runInterval(() => {
       }
     }
 
-    const nearbyEntities = overworld.getEntities({
-      location: cLoc,
-      maxDistance: 64,
-      excludeTypes: ["minecraft:item"]
-    });
-
-    const nearbyCars = overworld.getEntities({
-      location: cLoc,
-      maxDistance: 64,
-      type: "mi:regretcar"
-    });
+    let nearbyEntities: any[] = [];
+    let nearbyCars: any[] = [];
+    try {
+      nearbyEntities = overworld.getEntities({ location: cLoc, maxDistance: 64, excludeTypes: ["minecraft:item"] });
+      nearbyCars = overworld.getEntities({ location: cLoc, maxDistance: 64, type: "mi:regretcar" });
+    } catch (e) { }
 
     const carJamThreshold = isSlope ? 4 : 10;
     const entityJamThreshold = isSlope ? 12 : 30;
-
     const isCongested = nearbyCars.length >= carJamThreshold || nearbyEntities.length >= entityJamThreshold;
 
-    if (isNearAccident || isCongested) {
-      car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-    } else if (isSlope) {
-      car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
-    }
+    try {
+      if (isNearAccident || isCongested) {
+        car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+      } else if (isSlope) {
+        car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+      }
+    } catch (e) { }
   }
-}, 5);
-
-
-// ----------------------------------------------------
-// 0.85. Yahata Blueprint Item Use & Natural World Generation
-// ----------------------------------------------------
-world.afterEvents.itemUse.subscribe((event) => {
-  const player = event.source;
-  const itemStack = event.itemStack;
-
-  if (itemStack.typeId === "mi:yahata_blueprint") {
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-
-    const targetLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 8),
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 8)
-    };
-
-    player.sendMessage("§e🏭 [官営八幡製鉄所] 設計図を展開し、歴史ある製鉄所廃墟を建設中...！§r");
-    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
-
-    system.runTimeout(() => {
-      generateYahataSteelworks(dim, targetLoc);
-      player.sendMessage("§a✨ 官営八幡製鉄所の遺構（廃墟ダンジョン）が目の前に現れました！§r");
-      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
-    }, 5);
-  }
-
-  if (itemStack.typeId === "mi:hq_blueprint") {
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-
-    const targetLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 12),
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 12)
-    };
-
-    player.sendMessage("§b🏢 [Misskey開発所] 設計図を展開し、本社ビル（1F〜4F・屋上）を建築中...！§r");
-    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
-
-    system.runTimeout(() => {
-      generateMisskeyHQ(dim, targetLoc);
-      player.sendMessage("§a✨ Misskey開発所（本社ビル）が堂々完成しました！§r");
-      player.sendMessage("§7💡 1F: ロビー | 2F: 開発室 | 3F: サーバールーム & 会議室 | 4F: 社長室 (ボス部屋) | 屋上: 連合アンテナ§r");
-      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 5, z: targetLoc.z });
-    }, 5);
-  }
-});
-
-// Periodic Random Natural Generation around exploring players
-let worldGenTick = 0;
-system.runInterval(() => {
-  worldGenTick++;
-  if (worldGenTick % 200 !== 0) return; // Check every 10 seconds
-
-  const overworld = world.getDimension("overworld");
-  const players = overworld.getPlayers();
 
   for (const p of players) {
     const pLoc = p.location;

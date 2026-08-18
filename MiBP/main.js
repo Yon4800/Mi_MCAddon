@@ -1672,38 +1672,61 @@ system.runInterval(() => {
   const cars = overworld.getEntities({ type: "mi:regretcar" });
   const activeAccidentLocations = [];
   for (const car of cars) {
+    if (!car.isValid())
+      continue;
     const cLoc = car.location;
     const carId = car.id;
+    let playerNearby = false;
+    for (const p of players) {
+      const pLoc = p.location;
+      const distSq = Math.pow(pLoc.x - cLoc.x, 2) + Math.pow(pLoc.y - cLoc.y, 2) + Math.pow(pLoc.z - cLoc.z, 2);
+      if (distSq <= 2304) {
+        playerNearby = true;
+        break;
+      }
+    }
+    if (!playerNearby)
+      continue;
     if (accidentCarsMap.has(carId)) {
       const recoveryTime = accidentCarsMap.get(carId);
       if (now < recoveryTime) {
-        car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
-        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
-        overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        try {
+          car.addEffect("slowness", 30, { amplifier: 255, showParticles: false });
+          overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+          overworld.spawnParticle("minecraft:lava_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+        } catch (e) {
+        }
         activeAccidentLocations.push(cLoc);
         continue;
       } else {
         accidentCarsMap.delete(carId);
-        overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-        for (const p of nearbyPlayers) {
-          p.sendMessage("\xA7a\u{1F527}\u{1F697} [Mi_Addon] \u8ECA\u4E21\u306E\u5FDC\u6025\u4FEE\u7406\u304C\u5B8C\u4E86\u3057\u3001\u4E8B\u6545\u73FE\u5834\u304C\u5FA9\u65E7\u3057\u307E\u3057\u305F\uFF01\xA7r");
+        try {
+          overworld.spawnParticle("minecraft:heart_particle", { x: cLoc.x, y: cLoc.y + 1.5, z: cLoc.z });
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("\xA7a\u{1F527}\u{1F697} [Mi_Addon] \u8ECA\u4E21\u306E\u5FDC\u6025\u4FEE\u7406\u304C\u5B8C\u4E86\u3057\u3001\u4E8B\u6545\u73FE\u5834\u304C\u5FA9\u65E7\u3057\u307E\u3057\u305F\uFF01\xA7r");
+          }
+        } catch (e) {
         }
       }
     }
     const rideable = car.getComponent("minecraft:rideable");
     const riders = rideable && typeof rideable.getRiders === "function" ? rideable.getRiders() : [];
-    const isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    let isRidden = false;
+    try {
+      isRidden = riders.length > 0 || overworld.getPlayers({ location: cLoc, maxDistance: 2.5 }).length > 0;
+    } catch (e) {
+    }
     if (isRidden) {
-      const viewDir2 = car.getViewDirection();
+      const viewDir = car.getViewDirection();
       let hasWallHit = false;
       const testDistances = [1.8, 2.6, 3.4];
       const lateralOffsets = [-0.8, 0, 0.8];
       for (const dist of testDistances) {
         for (const lat of lateralOffsets) {
-          const checkX = Math.floor(cLoc.x + viewDir2.x * dist - viewDir2.z * lat);
+          const checkX = Math.floor(cLoc.x + viewDir.x * dist - viewDir.z * lat);
           const checkY = Math.floor(cLoc.y + 0.5);
-          const checkZ = Math.floor(cLoc.z + viewDir2.z * dist + viewDir2.x * lat);
+          const checkZ = Math.floor(cLoc.z + viewDir.z * dist + viewDir.x * lat);
           try {
             const block = overworld.getBlock({ x: checkX, y: checkY, z: checkZ });
             if (block && !block.isAir && !block.isLiquid) {
@@ -1720,28 +1743,31 @@ system.runInterval(() => {
         accidentCarsMap.set(carId, now + 6e4);
         activeAccidentLocations.push(cLoc);
         try {
-          car.applyKnockback(-viewDir2.x, -viewDir2.z, 0.6, 0.2);
+          car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+          for (const p of nearbyPlayers) {
+            p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
+          }
         } catch (e) {
-        }
-        overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-        overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-        const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-        for (const p of nearbyPlayers) {
-          p.sendMessage("\xA7c\u{1F4A5}\u{1F697}\u3010\u4EA4\u901A\u4E8B\u6545\u767A\u751F\uFF01\u3011\u8ECA\u304C\u58C1\u306B\u6FC0\u7A81\u3057\u3066\u5927\u7834\u3057\u307E\u3057\u305F\uFF01 1\u5206\u9593 \u79FB\u52D5\u4E0D\u80FD\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
         }
         continue;
       }
     }
     let isSlope = false;
-    const viewDir = car.getViewDirection();
-    const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
-    const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
-    const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
-    const currentTypeId = groundBlockCurrent?.typeId || "";
-    const frontTypeId = groundBlockFront?.typeId || "";
-    const stepTypeId = stepBlockFront?.typeId || "";
-    if (currentTypeId.includes("slab") || currentTypeId.includes("stairs") || frontTypeId.includes("slab") || frontTypeId.includes("stairs") || stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid || groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId) {
-      isSlope = true;
+    try {
+      const viewDir = car.getViewDirection();
+      const groundBlockCurrent = overworld.getBlock({ x: Math.floor(cLoc.x), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z) });
+      const groundBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y - 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+      const stepBlockFront = overworld.getBlock({ x: Math.floor(cLoc.x + viewDir.x * 2), y: Math.floor(cLoc.y + 0.5), z: Math.floor(cLoc.z + viewDir.z * 2) });
+      const currentTypeId = groundBlockCurrent?.typeId || "";
+      const frontTypeId = groundBlockFront?.typeId || "";
+      const stepTypeId = stepBlockFront?.typeId || "";
+      if (currentTypeId.includes("slab") || currentTypeId.includes("stairs") || frontTypeId.includes("slab") || frontTypeId.includes("stairs") || stepBlockFront && !stepBlockFront.isAir && !stepBlockFront.isLiquid || groundBlockFront && groundBlockCurrent && groundBlockFront.typeId !== groundBlockCurrent.typeId) {
+        isSlope = true;
+      }
+    } catch (e) {
     }
     let isNearAccident = false;
     for (const accLoc of activeAccidentLocations) {
@@ -1751,74 +1777,27 @@ system.runInterval(() => {
         break;
       }
     }
-    const nearbyEntities = overworld.getEntities({
-      location: cLoc,
-      maxDistance: 64,
-      excludeTypes: ["minecraft:item"]
-    });
-    const nearbyCars = overworld.getEntities({
-      location: cLoc,
-      maxDistance: 64,
-      type: "mi:regretcar"
-    });
+    let nearbyEntities = [];
+    let nearbyCars = [];
+    try {
+      nearbyEntities = overworld.getEntities({ location: cLoc, maxDistance: 64, excludeTypes: ["minecraft:item"] });
+      nearbyCars = overworld.getEntities({ location: cLoc, maxDistance: 64, type: "mi:regretcar" });
+    } catch (e) {
+    }
     const carJamThreshold = isSlope ? 4 : 10;
     const entityJamThreshold = isSlope ? 12 : 30;
     const isCongested = nearbyCars.length >= carJamThreshold || nearbyEntities.length >= entityJamThreshold;
-    if (isNearAccident || isCongested) {
-      car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-    } else if (isSlope) {
-      car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
-      overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+    try {
+      if (isNearAccident || isCongested) {
+        car.addEffect("slowness", 10, { amplifier: 5, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+      } else if (isSlope) {
+        car.addEffect("slowness", 10, { amplifier: 2, showParticles: false });
+        overworld.spawnParticle("minecraft:smoke_particle", { x: cLoc.x, y: cLoc.y + 0.5, z: cLoc.z });
+      }
+    } catch (e) {
     }
   }
-}, 5);
-world.afterEvents.itemUse.subscribe((event) => {
-  const player = event.source;
-  const itemStack = event.itemStack;
-  if (itemStack.typeId === "mi:yahata_blueprint") {
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-    const targetLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 8),
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 8)
-    };
-    player.sendMessage("\xA7e\u{1F3ED} [\u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u6B74\u53F2\u3042\u308B\u88FD\u9244\u6240\u5EC3\u589F\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
-    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
-    system.runTimeout(() => {
-      generateYahataSteelworks(dim, targetLoc);
-      player.sendMessage("\xA7a\u2728 \u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240\u306E\u907A\u69CB\uFF08\u5EC3\u589F\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u304C\u76EE\u306E\u524D\u306B\u73FE\u308C\u307E\u3057\u305F\uFF01\xA7r");
-      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
-    }, 5);
-  }
-  if (itemStack.typeId === "mi:hq_blueprint") {
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-    const targetLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 12),
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 12)
-    };
-    player.sendMessage("\xA7b\u{1F3E2} [Misskey\u958B\u767A\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u672C\u793E\u30D3\u30EB\uFF081F\u301C4F\u30FB\u5C4B\u4E0A\uFF09\u3092\u5EFA\u7BC9\u4E2D...\uFF01\xA7r");
-    dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
-    system.runTimeout(() => {
-      generateMisskeyHQ(dim, targetLoc);
-      player.sendMessage("\xA7a\u2728 Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u304C\u5802\u3005\u5B8C\u6210\u3057\u307E\u3057\u305F\uFF01\xA7r");
-      player.sendMessage("\xA77\u{1F4A1} 1F: \u30ED\u30D3\u30FC | 2F: \u958B\u767A\u5BA4 | 3F: \u30B5\u30FC\u30D0\u30FC\u30EB\u30FC\u30E0 & \u4F1A\u8B70\u5BA4 | 4F: \u793E\u9577\u5BA4 (\u30DC\u30B9\u90E8\u5C4B) | \u5C4B\u4E0A: \u9023\u5408\u30A2\u30F3\u30C6\u30CA\xA7r");
-      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 5, z: targetLoc.z });
-    }, 5);
-  }
-});
-var worldGenTick = 0;
-system.runInterval(() => {
-  worldGenTick++;
-  if (worldGenTick % 200 !== 0)
-    return;
-  const overworld = world.getDimension("overworld");
-  const players = overworld.getPlayers();
   for (const p of players) {
     const pLoc = p.location;
     const chunkX = Math.floor(pLoc.x / 64) * 64;
