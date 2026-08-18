@@ -9,13 +9,13 @@
     "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {
-    "@minecraft/server": "^1.11.0",
-    "@minecraft/server-ui": "^1.2.0",
-    "esbuild": "^0.20.0",
-    "jimp": "^1.6.1",
-    "typescript": "^5.3.3"
+    "@minecraft/server": "^*",
+    "@minecraft/server-ui": "^*",
+    "esbuild": "^*",
+    "jimp": "^*",
+    "typescript": "^*"
   },
   "dependencies": {
-    "sharp": "^0.35.3"
+    "sharp": "^*"
   }
 }
