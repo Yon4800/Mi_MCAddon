@@ -1318,7 +1318,18 @@ system.runInterval(() => {
   checkAllFloorClears();
 }, 10);
 world.afterEvents.entityDie.subscribe((event) => {
-  const deadType = event.deadEntity?.typeId;
+  const deadEntity = event.deadEntity;
+  const deadType = deadEntity?.typeId;
+  if (deadType && deadType.startsWith("mi:zabuton_")) {
+    try {
+      const dim = deadEntity.dimension;
+      const loc = deadEntity.location;
+      dim.spawnItem(new ItemStack(deadType, 1), loc);
+      dim.spawnParticle("minecraft:smoke_particle", loc);
+    } catch (e) {
+    }
+    return;
+  }
   if (deadType === "mi:blebcat" || deadType === "mi:researcher" || deadType === "mi:m_tutinoko_hostile" || deadType === "mi:murakami_boss") {
     system.runTimeout(() => {
       checkAllFloorClears();
@@ -2041,6 +2052,30 @@ world.afterEvents.itemUse.subscribe((event) => {
       } catch (e) {
       }
     }, 5);
+    return;
+  }
+  if (itemStack.typeId.startsWith("mi:zabuton_")) {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+    const spawnLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 2) + 0.5,
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 2) + 0.5
+    };
+    try {
+      dim.spawnEntity(itemStack.typeId, spawnLoc);
+      dim.spawnParticle("minecraft:smoke_particle", spawnLoc);
+      if (player.gameMode !== "creative") {
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
+        } else {
+          const equippable = player.getComponent(EntityComponentTypes.Equippable);
+          if (equippable) equippable.setEquipment("Mainhand", void 0);
+        }
+      }
+    } catch (e) {
+    }
     return;
   }
   if (itemStack.typeId === "mi:hq_blueprint") {

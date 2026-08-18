@@ -1702,7 +1702,20 @@ system.runInterval(() => {
 
 // 2. Immediate Entity Death Event Check
 world.afterEvents.entityDie.subscribe((event) => {
-  const deadType = event.deadEntity?.typeId;
+  const deadEntity = event.deadEntity;
+  const deadType = deadEntity?.typeId;
+
+  // Zabuton Break Drop
+  if (deadType && deadType.startsWith("mi:zabuton_")) {
+    try {
+      const dim = deadEntity.dimension;
+      const loc = deadEntity.location;
+      dim.spawnItem(new ItemStack(deadType, 1), loc);
+      dim.spawnParticle("minecraft:smoke_particle", loc);
+    } catch (e) { }
+    return;
+  }
+
   if (
     deadType === "mi:blebcat" ||
     deadType === "mi:researcher" ||
@@ -2608,6 +2621,33 @@ world.afterEvents.itemUse.subscribe((event) => {
         dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
       } catch (e) { }
     }, 5);
+    return;
+  }
+
+  // 3. Zabuton Placement Items (mi:zabuton_blue, etc.)
+  if (itemStack.typeId.startsWith("mi:zabuton_")) {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+    const spawnLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 2) + 0.5,
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 2) + 0.5
+    };
+
+    try {
+      dim.spawnEntity(itemStack.typeId, spawnLoc);
+      dim.spawnParticle("minecraft:smoke_particle", spawnLoc);
+
+      if (player.gameMode !== "creative") {
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
+        } else {
+          const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+          if (equippable) equippable.setEquipment("Mainhand" as any, undefined);
+        }
+      }
+    } catch (e) { }
     return;
   }
 
