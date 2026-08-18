@@ -10,7 +10,7 @@
         "default": "textures/entities/lab"
       },
       "geometry": {
-        "default": "geometry.player32"
+        "default": "geometry.humanoid"
       },
       "scripts": {
         "pre_animation": [

@@ -1531,8 +1531,8 @@ system.runInterval(() => {
 
           const spawnCount = 6 + (players.length * 2);
           for (let i = 0; i < spawnCount; i++) {
-            const sx = hq.x + (Math.random() * 8 - 4);
-            const sz = hq.z + (Math.random() * 8 - 4);
+            const sx = hq.x + (Math.random() * 3.6 - 1.8);
+            const sz = hq.z + (Math.random() * 3.6 - 1.8);
             try {
               dim.spawnEntity("mi:blebcat", { x: sx, y: hq.y + 1.2, z: sz });
             } catch (e) {
