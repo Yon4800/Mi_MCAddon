@@ -1429,86 +1429,121 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(0, 27, 0, "minecraft:sea_lantern");
   setB(0, 28, 0, "minecraft:lightning_rod");
 
-  lastMisskeyHQLocation = { x: ox, y: oy, z: oz, dimensionId: dimension.id };
+  registerMisskeyHQ({ x: ox, y: oy, z: oz, dimensionId: dimension.id });
   return true;
 }
 
 // ----------------------------------------------------
-// 0.87. Misskey HQ Floor Dungeon & Spawning System
+// 0.87. Misskey HQ Floor Dungeon & Spawning System (Robust & Multi-HQ Compatible)
 // ----------------------------------------------------
+const allMisskeyHQLocations: { x: number, y: number, z: number, dimensionId: string }[] = [];
 const hqSpawnedFloors = new Set<string>(); // key: `${hqX}_${hqZ}_floor${floorNum}`
 
+// Hook into generateMisskeyHQ location saving
+function registerMisskeyHQ(loc: { x: number, y: number, z: number, dimensionId: string }) {
+  lastMisskeyHQLocation = loc;
+  allMisskeyHQLocations.push(loc);
+}
+
 system.runInterval(() => {
-  if (!lastMisskeyHQLocation) return;
-  const hq = lastMisskeyHQLocation;
+  const overworld = world.getDimension("overworld");
+  const players = overworld.getPlayers();
+  if (players.length === 0) return;
 
-  try {
-    const dim = world.getDimension(hq.dimensionId);
-    if (!dim) return;
+  for (const hq of allMisskeyHQLocations) {
+    const dim = world.getDimension(hq.dimensionId) || overworld;
 
-    for (const player of world.getAllPlayers()) {
+    for (const player of players) {
       if (player.dimension.id !== hq.dimensionId) continue;
       const pLoc = player.location;
 
-      // Check if player is within HQ horizontal bounds (17x17 footprint)
-      if (Math.abs(pLoc.x - hq.x) <= 8 && Math.abs(pLoc.z - hq.z) <= 8) {
+      // Check if player is within HQ horizontal bounds (18x18 footprint: ±9 blocks)
+      if (Math.abs(pLoc.x - hq.x) <= 9 && Math.abs(pLoc.z - hq.z) <= 9) {
         const relY = pLoc.y - hq.y;
 
-        // 1F Entrance Lobby (y: 1..4) -> Spawn blebcat swarm
+        // 1F Entrance Lobby (y: 0..5) -> Spawn blebcat swarm
         const key1 = `${hq.x}_${hq.z}_floor1`;
-        if (relY >= 1 && relY <= 4 && !hqSpawnedFloors.has(key1)) {
-          hqSpawnedFloors.add(key1); hqFloorActiveMap.set(key1, { type: "floor1", hqLoc: hq, spawned: true, cleared: false });
-          player.sendMessage("§c⚠️ [1F エントランス] ぶれぶきゃっとの群れが現れた！§r");
-          dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 1.5, z: hq.z });
-          for (let i = 0; i < 5; i++) {
-            const sx = hq.x + (Math.random() * 6 - 3);
-            const sz = hq.z + (Math.random() * 6 - 3);
-            try { dim.spawnEntity("mi:blebcat", { x: sx, y: hq.y + 1, z: sz }); } catch (e) { }
+        if (relY >= 0 && relY <= 5 && !hqSpawnedFloors.has(key1)) {
+          hqSpawnedFloors.add(key1);
+          hqFloorActiveMap.set(key1, { type: "floor1", hqLoc: hq, spawned: true, cleared: false });
+          player.sendMessage("§c⚠️ [1F エントランス] 警備 blebcat 部隊が現れた！§r");
+          try {
+            dim.spawnParticle("minecraft:totem_particle", { x: hq.x + 0.5, y: hq.y + 1.5, z: hq.z + 0.5 });
+          } catch (e) { }
+
+          const spawnCount = 6 + (players.length * 2);
+          for (let i = 0; i < spawnCount; i++) {
+            const sx = hq.x + (Math.random() * 8 - 4);
+            const sz = hq.z + (Math.random() * 8 - 4);
+            try {
+              dim.spawnEntity("mi:blebcat", { x: sx, y: hq.y + 1.2, z: sz });
+            } catch (e) {
+              console.warn("[Mi_Addon] Error spawning blebcat: " + e);
+            }
           }
         }
 
-        // 2F Dev Room (y: 6..9) -> Spawn hostile Misskey Researchers
+        // 2F Dev Room (y: 5.5..10) -> Spawn hostile Misskey Researchers
         const key2 = `${hq.x}_${hq.z}_floor2`;
-        if (relY >= 6 && relY <= 9 && !hqSpawnedFloors.has(key2)) {
-          hqSpawnedFloors.add(key2); hqFloorActiveMap.set(key2, { type: "floor2", hqLoc: hq, spawned: true, cleared: false });
+        if (relY >= 5.5 && relY <= 10 && !hqSpawnedFloors.has(key2)) {
+          hqSpawnedFloors.add(key2);
+          hqFloorActiveMap.set(key2, { type: "floor2", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§c⚠️ [2F 開発室] 暴走したMisskey研究者たちが襲いかかってきた！§r");
-          dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
-          const spawnSpots = [
-            { x: hq.x - 4, z: hq.z - 3 },
-            { x: hq.x - 3, z: hq.z - 1 },
-            { x: hq.x - 1, z: hq.z + 1 },
-            { x: hq.x - 5, z: hq.z + 1 }
-          ];
-          for (const spot of spawnSpots) {
-            try { dim.spawnEntity("mi:researcher", { x: spot.x + 0.5, y: hq.y + 6, z: spot.z + 0.5 }); } catch (e) { }
+          try {
+            dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
+          } catch (e) { }
+
+          const spawnCount = 6 + (players.length * 2);
+          for (let i = 0; i < spawnCount; i++) {
+            const sx = hq.x + (Math.random() * 8 - 4);
+            const sz = hq.z + (Math.random() * 8 - 4);
+            try {
+              dim.spawnEntity("mi:researcher", { x: sx, y: hq.y + 6.2, z: sz });
+            } catch (e) {
+              console.warn("[Mi_Addon] Error spawning researcher: " + e);
+            }
           }
         }
 
-        // 3F Server Room (y: 11..14) -> Spawn hostile Murakami Tutinoko copies
+        // 3F Server Room (y: 10.5..15) -> Spawn hostile Murakami Tutinoko copies
         const key3 = `${hq.x}_${hq.z}_floor3`;
-        if (relY >= 11 && relY <= 14 && !hqSpawnedFloors.has(key3)) {
-          hqSpawnedFloors.add(key3); hqFloorActiveMap.set(key3, { type: "floor3", hqLoc: hq, spawned: true, cleared: false });
+        if (relY >= 10.5 && relY <= 15 && !hqSpawnedFloors.has(key3)) {
+          hqSpawnedFloors.add(key3);
+          hqFloorActiveMap.set(key3, { type: "floor3", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§c⚠️ [3F サーバー室] 生体サーバーから村上ツチノコ（複製体）が飛び出してきた！§r");
-          dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
-          for (let i = 0; i < 5; i++) {
-            const sz = hq.z + (i * 2 - 4);
-            try { dim.spawnEntity("mi:m_tutinoko_hostile", { x: hq.x - 4 + 0.5, y: hq.y + 11, z: sz + 0.5 }); } catch (e) { }
+          try {
+            dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
+          } catch (e) { }
+
+          const spawnCount = 8 + (players.length * 3);
+          for (let i = 0; i < spawnCount; i++) {
+            const sx = hq.x + (Math.random() * 8 - 4);
+            const sz = hq.z + (Math.random() * 8 - 4);
+            try {
+              dim.spawnEntity("mi:m_tutinoko_hostile", { x: sx, y: hq.y + 11.2, z: sz });
+            } catch (e) {
+              console.warn("[Mi_Addon] Error spawning m_tutinoko_hostile: " + e);
+            }
           }
         }
 
-        // 4F President Boss Room (y: 16..20) -> Spawn Boss: Murakami-san
+        // 4F President Boss Room (y: 15.5..21) -> Spawn Boss: Murakami-san
         const key4 = `${hq.x}_${hq.z}_floor4`;
-        if (relY >= 16 && relY <= 20 && !hqSpawnedFloors.has(key4)) {
-          hqSpawnedFloors.add(key4); hqFloorActiveMap.set(key4, { type: "floor4", hqLoc: hq, spawned: true, cleared: false });
+        if (relY >= 15.5 && relY <= 21 && !hqSpawnedFloors.has(key4)) {
+          hqSpawnedFloors.add(key4);
+          hqFloorActiveMap.set(key4, { type: "floor4", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§6⚔️ [4F 社長室] ボス：村上さんが現れた！「開発所へようこそ…覚悟はできているかね？」§r");
-          dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 16.5, z: hq.z + 2 });
-          try { dim.spawnEntity("mi:murakami_boss", { x: hq.x + 0.5, y: hq.y + 16, z: hq.z + 2 + 0.5 }); } catch (e) { }
+          try {
+            dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 16.5, z: hq.z + 2 });
+            dim.spawnEntity("mi:murakami_boss", { x: hq.x + 0.5, y: hq.y + 16.2, z: hq.z + 2 + 0.5 });
+          } catch (e) {
+            console.warn("[Mi_Addon] Error spawning murakami_boss: " + e);
+          }
         }
       }
     }
-  } catch (e) { }
-}, 20);
-
+  }
+}, 10);
 // ----------------------------------------------------
 // 0.88. Syuilo NPC Dialog & Misskey HQ Guide (1-Time Hint System)
 // ----------------------------------------------------
