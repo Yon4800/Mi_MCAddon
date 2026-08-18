@@ -1615,8 +1615,8 @@ system.runInterval(() => {
 
           const spawnCount = 4 + players.length;
           for (let i = 0; i < spawnCount; i++) {
-            const sx = hq.x + (Math.random() * 8 - 4);
-            const sz = hq.z + (Math.random() * 8 - 4);
+            const sx = hq.x + (Math.random() * 4.0 - 1.0);
+            const sz = hq.z + (Math.random() * 5.0 - 2.5);
             try {
               dim.spawnEntity("mi:researcher", { x: sx, y: hq.y + 6.2, z: sz });
             } catch (e) {
@@ -1637,8 +1637,8 @@ system.runInterval(() => {
 
           const spawnCount = 5 + players.length;
           for (let i = 0; i < spawnCount; i++) {
-            const sx = hq.x + (Math.random() * 8 - 4);
-            const sz = hq.z + (Math.random() * 8 - 4);
+            const sx = hq.x + (Math.random() * 3.0 - 1.5);
+            const sz = hq.z + (Math.random() * 4.0 - 2.0);
             try {
               dim.spawnEntity("mi:m_tutinoko_hostile", { x: sx, y: hq.y + 11.2, z: sz });
             } catch (e) {
