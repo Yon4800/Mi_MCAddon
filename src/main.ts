@@ -1668,24 +1668,42 @@ system.runInterval(() => {
 // ----------------------------------------------------
 // Floor Mob Clear Monitoring Function & Loops
 // ----------------------------------------------------
+const completedFloorsSet = new Set<string>(); // key: `${hqX}_${hqZ}_${type}`
+
 function checkAllFloorClears() {
   const overworld = world.getDimension("overworld");
+  const players = overworld.getPlayers();
+  if (players.length === 0) return;
 
   for (const [key, floorData] of hqFloorActiveMap.entries()) {
     if (!floorData.spawned || floorData.cleared) continue;
 
     const { hqLoc, type } = floorData;
+    const floorKey = `${hqLoc.x}_${hqLoc.z}_${type}`;
+    if (completedFloorsSet.has(floorKey)) {
+      floorData.cleared = true;
+      continue;
+    }
+
+    // Only process floors where a player is currently present inside this specific HQ footprint (within 12 blocks horizontally)
+    const hasPlayerInHQ = players.some(p => {
+      const pLoc = p.location;
+      return Math.abs(pLoc.x - hqLoc.x) <= 12 && Math.abs(pLoc.z - hqLoc.z) <= 12;
+    });
+    if (!hasPlayerInHQ) continue;
+
     const dim = world.getDimension(hqLoc.dimensionId || "overworld") || overworld;
 
     if (type === "floor1") {
       try {
         const blebcats = dim.getEntities({
           location: { x: hqLoc.x, y: hqLoc.y + 1, z: hqLoc.z },
-          maxDistance: 16,
+          maxDistance: 14,
           type: "mi:blebcat"
         });
 
         if (blebcats.length === 0) {
+          completedFloorsSet.add(floorKey);
           floorData.cleared = true;
           const chestLoc = { x: hqLoc.x - 3, y: hqLoc.y + 1, z: hqLoc.z - 4 };
           spawnRewardChest(dim, chestLoc, "lobby");
@@ -1700,11 +1718,12 @@ function checkAllFloorClears() {
       try {
         const researchers = dim.getEntities({
           location: { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z },
-          maxDistance: 16,
+          maxDistance: 14,
           type: "mi:researcher"
         });
 
         if (researchers.length === 0) {
+          completedFloorsSet.add(floorKey);
           floorData.cleared = true;
           const chestLoc = { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z };
           spawnRewardChest(dim, chestLoc, "dev");
@@ -1719,11 +1738,12 @@ function checkAllFloorClears() {
       try {
         const tutinokos = dim.getEntities({
           location: { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z },
-          maxDistance: 16,
+          maxDistance: 14,
           type: "mi:m_tutinoko_hostile"
         });
 
         if (tutinokos.length === 0) {
+          completedFloorsSet.add(floorKey);
           floorData.cleared = true;
           const chestLoc = { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z };
           spawnRewardChest(dim, chestLoc, "server");
@@ -1738,11 +1758,12 @@ function checkAllFloorClears() {
       try {
         const bosses = dim.getEntities({
           location: { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z },
-          maxDistance: 24,
+          maxDistance: 20,
           type: "mi:murakami_boss"
         });
 
         if (bosses.length === 0) {
+          completedFloorsSet.add(floorKey);
           floorData.cleared = true;
           const chestLoc = { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z };
           spawnRewardChest(dim, chestLoc, "boss");
