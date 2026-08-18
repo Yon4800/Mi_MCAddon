@@ -1474,7 +1474,7 @@ system.runInterval(() => {
         // 1F Entrance Lobby (y: 1..4) -> Spawn blebcat swarm
         const key1 = `${hq.x}_${hq.z}_floor1`;
         if (relY >= 1 && relY <= 4 && !hqSpawnedFloors.has(key1)) {
-          hqSpawnedFloors.add(key1);
+          hqSpawnedFloors.add(key1); hqFloorActiveMap.set(key1, { type: "floor1", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§c⚠️ [1F エントランス] ぶれぶきゃっとの群れが現れた！§r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 1.5, z: hq.z });
           for (let i = 0; i < 5; i++) {

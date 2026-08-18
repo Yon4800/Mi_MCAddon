@@ -1160,6 +1160,7 @@ system.runInterval(() => {
         const key1 = `${hq.x}_${hq.z}_floor1`;
         if (relY >= 1 && relY <= 4 && !hqSpawnedFloors.has(key1)) {
           hqSpawnedFloors.add(key1);
+          hqFloorActiveMap.set(key1, { type: "floor1", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("\xA7c\u26A0\uFE0F [1F \u30A8\u30F3\u30C8\u30E9\u30F3\u30B9] \u3076\u308C\u3076\u304D\u3083\u3063\u3068\u306E\u7FA4\u308C\u304C\u73FE\u308C\u305F\uFF01\xA7r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 1.5, z: hq.z });
           for (let i = 0; i < 5; i++) {
