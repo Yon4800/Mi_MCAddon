@@ -1419,24 +1419,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     }
   }
 
-  // Server Admin Chest
-  const serverChest = dimension.getBlock({ x: ox - 6, y: oy + 11, z: oz + 4 });
-  if (serverChest) {
-    serverChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = (serverChest as any).getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("mi:ecology_server", 2));
-          inv.addItem(new ItemStack("mi:machida", 4));
-          inv.addItem(new ItemStack("mi:blob_aichi", 3));
-          inv.addItem(new ItemStack("mi:sanjuu", 3));
-          inv.addItem(new ItemStack("mi:gif", 3));
-          inv.addItem(new ItemStack("mi:silenthill", 3));
-        }
-      } catch (e) { }
-    }, 2);
-  }
+
 
   // === 4F: President / Boss Room (Spacious Luxury Boss Arena) ===
   setB(0, 20, 0, "minecraft:sea_lantern");
@@ -1462,29 +1445,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(-4, 17, 5, "mi:ecology_server_block");
   setB(-4, 18, 5, "mi:ecology_server_block");
 
-  // Executive Safe & Vault Treasure
-  setB(4, 16, 4, "minecraft:gold_block");
-  setB(4, 17, 4, "minecraft:iron_block");
-  setB(5, 16, 4, "minecraft:diamond_block");
-  setB(5, 17, 4, "minecraft:gold_block");
 
-  const safeChest = dimension.getBlock({ x: ox + 4, y: oy + 16, z: oz + 5 });
-  if (safeChest) {
-    safeChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = (safeChest as any).getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("minecraft:netherite_ingot", 1));
-          inv.addItem(new ItemStack("minecraft:diamond", 8));
-          inv.addItem(new ItemStack("minecraft:golden_apple", 3));
-          inv.addItem(new ItemStack("mi:kanagawa", 1));
-          inv.addItem(new ItemStack("mi:bunchou", 2));
-          inv.addItem(new ItemStack("mi:nekomimi_pudding", 2));
-        }
-      } catch (e) { }
-    }, 2);
-  }
 
   // === Rooftop Deck & Fediverse Antenna (y = 22..28) ===
   for (let rx = -8; rx <= 8; rx++) {

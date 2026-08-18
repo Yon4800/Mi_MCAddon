@@ -1078,24 +1078,6 @@ function generateMisskeyHQ(dimension, origin) {
       setB(7, sy, sz, "minecraft:black_concrete");
     }
   }
-  const serverChest = dimension.getBlock({ x: ox - 6, y: oy + 11, z: oz + 4 });
-  if (serverChest) {
-    serverChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = serverChest.getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("mi:ecology_server", 2));
-          inv.addItem(new ItemStack("mi:machida", 4));
-          inv.addItem(new ItemStack("mi:blob_aichi", 3));
-          inv.addItem(new ItemStack("mi:sanjuu", 3));
-          inv.addItem(new ItemStack("mi:gif", 3));
-          inv.addItem(new ItemStack("mi:silenthill", 3));
-        }
-      } catch (e) {
-      }
-    }, 2);
-  }
   setB(0, 20, 0, "minecraft:sea_lantern");
   setB(0, 19, 0, "minecraft:end_rod");
   setB(-1, 19, 0, "minecraft:end_rod");
@@ -1115,28 +1097,6 @@ function generateMisskeyHQ(dimension, origin) {
   setB(-4, 16, 5, "mi:ecology_server_block");
   setB(-4, 17, 5, "mi:ecology_server_block");
   setB(-4, 18, 5, "mi:ecology_server_block");
-  setB(4, 16, 4, "minecraft:gold_block");
-  setB(4, 17, 4, "minecraft:iron_block");
-  setB(5, 16, 4, "minecraft:diamond_block");
-  setB(5, 17, 4, "minecraft:gold_block");
-  const safeChest = dimension.getBlock({ x: ox + 4, y: oy + 16, z: oz + 5 });
-  if (safeChest) {
-    safeChest.setType("minecraft:chest");
-    system.runTimeout(() => {
-      try {
-        const inv = safeChest.getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("minecraft:netherite_ingot", 1));
-          inv.addItem(new ItemStack("minecraft:diamond", 8));
-          inv.addItem(new ItemStack("minecraft:golden_apple", 3));
-          inv.addItem(new ItemStack("mi:kanagawa", 1));
-          inv.addItem(new ItemStack("mi:bunchou", 2));
-          inv.addItem(new ItemStack("mi:nekomimi_pudding", 2));
-        }
-      } catch (e) {
-      }
-    }, 2);
-  }
   for (let rx = -8; rx <= 8; rx++) {
     for (let rz = -8; rz <= 8; rz++) {
       const isEdge = rx === -8 || rx === 8 || rz === -8 || rz === 8;
