@@ -1228,7 +1228,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
         // Staircase opening area: dx: 4..6, dz: 4..6
-        const isStairHole = (dx >= 5 && dx <= 6 && dz >= 2 && dz <= 7);
+        const isStairHole = (dx >= 5 && dx <= 6 && dz >= 3 && dz <= 6);
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
@@ -1248,46 +1248,51 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     setB(0, ly, 4, "minecraft:sea_lantern");
   }
 
-  // 4. Wide 2-Block Straight Quartz Staircase with Upside-Down Stair Underside
-  // Perfectly matches user screenshot: x: 5..6, ascent from z: 3 to z: 7, upside-down stairs underneath
+  // 4. Wide 2-Block Straight Quartz Staircase (Interior z: 2..6, Zero Exterior Wall Breach)
+  // Floors are at y: 0 (1F), y: 5 (2F), y: 10 (3F), y: 15 (4F), y: 21 (Roof)
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
-    // Clear head space across entire staircase (x: 5..6, z: 2..8, y: 1..6)
+    // Clear head space strictly within interior room (x: 5..6, z: 2..6, y: 1..5) - Never touch z: 7..8!
     for (let cdx = 5; cdx <= 6; cdx++) {
-      for (let cdz = 2; cdz <= 8; cdz++) {
-        for (let cy = 1; cy <= 6; cy++) {
+      for (let cdz = 2; cdz <= 6; cdz++) {
+        for (let cy = 1; cy <= 5; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
       }
     }
 
-    // Step 1 (z = 3)
+    // Step 1 (z = 2, y = yBase + 1)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 3, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+      setB(cdx, yBase + 1, 2, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
 
-    // Step 2 (z = 4)
+    // Step 2 (z = 3, y = yBase + 2)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
-      setB(cdx, yBase + 2, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+      setB(cdx, yBase + 1, 3, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
+      setB(cdx, yBase + 2, 3, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
 
-    // Step 3 (z = 5)
+    // Step 3 (z = 4, y = yBase + 3)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
-      setB(cdx, yBase + 3, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+      setB(cdx, yBase + 2, 4, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
+      setB(cdx, yBase + 3, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
 
-    // Step 4 (z = 6)
+    // Step 4 (z = 5, y = yBase + 4)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 3, 6, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
-      setB(cdx, yBase + 4, 6, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+      setB(cdx, yBase + 3, 5, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
+      setB(cdx, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
 
-    // Step 5 (z = 7 - connects flush to next floor level!)
+    // Step 5 (z = 6, y = yBase + 5 - connects flush to next floor level!)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 4, 7, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
-      setB(cdx, yBase + 5, 7, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+      setB(cdx, yBase + 4, 6, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 }); // Underside
+      setB(cdx, yBase + 5, 6, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
+
+    // Solid landing transition at z = 7 (Next floor walkway)
+    for (let cdx = 5; cdx <= 6; cdx++) {
+      setB(cdx, yBase + 5, 7, "minecraft:smooth_quartz");
     }
   }
 
