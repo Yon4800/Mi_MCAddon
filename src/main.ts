@@ -1244,36 +1244,53 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     setB(0, ly, 0, "minecraft:sea_lantern");
   }
 
-  // 4. Smooth Quartz Staircase between all floors (1F -> 2F -> 3F -> 4F -> Roof)
+  // 4. Wide 2-Block Straight Quartz Staircase along East Wall (1F -> 2F -> 3F -> 4F -> Roof)
+  // Perfectly matches user screenshot: wall-aligned at x: 6..7, straight ascent from z: -5 to z: -1
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
-    // Clear head space above stairs
-    for (let cdx = 4; cdx <= 6; cdx++) {
-      for (let cdz = 3; cdz <= 7; cdz++) {
+    // Clear head space strictly above stairs (x: 6..7, z: -5..-1)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      for (let cdz = -5; cdz <= -1; cdz++) {
         for (let cy = 1; cy <= 5; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
       }
     }
 
-    // Flight 1: Ascending going South (+Z) -> weirdo_direction: 2
-    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
-    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
-    setB(4, yBase + 1, 5, "minecraft:smooth_quartz"); // Base support
+    // Step 1 (z = -5, y = yBase + 1)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      setB(cdx, yBase + 1, -5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
 
-    // Landing (Step 3 at yBase + 3)
-    setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(4, yBase + 2, 6, "minecraft:smooth_quartz");
-    setB(5, yBase + 2, 6, "minecraft:smooth_quartz");
-    setB(6, yBase + 2, 6, "minecraft:smooth_quartz");
+    // Step 2 (z = -4, y = yBase + 2)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      setB(cdx, yBase + 1, -4, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 2, -4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
 
-    // Flight 2: Ascending going North (-Z) -> weirdo_direction: 3
-    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
-    setB(6, yBase + 3, 5, "minecraft:smooth_quartz"); // Base support
-    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
-    setB(6, yBase + 4, 4, "minecraft:smooth_quartz"); // Base support
+    // Step 3 (z = -3, y = yBase + 3)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      setB(cdx, yBase + 1, -3, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 2, -3, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 3, -3, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
+
+    // Step 4 (z = -2, y = yBase + 4)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      setB(cdx, yBase + 1, -2, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 2, -2, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 3, -2, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 4, -2, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
+
+    // Step 5 (z = -1, y = yBase + 5 - connects flush to next floor!)
+    for (let cdx = 6; cdx <= 7; cdx++) {
+      setB(cdx, yBase + 1, -1, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 2, -1, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 3, -1, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 4, -1, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 5, -1, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    }
   }
 
   // ----------------------------------------------------
