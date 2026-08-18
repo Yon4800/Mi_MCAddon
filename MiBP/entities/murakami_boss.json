@@ -22,8 +22,8 @@
         "should_darken_sky": false
       },
       "minecraft:health": {
-        "value": 350,
-        "max": 350
+        "value": 300,
+        "max": 300
       },
       "minecraft:knockback_resistance": {
         "value": 0.7

@@ -15,8 +15,8 @@
         ]
       },
       "minecraft:health": {
-        "value": 3,
-        "max": 3
+        "value": 5,
+        "max": 5
       },
       "minecraft:physics": {
         "has_gravity": true,

@@ -15,8 +15,8 @@
         ]
       },
       "minecraft:health": {
-        "value": 40,
-        "max": 40
+        "value": 30,
+        "max": 30
       },
       "minecraft:physics": {},
       "minecraft:collision_box": {
