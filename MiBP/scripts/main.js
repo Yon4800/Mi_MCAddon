@@ -1096,6 +1096,9 @@ function generateMisskeyHQ(dimension, origin) {
 }
 var hqFloorActiveMap = /* @__PURE__ */ new Map();
 function spawnRewardChest(dimension, loc, rewardType) {
+  const chestKey = `${loc.x}_${loc.y}_${loc.z}`;
+  if (spawnedChestLocationsSet.has(chestKey)) return;
+  spawnedChestLocationsSet.add(chestKey);
   try {
     const block = dimension.getBlock(loc);
     if (!block) return;
@@ -1142,9 +1145,15 @@ function spawnRewardChest(dimension, loc, rewardType) {
 }
 var allMisskeyHQLocations = [];
 var hqSpawnedFloors = /* @__PURE__ */ new Set();
+var spawnedChestLocationsSet = /* @__PURE__ */ new Set();
 function registerMisskeyHQ(loc) {
   lastMisskeyHQLocation = loc;
-  allMisskeyHQLocations.push(loc);
+  const exists = allMisskeyHQLocations.some(
+    (h) => Math.abs(h.x - loc.x) < 16 && Math.abs(h.z - loc.z) < 16 && h.dimensionId === loc.dimensionId
+  );
+  if (!exists) {
+    allMisskeyHQLocations.push(loc);
+  }
 }
 system.runInterval(() => {
   const overworld = world.getDimension("overworld");

@@ -1448,6 +1448,10 @@ const hqFloorActiveMap = new Map<string, {
 
 // Helper to spawn and fill reward chests
 function spawnRewardChest(dimension: any, loc: { x: number, y: number, z: number }, rewardType: "lobby" | "dev" | "server" | "boss") {
+  const chestKey = `${loc.x}_${loc.y}_${loc.z}`;
+  if (spawnedChestLocationsSet.has(chestKey)) return; // Strictly prevent duplicate chest spawns!
+  spawnedChestLocationsSet.add(chestKey);
+
   try {
     const block = dimension.getBlock(loc);
     if (!block) return;
@@ -1496,11 +1500,17 @@ function spawnRewardChest(dimension: any, loc: { x: number, y: number, z: number
 
 const allMisskeyHQLocations: { x: number, y: number, z: number, dimensionId: string }[] = [];
 const hqSpawnedFloors = new Set<string>(); // key: `${hqX}_${hqZ}_floor${floorNum}`
+const spawnedChestLocationsSet = new Set<string>(); // key: `${x}_${y}_${z}`
 
-// Hook into generateMisskeyHQ location saving
+// Hook into generateMisskeyHQ location saving (Deduplicated)
 function registerMisskeyHQ(loc: { x: number, y: number, z: number, dimensionId: string }) {
   lastMisskeyHQLocation = loc;
-  allMisskeyHQLocations.push(loc);
+  const exists = allMisskeyHQLocations.some(
+    h => Math.abs(h.x - loc.x) < 16 && Math.abs(h.z - loc.z) < 16 && h.dimensionId === loc.dimensionId
+  );
+  if (!exists) {
+    allMisskeyHQLocations.push(loc);
+  }
 }
 
 system.runInterval(() => {
