@@ -2306,4 +2306,87 @@ system.runInterval(() => {
   }
 }, 20);
 
+
+// ----------------------------------------------------
+// 0.86. Boss: Murakami-san Special Skill "白鬼夜行 (Night of the White Phantoms)"
+// ----------------------------------------------------
+const murakamiLastSkillTimeMap = new Map<string, number>(); // entityId -> timestamp
+
+system.runInterval(() => {
+  const overworld = world.getDimension("overworld");
+  let murakamiBosses: any[] = [];
+  try {
+    murakamiBosses = overworld.getEntities({ type: "mi:murakami_boss" });
+  } catch (e) { }
+
+  const now = Date.now();
+
+  for (const boss of murakamiBosses) {
+    if (!boss.isValid()) continue;
+    const bLoc = boss.location;
+
+    // Find nearby players within 24 blocks
+    const nearbyPlayers = overworld.getPlayers().filter(p => {
+      const pLoc = p.location;
+      const distSq = Math.pow(pLoc.x - bLoc.x, 2) + Math.pow(pLoc.y - bLoc.y, 2) + Math.pow(pLoc.z - bLoc.z, 2);
+      return distSq <= 576; // 24m
+    });
+
+    if (nearbyPlayers.length === 0) continue;
+
+    const lastSkill = murakamiLastSkillTimeMap.get(boss.id) || 0;
+    if (now - lastSkill >= 18000) { // Every 18 seconds
+      murakamiLastSkillTimeMap.set(boss.id, now);
+
+      // ⚡ Announce "白鬼夜行"
+      for (const p of nearbyPlayers) {
+        p.sendMessage("§c⚡ [村上さん] 「白鬼夜行（はっきやこう）の始まりだ…！ 我が複製体どもよ、侵入者を喰らい尽くせ！！」§r");
+      }
+
+      // Visual & Sound Effects
+      overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
+      overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
+      overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+
+      // 1. Shockwave Attack: Knockback all nearby players
+      for (const p of nearbyPlayers) {
+        const pLoc = p.location;
+        const dist = Math.sqrt(Math.pow(pLoc.x - bLoc.x, 2) + Math.pow(pLoc.z - bLoc.z, 2));
+        if (dist <= 10) {
+          const kx = (pLoc.x - bLoc.x) / (dist || 1);
+          const kz = (pLoc.z - bLoc.z) / (dist || 1);
+          p.applyKnockback(kx, kz, 1.6, 0.6);
+          p.applyDamage(6);
+        }
+      }
+
+      // 2. Buff Murakami-san
+      boss.addEffect("strength", 300, { amplifier: 1 }); // Strength II (15s)
+      boss.addEffect("resistance", 200, { amplifier: 2 }); // Resistance III (10s)
+      boss.addEffect("speed", 300, { amplifier: 1 }); // Speed II
+
+      // 3. Summon White Phantoms (村上ツチノコ複製体 + 暴走研究者 + blebcat)
+      const summonCount = 6 + (nearbyPlayers.length * 3);
+      for (let i = 0; i < summonCount; i++) {
+        const sx = bLoc.x + (Math.random() * 8 - 4);
+        const sz = bLoc.z + (Math.random() * 8 - 4);
+        const randType = Math.random();
+
+        system.runTimeout(() => {
+          try {
+            if (randType < 0.6) {
+              overworld.spawnEntity("mi:m_tutinoko_hostile", { x: sx, y: bLoc.y + 0.5, z: sz });
+            } else if (randType < 0.85) {
+              overworld.spawnEntity("mi:researcher", { x: sx, y: bLoc.y + 0.5, z: sz });
+            } else {
+              overworld.spawnEntity("mi:blebcat", { x: sx, y: bLoc.y + 1.0, z: sz });
+            }
+            overworld.spawnParticle("minecraft:mob_portal", { x: sx, y: bLoc.y + 1, z: sz });
+          } catch (e) { }
+        }, i * 2);
+      }
+    }
+  }
+}, 20);
+
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");

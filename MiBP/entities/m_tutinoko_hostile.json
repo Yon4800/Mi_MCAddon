@@ -15,8 +15,8 @@
         ]
       },
       "minecraft:health": {
-        "value": 16,
-        "max": 16
+        "value": 40,
+        "max": 40
       },
       "minecraft:physics": {},
       "minecraft:collision_box": {
@@ -28,16 +28,14 @@
         "is_pushable_by_piston": true
       },
       "minecraft:movement": {
-        "value": 0.32
+        "value": 0.35
       },
       "minecraft:movement.basic": {},
       "minecraft:navigation.walk": {
         "can_path_over_water": true
       },
       "minecraft:attack": {
-        "damage": 4,
-        "effect_name": "poison",
-        "effect_duration": 4
+        "damage": 7
       },
       "minecraft:nameable": {
         "always_show": false,
@@ -71,7 +69,7 @@
       },
       "minecraft:behavior.look_at_player": {
         "priority": 6,
-        "look_distance": 8.0
+        "look_distance": 8
       }
     }
   }

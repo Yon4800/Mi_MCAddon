@@ -6,7 +6,8 @@ var playerUIOpenLock = /* @__PURE__ */ new Map();
 function canOpenUI(player) {
   const now = Date.now();
   const lastTime = playerUIOpenLock.get(player.id) || 0;
-  if (now - lastTime < 600) return false;
+  if (now - lastTime < 600)
+    return false;
   playerUIOpenLock.set(player.id, now);
   return true;
 }
@@ -95,7 +96,8 @@ var MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1e3;
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
-  if (!target) return;
+  if (!target)
+    return;
   if (target.typeId === "mi:momo") {
     event.cancel = true;
     const now = Date.now();
@@ -120,7 +122,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   }
   if (target.typeId === "mi:syuilo") {
     event.cancel = true;
-    if (!canOpenUI(player)) return;
+    if (!canOpenUI(player))
+      return;
     system.run(() => {
       openSyuiloDialogUI(player, target);
     });
@@ -163,11 +166,13 @@ function openInstanceServerUI(player, blockLoc) {
 \u9023\u5408\u5148\u30B5\u30FC\u30D0\u30FC\u6570: ${inst.federatedWith.length} \u62E0\u70B9
 \u96FB\u6CE2\u30D0\u30D5: ${inst.federatedWith.length > 0 ? "\u26A1 \u7A3C\u50CD\u4E2D (\u79FB\u52D5\u901F\u5EA6 / \u63A1\u6398\u901F\u5EA6)" : "\u{1F4A4} \u672A\u63A5\u7D9A"}`).button("\u{1F4DD} \u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u540D\u3092\u5909\u66F4\u3059\u308B").button("\u{1F310} \u9023\u5408\uFF08Federation\uFF09\u7BA1\u7406").button("\u{1F4CA} Fediverse \u7D71\u8A08\u3092\u898B\u308B").button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection === 0) {
       const modal = new ModalFormData().title("\u{1F3DB}\uFE0F \u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u540D\u306E\u8A2D\u5B9A").textField("\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u306E\u30C9\u30E1\u30A4\u30F3\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044", "\u4F8B: my-home.misskey", inst.name);
       showFormSafe(player, modal, (res) => {
-        if (res.canceled || !res.formValues) return;
+        if (res.canceled || !res.formValues)
+          return;
         const newName = String(res.formValues[0]).trim();
         if (newName) {
           inst.name = newName;
@@ -178,11 +183,13 @@ function openInstanceServerUI(player, blockLoc) {
       const fedForm = new ActionFormData().title("\u{1F310} \u9023\u5408\uFF08Federation\uFF09\u7BA1\u7406").body(`\u73FE\u5728\u306E\u9023\u5408\u5148:
 ${inst.federatedWith.map((s) => `\u30FB @${s}`).join("\n")}`).button("\u2795 \u65B0\u3057\u3044\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u3068\u9023\u5408\u3092\u7D50\u3076").button("\u623B\u308B");
       showFormSafe(player, fedForm, (fRes) => {
-        if (fRes.canceled || fRes.selection === void 0) return;
+        if (fRes.canceled || fRes.selection === void 0)
+          return;
         if (fRes.selection === 0) {
           const connectModal = new ModalFormData().title("\u2795 \u9023\u5408\u5148\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u306E\u8FFD\u52A0").textField("\u63A5\u7D9A\u5148\u30C9\u30E1\u30A4\u30F3\u540D\u3092\u5165\u529B", "\u4F8B: friend-base.misskey");
           showFormSafe(player, connectModal, (cRes) => {
-            if (cRes.canceled || !cRes.formValues) return;
+            if (cRes.canceled || !cRes.formValues)
+              return;
             const target = String(cRes.formValues[0]).trim();
             if (target && !inst.federatedWith.includes(target)) {
               inst.federatedWith.push(target);
@@ -217,7 +224,8 @@ ${deckLabels.join("\n") || "\u306A\u3057"}
 
 \u30C7\u30C3\u30AD\u3092\u5897\u3084\u3057\u305F\u308A\u6E1B\u3089\u3057\u305F\u308A\u81EA\u7531\u306B\u30AB\u30B9\u30BF\u30DE\u30A4\u30BA\u3067\u304D\u307E\u3059:`).button("\u2795 \u30C7\u30C3\u30AD\u306B\u7D75\u6587\u5B57\u3092\u8FFD\u52A0\u3059\u308B").button("\u2796 \u30C7\u30C3\u30AD\u304B\u3089\u7D75\u6587\u5B57\u3092\u524A\u9664\u3059\u308B").button("\u{1F504} \u30C7\u30D5\u30A9\u30EB\u30C8\u8A2D\u5B9A\u306B\u623B\u3059").button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (res) => {
-    if (res.canceled || res.selection === void 0) return;
+    if (res.canceled || res.selection === void 0)
+      return;
     if (res.selection === 0) {
       const pickForm = new ActionFormData().title("\u2795 \u30C7\u30C3\u30AD\u306B\u8FFD\u52A0\u3059\u308B\u7D75\u6587\u5B57\u3092\u9078\u629E");
       for (const opt of reactionOptions) {
@@ -280,7 +288,8 @@ function openAllInOneNoteModal(player, blockLoc) {
     modal.dropdown(`\u{1F3A8} \u7D75\u6587\u5B57\u30C7\u30C3\u30AD {${i + 1}}:`, emojiDeckList, defaultIdx > 0 ? defaultIdx : 0);
   }
   showFormSafe(player, modal, (res) => {
-    if (res.canceled || !res.formValues) return;
+    if (res.canceled || !res.formValues)
+      return;
     let text = String(res.formValues[0]).trim();
     const selectedEmojis = [];
     let hasPlaceholder = false;
@@ -316,7 +325,8 @@ function openAllInOneNoteModal(player, blockLoc) {
       reactions: {}
     };
     globalNotes.unshift(newNote);
-    if (globalNotes.length > 50) globalNotes.pop();
+    if (globalNotes.length > 50)
+      globalNotes.pop();
     player.dimension.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
     player.dimension.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
     world.sendMessage(`\xA7a\u{1F4E2} [${player.name}@local.misskey] \u304C\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u307E\u3057\u305F: \u300C${text.trim()}\u300D\xA7r`);
@@ -328,7 +338,8 @@ function openNoteBoardUI(player, blockLoc) {
   const deckCount = getPlayerEmojiDeck(player).length;
   const form = new ActionFormData().title("\u{1F4CB} Misskey \u30CE\u30FC\u30C8\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3").body("Misskey\u306E\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u63B2\u793A\u677F\u3067\u3059\u3002\u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001DM\u3092\u9001\u53D7\u4FE1\u3057\u307E\u3057\u3087\u3046\uFF01").button("\u{1F4DD} \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3059\u308B").button(`\u2699\uFE0F \u7D75\u6587\u5B57\u30C7\u30C3\u30AD\u3092\u30AB\u30B9\u30BF\u30DE\u30A4\u30BA (${deckCount}\u30B9\u30ED\u30C3\u30C8)`).button("\u{1F4DC} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u898B\u308B / \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3").button(`\u2709\uFE0F \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)${dmBadge}`).button("\u9589\u3058\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection === 0) {
       openAllInOneNoteModal(player, blockLoc);
     } else if (response.selection === 1) {
@@ -350,10 +361,12 @@ function getReactionSummary(note) {
 function getReactorsDetail(note) {
   const grouped = {};
   for (const [pName, emoji] of Object.entries(note.reactions)) {
-    if (!grouped[emoji]) grouped[emoji] = [];
+    if (!grouped[emoji])
+      grouped[emoji] = [];
     grouped[emoji].push(pName);
   }
-  if (Object.keys(grouped).length === 0) return "\u307E\u3060\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306F\u3042\u308A\u307E\u305B\u3093";
+  if (Object.keys(grouped).length === 0)
+    return "\u307E\u3060\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306F\u3042\u308A\u307E\u305B\u3093";
   return Object.entries(grouped).map(([emoji, users]) => `${emoji} (${users.length}): ${users.join(", ")}`).join("\n");
 }
 function openTimelineListUI(player, blockLoc) {
@@ -365,8 +378,10 @@ ${reactSummary || "\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u306A\u3057"}`);
   }
   form.button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
-    if (response.selection >= globalNotes.length) return;
+    if (response.canceled || response.selection === void 0)
+      return;
+    if (response.selection >= globalNotes.length)
+      return;
     const note = globalNotes[response.selection];
     openNoteDetailUI(player, note, blockLoc);
   });
@@ -388,7 +403,8 @@ ${reactorsText}`).button(myReaction ? `\u{1F504} \u30EA\u30A2\u30AF\u30B7\u30E7\
   }
   form.button("\u{1F519} \u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u306B\u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     let buttonIndex = 0;
     const reactBtn = buttonIndex++;
     const unreactBtn = myReaction ? buttonIndex++ : -1;
@@ -403,7 +419,8 @@ ${reactorsText}`).button(myReaction ? `\u{1F504} \u30EA\u30A2\u30AF\u30B7\u30E7\
         pickForm.button(`${opt.glyph} ${opt.label}`);
       }
       showFormSafe(player, pickForm, (pRes) => {
-        if (pRes.canceled || pRes.selection === void 0) return;
+        if (pRes.canceled || pRes.selection === void 0)
+          return;
         if (myReaction && pRes.selection === 0) {
           delete note.reactions[player.name];
           player.sendMessage("\xA7e\u274C \u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3092\u53D6\u308A\u6D88\u3057\u307E\u3057\u305F\u3002\xA7r");
@@ -441,7 +458,8 @@ function openReactionWandUI(player, targetName, targetLoc, targetEntity) {
     form.button(`${opt.glyph} ${opt.label}`);
   }
   showFormSafe(player, form, (res) => {
-    if (res.canceled || res.selection === void 0) return;
+    if (res.canceled || res.selection === void 0)
+      return;
     const chosen = reactionOptions[res.selection];
     const dim = player.dimension;
     dim.spawnParticle("minecraft:heart_particle", { x: targetLoc.x, y: targetLoc.y + 1.5, z: targetLoc.z });
@@ -465,7 +483,8 @@ function openDMHubUI(player, blockLoc) {
   const form = new ActionFormData().title("\u2709\uFE0F Misskey \u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8 (DM)").body(`\u3042\u306A\u305F\u5B9B\u3066\u306E\u672A\u8AADDM: ${unreadCount} \u4EF6
 \u76F8\u624B\u3092\u9078\u3093\u3067\u30D7\u30E9\u30A4\u30D9\u30FC\u30C8\u306A\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u9001\u4FE1\u30FB\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002`).button("\u{1F4DD} \u65B0\u3057\u3044DM\u3092\u9001\u4FE1\u3059\u308B").button(`\u{1F4EC} \u53D7\u4FE1\u30C8\u30EC\u30A4\u3092\u898B\u308B (${unreadCount}\u4EF6\u672A\u8AAD)`).button("\u{1F4E4} \u9001\u4FE1\u6E08\u307F\u30E1\u30C3\u30BB\u30FC\u30B8").button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection === 0) {
       openSendDMUI(player, blockLoc);
     } else if (response.selection === 1) {
@@ -486,7 +505,8 @@ function openSendDMUI(player, blockLoc, defaultTarget) {
   const targetList = defaultTarget && !allPlayers.includes(defaultTarget) ? [defaultTarget, ...allPlayers] : allPlayers.length > 0 ? allPlayers : [defaultTarget || ""];
   const modal = new ModalFormData().title("\u{1F4DD} DM\uFF08\u30C0\u30A4\u30EC\u30AF\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8\uFF09\u306E\u9001\u4FE1").dropdown("\u9001\u4FE1\u5148\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u9078\u629E:", targetList, 0).textField("\u30E1\u30C3\u30BB\u30FC\u30B8\u672C\u6587\u3092\u5165\u529B (\u7D75\u6587\u5B57\u30B3\u30FC\u30C9\u3082\u4F7F\u7528\u53EF):", "\u4F8B: \u3042\u3068\u3067\u62E0\u70B9\u306B\u6765\u3066\uFF01 :blobcat:");
   showFormSafe(player, modal, (res) => {
-    if (res.canceled || !res.formValues) return;
+    if (res.canceled || !res.formValues)
+      return;
     const targetIndex = Number(res.formValues[0]);
     const targetName = targetList[targetIndex];
     let msgText = String(res.formValues[1]).trim();
@@ -508,7 +528,8 @@ function openSendDMUI(player, blockLoc, defaultTarget) {
       read: false
     };
     directMessages.unshift(newDM);
-    if (directMessages.length > 100) directMessages.pop();
+    if (directMessages.length > 100)
+      directMessages.pop();
     player.sendMessage(`\xA7a\u2709\uFE0F [@${targetName}] \u306BDM\u3092\u9001\u4FE1\u3057\u307E\u3057\u305F: \u300C${msgText}\u300D\xA7r`);
     const recipientPlayer = world.getAllPlayers().find((p) => p.name === targetName);
     if (recipientPlayer) {
@@ -536,7 +557,8 @@ function openDMInboxUI(player, blockLoc) {
   }
   form.button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection >= inbox.length) {
       openDMHubUI(player, blockLoc);
       return;
@@ -555,7 +577,8 @@ function openDMSentBoxUI(player, blockLoc) {
   }
   form.button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection >= sentBox.length) {
       openDMHubUI(player, blockLoc);
       return;
@@ -581,7 +604,8 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
   form.button("\u{1F5D1}\uFE0F \u3053\u306EDM\u3092\u524A\u9664\u3059\u308B");
   form.button("\u{1F519} \u4E00\u89A7\u306B\u623B\u308B");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (isInbox) {
       let bIdx = 0;
       const replyBtn = bIdx++;
@@ -596,7 +620,8 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
           pickForm.button(`${opt.glyph} ${opt.label}`);
         }
         showFormSafe(player, pickForm, (pRes) => {
-          if (pRes.canceled || pRes.selection === void 0) return;
+          if (pRes.canceled || pRes.selection === void 0)
+            return;
           const chosen = reactionOptions[pRes.selection];
           dm.reaction = chosen.glyph;
           player.sendMessage(`\xA7d\u{1F496} @${dm.sender} \u304B\u3089\u306EDM\u306B ${chosen.glyph} \u3067\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3057\u307E\u3057\u305F\uFF01\xA7r`);
@@ -612,7 +637,8 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
         openDMDetailUI(player, dm, blockLoc, isInbox);
       } else if (response.selection === delBtn) {
         const idx = directMessages.findIndex((m) => m.id === dm.id);
-        if (idx !== -1) directMessages.splice(idx, 1);
+        if (idx !== -1)
+          directMessages.splice(idx, 1);
         player.sendMessage("\xA7e\u{1F5D1}\uFE0F DM\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002\xA7r");
         openDMInboxUI(player, blockLoc);
       } else {
@@ -621,7 +647,8 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
     } else {
       if (response.selection === 0) {
         const idx = directMessages.findIndex((m) => m.id === dm.id);
-        if (idx !== -1) directMessages.splice(idx, 1);
+        if (idx !== -1)
+          directMessages.splice(idx, 1);
         player.sendMessage("\xA7e\u{1F5D1}\uFE0F \u9001\u4FE1\u6E08\u307FDM\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002\xA7r");
         openDMSentBoxUI(player, blockLoc);
       } else {
@@ -636,7 +663,8 @@ var playerPuddingEatLock = /* @__PURE__ */ new Map();
 function handlePuddingEat(player, block, isNekomimi) {
   const now = Date.now();
   const lastEat = playerPuddingEatLock.get(player.id) || 0;
-  if (now - lastEat < 500) return;
+  if (now - lastEat < 500)
+    return;
   playerPuddingEatLock.set(player.id, now);
   const loc = block.location;
   const dim = player.dimension;
@@ -684,7 +712,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   }
   if (block.typeId === "mi:instance_server") {
     event.cancel = true;
-    if (!canOpenUI(player)) return;
+    if (!canOpenUI(player))
+      return;
     const loc = block.location;
     system.run(() => {
       openInstanceServerUI(player, loc);
@@ -693,7 +722,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   }
   if (block.typeId === "mi:note_board") {
     event.cancel = true;
-    if (!canOpenUI(player)) return;
+    if (!canOpenUI(player))
+      return;
     const loc = block.location;
     system.run(() => {
       openNoteBoardUI(player, loc);
@@ -724,7 +754,8 @@ function generateYahataSteelworks(dimension, origin) {
         const isPillar = (dx === -8 || dx === 9 || dx === 0) && (dz === -8 || dz === 9 || dz === 0);
         if (isPillar) {
           const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
-          if (b) b.setType("minecraft:deepslate_bricks");
+          if (b)
+            b.setType("minecraft:deepslate_bricks");
         } else if (isWall) {
           const isWindow = dy >= 3 && dy <= 5 && (Math.abs(dx) % 4 === 2 || Math.abs(dz) % 4 === 2);
           const isDecayed = (dx + dy + dz) % 7 === 0;
@@ -785,7 +816,8 @@ function generateYahataSteelworks(dimension, origin) {
   }
   for (let pz = -4; pz <= 4; pz++) {
     const pipeB = dimension.getBlock({ x: ox, y: oy + 6, z: oz + pz });
-    if (pipeB) pipeB.setType("minecraft:iron_bars");
+    if (pipeB)
+      pipeB.setType("minecraft:iron_bars");
   }
   const chest1 = dimension.getBlock({ x: ox - 3, y: oy + 1, z: oz + 4 });
   if (chest1) {
@@ -1129,13 +1161,16 @@ function generateMisskeyHQ(dimension, origin) {
 }
 var hqSpawnedFloors = /* @__PURE__ */ new Set();
 system.runInterval(() => {
-  if (!lastMisskeyHQLocation) return;
+  if (!lastMisskeyHQLocation)
+    return;
   const hq = lastMisskeyHQLocation;
   try {
     const dim = world.getDimension(hq.dimensionId);
-    if (!dim) return;
+    if (!dim)
+      return;
     for (const player of world.getAllPlayers()) {
-      if (player.dimension.id !== hq.dimensionId) continue;
+      if (player.dimension.id !== hq.dimensionId)
+        continue;
       const pLoc = player.location;
       if (Math.abs(pLoc.x - hq.x) <= 8 && Math.abs(pLoc.z - hq.z) <= 8) {
         const relY = pLoc.y - hq.y;
@@ -1203,7 +1238,8 @@ var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
 function openSyuiloDialogUI(player, syuiloEntity) {
   const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u307E\u305F\u306D");
   showFormSafe(player, form, (response) => {
-    if (response.canceled || response.selection === void 0) return;
+    if (response.canceled || response.selection === void 0)
+      return;
     if (response.selection === 0) {
       const syuiloQuotes = [
         "\xA7b\u3057\u3085\u3044\u308D: \u300C\u3042\u3001\u3069\u3046\u3082\u3002Misskey\u306E\u958B\u767A\u3001\u4ECA\u65E5\u3082\u5143\u6C17\u306B\u3084\u3063\u3066\u307E\u3059\u3088\u3002\u300D\xA7r",
@@ -1257,13 +1293,16 @@ function openSyuiloDialogUI(player, syuiloEntity) {
 }
 world.afterEvents.entityDie.subscribe((event) => {
   const deadEntity = event.deadEntity;
-  if (!deadEntity) return;
+  if (!deadEntity)
+    return;
   const dimension = deadEntity.dimension;
   const location = deadEntity.location;
   const typeId = deadEntity.typeId;
   if (typeId === "mi:blebcat") {
-    if (Math.random() < 0.4) dimension.spawnItem(new ItemStack("mi:ecology_server", 1), location);
-    if (Math.random() < 0.2) dimension.spawnItem(new ItemStack("mi:sanjuu", 1), location);
+    if (Math.random() < 0.4)
+      dimension.spawnItem(new ItemStack("mi:ecology_server", 1), location);
+    if (Math.random() < 0.2)
+      dimension.spawnItem(new ItemStack("mi:sanjuu", 1), location);
     return;
   }
   if (typeId === "mi:m_tutinoko") {
@@ -1273,9 +1312,12 @@ world.afterEvents.entityDie.subscribe((event) => {
   }
   let dropItemId = null;
   let chance = 0.15;
-  if (typeId === "minecraft:zombie" || typeId === "minecraft:zombie_villager" || typeId === "minecraft:husk") dropItemId = "mi:blob_aichi";
-  else if (typeId === "minecraft:skeleton" || typeId === "minecraft:stray") dropItemId = "mi:machida";
-  else if (typeId === "minecraft:creeper") dropItemId = "mi:silenthill";
+  if (typeId === "minecraft:zombie" || typeId === "minecraft:zombie_villager" || typeId === "minecraft:husk")
+    dropItemId = "mi:blob_aichi";
+  else if (typeId === "minecraft:skeleton" || typeId === "minecraft:stray")
+    dropItemId = "mi:machida";
+  else if (typeId === "minecraft:creeper")
+    dropItemId = "mi:silenthill";
   else if (typeId === "minecraft:enderman") {
     dropItemId = "mi:sanjuu";
     chance = 0.2;
@@ -1292,10 +1334,12 @@ world.afterEvents.entityDie.subscribe((event) => {
 });
 world.afterEvents.entitySpawn.subscribe((event) => {
   const entity = event.entity;
-  if (!entity || !entity.isValid()) return;
+  if (!entity || !entity.isValid())
+    return;
   const typeId = entity.typeId;
   const isMonster = typeId.startsWith("minecraft:zombie") || typeId.startsWith("minecraft:skeleton") || typeId === "minecraft:creeper" || typeId === "minecraft:spider" || typeId === "minecraft:cave_spider" || typeId === "minecraft:enderman" || typeId === "minecraft:witch" || typeId === "minecraft:slime" || typeId === "minecraft:phantom" || typeId === "minecraft:drowned" || typeId === "minecraft:husk" || typeId === "minecraft:stray" || typeId === "mi:blebcat";
-  if (!isMonster) return;
+  if (!isMonster)
+    return;
   const loc = entity.location;
   const dim = entity.dimension;
   for (let dy = -1; dy >= -3; dy--) {
@@ -1305,7 +1349,8 @@ world.afterEvents.entitySpawn.subscribe((event) => {
         system.run(() => {
           dim.spawnParticle("minecraft:electric_spark_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
           dim.spawnParticle("minecraft:smoke_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
-          if (entity.isValid()) entity.remove();
+          if (entity.isValid())
+            entity.remove();
         });
         break;
       }
@@ -1317,10 +1362,12 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
   const itemStack = event.itemStack;
-  if (!target) return;
+  if (!target)
+    return;
   if (target instanceof Player && player.isSneaking) {
     event.cancel = true;
-    if (!canOpenUI(player)) return;
+    if (!canOpenUI(player))
+      return;
     system.run(() => {
       openSendDMUI(player, void 0, target.name);
     });
@@ -1328,7 +1375,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   }
   if (itemStack && itemStack.typeId === "mi:reaction_wand") {
     event.cancel = true;
-    if (!canOpenUI(player)) return;
+    if (!canOpenUI(player))
+      return;
     const tLoc = target.location;
     const targetName = target.nameTag || target.typeId.replace("mi:", "").replace("minecraft:", "");
     system.run(() => {
@@ -1379,7 +1427,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
               itemStack.amount -= 1;
             } else {
               const equippable = player.getComponent(EntityComponentTypes.Equippable);
-              if (equippable) equippable.setEquipment("Mainhand", void 0);
+              if (equippable)
+                equippable.setEquipment("Mainhand", void 0);
             }
           }
           player.sendMessage(`\xA7a\u{1F3A8} [Mi_Addon] \u9577\u3044\u5909\u306A\u8ECA\u3092\u300C${dye.name}\u300D\u306B\u518D\u5857\u88C5\u3057\u307E\u3057\u305F\uFF01\xA7r`);
@@ -1388,7 +1437,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       }
     }
   }
-  if (!itemStack) return;
+  if (!itemStack)
+    return;
   if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:blob_aichi") {
     event.cancel = true;
     system.run(() => {
@@ -1399,7 +1449,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
           itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
-          if (equippable) equippable.setEquipment("Mainhand", void 0);
+          if (equippable)
+            equippable.setEquipment("Mainhand", void 0);
         }
       }
       target.remove();
@@ -1418,7 +1469,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
           itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
-          if (equippable) equippable.setEquipment("Mainhand", void 0);
+          if (equippable)
+            equippable.setEquipment("Mainhand", void 0);
         }
       }
       target.remove();
@@ -1440,7 +1492,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
           itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
-          if (equippable) equippable.setEquipment("Mainhand", void 0);
+          if (equippable)
+            equippable.setEquipment("Mainhand", void 0);
         }
       }
       dim.spawnParticle("minecraft:heart_particle", loc);
@@ -1592,7 +1645,8 @@ system.runInterval(() => {
     const pId = p.id;
     const now2 = Date.now();
     const lastBounce = playerLastBounceTimeMap.get(pId) || 0;
-    if (now2 - lastBounce < 350) continue;
+    if (now2 - lastBounce < 350)
+      continue;
     const bx = Math.floor(pLoc.x);
     const by = Math.floor(pLoc.y - 0.2);
     const bz = Math.floor(pLoc.z);
@@ -1659,7 +1713,8 @@ system.runInterval(() => {
           } catch (e) {
           }
         }
-        if (hasWallHit) break;
+        if (hasWallHit)
+          break;
       }
       if (hasWallHit) {
         accidentCarsMap.set(carId, now + 6e4);
@@ -1760,7 +1815,8 @@ world.afterEvents.itemUse.subscribe((event) => {
 var worldGenTick = 0;
 system.runInterval(() => {
   worldGenTick++;
-  if (worldGenTick % 200 !== 0) return;
+  if (worldGenTick % 200 !== 0)
+    return;
   const overworld = world.getDimension("overworld");
   const players = overworld.getPlayers();
   for (const p of players) {
@@ -1791,6 +1847,70 @@ system.runInterval(() => {
         generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
         console.warn(`[Mi_Addon] Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
       } catch (e) {
+      }
+    }
+  }
+}, 20);
+var murakamiLastSkillTimeMap = /* @__PURE__ */ new Map();
+system.runInterval(() => {
+  const overworld = world.getDimension("overworld");
+  let murakamiBosses = [];
+  try {
+    murakamiBosses = overworld.getEntities({ type: "mi:murakami_boss" });
+  } catch (e) {
+  }
+  const now = Date.now();
+  for (const boss of murakamiBosses) {
+    if (!boss.isValid())
+      continue;
+    const bLoc = boss.location;
+    const nearbyPlayers = overworld.getPlayers().filter((p) => {
+      const pLoc = p.location;
+      const distSq = Math.pow(pLoc.x - bLoc.x, 2) + Math.pow(pLoc.y - bLoc.y, 2) + Math.pow(pLoc.z - bLoc.z, 2);
+      return distSq <= 576;
+    });
+    if (nearbyPlayers.length === 0)
+      continue;
+    const lastSkill = murakamiLastSkillTimeMap.get(boss.id) || 0;
+    if (now - lastSkill >= 18e3) {
+      murakamiLastSkillTimeMap.set(boss.id, now);
+      for (const p of nearbyPlayers) {
+        p.sendMessage("\xA7c\u26A1 [\u6751\u4E0A\u3055\u3093] \u300C\u767D\u9B3C\u591C\u884C\uFF08\u306F\u3063\u304D\u3084\u3053\u3046\uFF09\u306E\u59CB\u307E\u308A\u3060\u2026\uFF01 \u6211\u304C\u8907\u88FD\u4F53\u3069\u3082\u3088\u3001\u4FB5\u5165\u8005\u3092\u55B0\u3089\u3044\u5C3D\u304F\u305B\uFF01\uFF01\u300D\xA7r");
+      }
+      overworld.spawnParticle("minecraft:mob_portal", { x: bLoc.x, y: bLoc.y + 1.5, z: bLoc.z });
+      overworld.spawnParticle("minecraft:large_explosion", { x: bLoc.x, y: bLoc.y + 2, z: bLoc.z });
+      overworld.spawnParticle("minecraft:sonic_explosion", { x: bLoc.x, y: bLoc.y + 1, z: bLoc.z });
+      for (const p of nearbyPlayers) {
+        const pLoc = p.location;
+        const dist = Math.sqrt(Math.pow(pLoc.x - bLoc.x, 2) + Math.pow(pLoc.z - bLoc.z, 2));
+        if (dist <= 10) {
+          const kx = (pLoc.x - bLoc.x) / (dist || 1);
+          const kz = (pLoc.z - bLoc.z) / (dist || 1);
+          p.applyKnockback(kx, kz, 1.6, 0.6);
+          p.applyDamage(6);
+        }
+      }
+      boss.addEffect("strength", 300, { amplifier: 1 });
+      boss.addEffect("resistance", 200, { amplifier: 2 });
+      boss.addEffect("speed", 300, { amplifier: 1 });
+      const summonCount = 6 + nearbyPlayers.length * 3;
+      for (let i = 0; i < summonCount; i++) {
+        const sx = bLoc.x + (Math.random() * 8 - 4);
+        const sz = bLoc.z + (Math.random() * 8 - 4);
+        const randType = Math.random();
+        system.runTimeout(() => {
+          try {
+            if (randType < 0.6) {
+              overworld.spawnEntity("mi:m_tutinoko_hostile", { x: sx, y: bLoc.y + 0.5, z: sz });
+            } else if (randType < 0.85) {
+              overworld.spawnEntity("mi:researcher", { x: sx, y: bLoc.y + 0.5, z: sz });
+            } else {
+              overworld.spawnEntity("mi:blebcat", { x: sx, y: bLoc.y + 1, z: sz });
+            }
+            overworld.spawnParticle("minecraft:mob_portal", { x: sx, y: bLoc.y + 1, z: sz });
+          } catch (e) {
+          }
+        }, i * 2);
       }
     }
   }
