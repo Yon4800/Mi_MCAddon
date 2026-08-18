@@ -65,6 +65,195 @@ const syuiloQuoteIndexMap = new Map<string, number>();
 const syuiloLastTalkTimeMap = new Map<string, number>();
 
 // ----------------------------------------------------
+// 0.0. Achievements (偉業) System
+// ----------------------------------------------------
+const ALL_IGYO_ITEMS = [
+  "mi:aisatu_ha_igyo",
+  "mi:suimin_ha_igyo",
+  "mi:suibunhokyu_ha_igyo",
+  "mi:asakatsu_ha_igyo",
+  "mi:chokin_ha_igyo",
+  "mi:dokusho_ha_igyo",
+  "mi:josetsu_ha_igyo",
+  "mi:kaimono_ha_igyo",
+  "mi:seichi_ha_igyo",
+  "mi:upgrade_ha_igyo",
+  "mi:shokuji_ha_igyo"
+];
+
+const IGYO_NAMES: Record<string, string> = {
+  "aisatu": "挨拶の偉業",
+  "suimin": "睡眠の偉業",
+  "suibunhokyu": "水分補給の偉業",
+  "asakatsu": "朝活の偉業",
+  "chokin": "貯金の偉業",
+  "dokusho": "読書の偉業",
+  "josetsu": "除雪の偉業",
+  "kaimono": "買い物の偉業",
+  "seichi": "整地の偉業",
+  "upgrade": "アップグレードの偉業",
+  "shokuji": "食事の偉業"
+};
+
+const IGYO_DESCRIPTIONS: Record<string, string> = {
+  "aisatu": "チャットで挨拶する",
+  "suimin": "ベッドで眠る",
+  "suibunhokyu": "水やポーションを飲む",
+  "asakatsu": "朝6時〜9時に30分プレイ",
+  "chokin": "金インゴット等を所持",
+  "dokusho": "本を使用する",
+  "josetsu": "雪を500個掘る",
+  "kaimono": "村人と取引する",
+  "seichi": "土や草を1000個掘る",
+  "upgrade": "鍛冶台でネザライトに強化",
+  "shokuji": "食べ物を500個食べる"
+};
+
+const playerAsakatsuPlaySecondsMap = new Map<string, number>(); // playerId -> total seconds in morning
+const playerSnowBreakCountMap = new Map<string, number>(); // playerId -> snow blocks broken
+const playerSeichiBreakCountMap = new Map<string, number>(); // playerId -> ground blocks broken
+const playerFoodEatCountMap = new Map<string, number>(); // playerId -> food eaten count
+const playerSmithingTableOpenMap = new Map<string, number>(); // playerId -> timestamp when opened smithing table
+
+function playerHasItem(player: Player, itemTypeId: string): boolean {
+  try {
+    const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+    if (!inv) return false;
+    for (let i = 0; i < inv.size; i++) {
+      const item = inv.getItem(i);
+      if (item && item.typeId === itemTypeId) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function hasPlayerAchieved(player: Player, igyoKey: string): boolean {
+  try {
+    const prop = player.getDynamicProperty(`igyo_${igyoKey}`);
+    if (prop === true) return true;
+  } catch (e) {}
+  return player.hasTag(`igyo_${igyoKey}`);
+}
+
+function setPlayerAchieved(player: Player, igyoKey: string) {
+  try {
+    player.setDynamicProperty(`igyo_${igyoKey}`, true);
+  } catch (e) {}
+  player.addTag(`igyo_${igyoKey}`);
+}
+
+function grantAchievement(player: Player, igyoKey: string) {
+  // すでに達成済みの場合は一切再付与しない（二度と復活しない）
+  if (hasPlayerAchieved(player, igyoKey)) return;
+
+  setPlayerAchieved(player, igyoKey);
+
+  const itemTypeId = `mi:${igyoKey}_ha_igyo`;
+  const name = IGYO_NAMES[igyoKey] || igyoKey;
+
+  system.run(() => {
+    try {
+      const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+      if (!inv) return;
+
+      const item = new ItemStack(itemTypeId, 1);
+      // 達成者タグと説明を Lore に刻印！
+      item.setLore([
+        `§6達成者: §f${player.name}§r`,
+        `§7達成条件: ${IGYO_DESCRIPTIONS[igyoKey] || ""}§r`
+      ]);
+
+      const hasBaseIgyo = hasPlayerAchieved(player, "base_igyo");
+      inv.addItem(item);
+
+      if (!hasBaseIgyo) {
+        setPlayerAchieved(player, "base_igyo");
+        const baseItem = new ItemStack("mi:igyo", 1);
+        baseItem.setLore([
+          `§6所有者: §f${player.name}§r`,
+          `§e11種類の偉業を集めて右クリックすると§r`,
+          `§e「偉業のツール」を錬成できます！§r`
+        ]);
+        inv.addItem(baseItem);
+        player.sendMessage(`§6🏆 [偉業達成] 初めての偉業を達成！「偉業 (mi:igyo)」を獲得しました！§r`);
+        player.sendMessage(`§e💡 [ヒント] 11種類すべての偉業を集めて「偉業」を右クリックすると、「偉業のツール」を錬成できます！§r`);
+      }
+
+      player.sendMessage(`§6🏆 [偉業達成] 「${name}」を獲得しました！§r`);
+      const loc = player.location;
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.5, z: loc.z });
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    } catch (e) {
+      console.warn("[Mi_Addon] Error granting achievement: " + e);
+    }
+  });
+}
+
+function resetAchievement(player: Player, igyoKey: string) {
+  try {
+    player.setDynamicProperty(`igyo_${igyoKey}`, false);
+  } catch (e) {}
+  player.removeTag(`igyo_${igyoKey}`);
+  if (igyoKey === "asakatsu") playerAsakatsuPlaySecondsMap.delete(player.id);
+  if (igyoKey === "josetsu") playerSnowBreakCountMap.delete(player.id);
+  if (igyoKey === "seichi") playerSeichiBreakCountMap.delete(player.id);
+  if (igyoKey === "shokuji") playerFoodEatCountMap.delete(player.id);
+}
+
+function openAchievementRetryUI(player: Player) {
+  const form = new ActionFormData()
+    .title("🔄 偉業の再チャレンジ (リセット)")
+    .body("紛失・ロストした偉業を選択してフラグをリセットし、もう一度達成条件にチャレンジできます。\n（※インベントリに所持中の偉業はリセット不要です）");
+
+  const allKeys = Object.keys(IGYO_NAMES);
+
+  for (const key of allKeys) {
+    const itemTypeId = `mi:${key}_ha_igyo`;
+    const isHeld = playerHasItem(player, itemTypeId);
+    const isAchieved = hasPlayerAchieved(player, key);
+    const name = IGYO_NAMES[key];
+
+    if (isHeld) {
+      form.button(`✅ ${name}\n[所持中 - リセット不要]`);
+    } else if (isAchieved) {
+      form.button(`🔄 ${name}\n[リセットして再挑戦！]`);
+    } else {
+      form.button(`⏳ ${name}\n[未達成 - チャレンジ可能]`);
+    }
+  }
+
+  form.button("🔙 閉じる");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+    const selectedIdx = res.selection;
+
+    if (selectedIdx < allKeys.length) {
+      const key = allKeys[selectedIdx];
+      const itemTypeId = `mi:${key}_ha_igyo`;
+      const isHeld = playerHasItem(player, itemTypeId);
+      const isAchieved = hasPlayerAchieved(player, key);
+      const name = IGYO_NAMES[key];
+      const desc = IGYO_DESCRIPTIONS[key] || "";
+
+      if (isHeld) {
+        player.sendMessage(`§e⚠️ 「${name}」はすでにインベントリ内に所持しています。§r`);
+        openAchievementRetryUI(player);
+      } else if (isAchieved) {
+        resetAchievement(player, key);
+        player.sendMessage(`§a🔄 [偉業リセット] 「${name}」の実績フラグをリセットしました！§r`);
+        player.sendMessage(`§e💡 再達成の条件: ${desc}§r`);
+        const pLoc = player.location;
+        player.dimension.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+      } else {
+        player.sendMessage(`§7「${name}」はまだ達成していません。(達成条件: ${desc})§r`);
+        openAchievementRetryUI(player);
+      }
+    }
+  });
+}
+
+// ----------------------------------------------------
 // 0. Misskey Emoji Chat System
 // ----------------------------------------------------
 const emojiMap: Record<string, string> = {
@@ -130,7 +319,7 @@ if ((world.afterEvents as any)?.chatSend) {
       });
     }
 
-    if (/^(hello|hi|hey|こんにちは|こんばんは|おはよう|おはようございます|やあ|やっほー)$/i.test(event.message.trim())) {
+    if (/^(hello|hi|hey|こんにちは|こんばんは|おはよう|おはようございます|やあ|やっほー|おは|こん|おやすみ)/i.test(event.message.trim())) {
       grantAchievement(sender, "aisatu");
     }
   });
@@ -944,13 +1133,23 @@ function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
 }
 
 // ----------------------------------------------------
-// 0.7. Block Interaction for Fediverse (Single-Click Instant UI with event.cancel)
+// 0.7. Block Interaction (Pudding, Fediverse, Chest Ritual, Bed)
 // ----------------------------------------------------
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
 
+  // 1. Bed Sleep Achievement
+  if (block.typeId.includes("bed")) {
+    grantAchievement(player, "suimin");
+  }
 
+  // 1.5. Smithing Table Interaction Tracking (鍛冶台アップグレード用)
+  if (block.typeId === "minecraft:smithing_table") {
+    playerSmithingTableOpenMap.set(player.id, Date.now());
+  }
+
+  // 2. Pudding Eating Gimmick
   if (block.typeId === "mi:pudding") {
     event.cancel = true;
     handlePuddingEat(player, block, false);
@@ -963,19 +1162,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     return;
   }
 
-
-  if (block.typeId === "mi:pudding") {
-    event.cancel = true;
-    handlePuddingEat(player, block, false);
-    return;
-  }
-
-  if (block.typeId === "mi:nekomimi_pudding") {
-    event.cancel = true;
-    handlePuddingEat(player, block, true);
-    return;
-  }
-
+  // 3. Fediverse Instance Server & Note Board UI
   if (block.typeId === "mi:instance_server") {
     event.cancel = true;
     if (!canOpenUI(player)) return;
@@ -994,6 +1181,92 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
       openNoteBoardUI(player, loc);
     });
     return;
+  }
+
+  // 4. 偉業のツール 儀式システム (11種類の偉業アイテムをチェストに入れて右クリック)
+  if (block.typeId === "minecraft:chest" || block.typeId === "minecraft:trapped_chest") {
+    try {
+      const chestContainer = (block as any).getComponent("minecraft:inventory")?.container;
+      if (chestContainer) {
+        const requiredIgyoTypes = [
+          "mi:aisatu_ha_igyo",
+          "mi:suimin_ha_igyo",
+          "mi:suibunhokyu_ha_igyo",
+          "mi:asakatsu_ha_igyo",
+          "mi:chokin_ha_igyo",
+          "mi:dokusho_ha_igyo",
+          "mi:josetsu_ha_igyo",
+          "mi:kaimono_ha_igyo",
+          "mi:seichi_ha_igyo",
+          "mi:upgrade_ha_igyo",
+          "mi:shokuji_ha_igyo"
+        ];
+
+        const matchedSlots = new Map<string, number>();
+
+        for (let i = 0; i < chestContainer.size; i++) {
+          const item = chestContainer.getItem(i);
+          if (!item) continue;
+          if (requiredIgyoTypes.includes(item.typeId) && !matchedSlots.has(item.typeId)) {
+            matchedSlots.set(item.typeId, i);
+          }
+        }
+
+        // 11種類すべてがチェスト内に存在するか？
+        if (matchedSlots.size === requiredIgyoTypes.length) {
+          if (playerHasItem(player, "mi:igyo_tool")) {
+            player.sendMessage("§e⚠️ [偉業の儀式] あなたはすでに「偉業のツール」を所持しています！§r");
+          } else {
+            event.cancel = true; // チェストUIを開かずに儀式を発動！
+            const blockLoc = block.location;
+            const dim = player.dimension;
+
+            system.run(() => {
+              try {
+                // 11種類のアイテムをそれぞれ1個消費
+                for (const [typeId, slotIdx] of matchedSlots.entries()) {
+                  const item = chestContainer.getItem(slotIdx);
+                  if (item) {
+                    if (item.amount > 1) {
+                      item.amount -= 1;
+                      chestContainer.setItem(slotIdx, item);
+                    } else {
+                      chestContainer.setItem(slotIdx, undefined);
+                    }
+                  }
+                }
+
+                // 偉業のツールを生成
+                const toolItem = new ItemStack("mi:igyo_tool", 1);
+                let addedToChest = false;
+                try {
+                  chestContainer.addItem(toolItem);
+                  addedToChest = true;
+                } catch (e) {
+                  addedToChest = false;
+                }
+
+                if (!addedToChest) {
+                  dim.spawnItem(toolItem, { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+                }
+
+                // 神聖な儀式演出
+                dim.spawnParticle("minecraft:totem_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.0, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.8, z: blockLoc.z + 0.5 });
+
+                player.sendMessage("§6🏆✨【偉業達成の儀式】11の偉業が共鳴し、万能なる「偉業のツール」が授けられた！§r");
+                world.sendMessage(`§6📢 [Mi_Addon] プレイヤー「${player.name}」が11の偉業をすべて捧げ、「偉業のツール」を手に入れました！§r`);
+              } catch (e) {
+                console.warn("[Mi_Addon] Error during Igyo tool ritual: " + e);
+              }
+            });
+            return;
+          }
+        }
+      }
+    } catch (e) { }
   }
 });
 
@@ -1813,6 +2086,7 @@ function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
     .body("「やあ！ Misskey MC Addonへようこそ！\n何かお手伝いできることはありますか？」")
     .button("💬 世間話をする (開発トーク)")
     .button("🏢 Misskey開発所（本社ビル）の場所を聞く")
+    .button("🔄 紛失した偉業の再チャレンジ (リセット)")
     .button("またね");
 
   showFormSafe(player, form, (response) => {
@@ -1876,6 +2150,9 @@ function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
       } else {
         player.sendMessage("§b🏢 しゅいろ: 「開発所の場所のヒントはさっき教えたよ！ おおよそ §eX: " + approxX + " 付近, Z: " + approxZ + " 付近§b のあたりを探してみてね。無事にたどり着けるといいな！」§r");
       }
+    } else if (response.selection === 2) {
+      // 🔄 偉業の再チャレンジ (リセットUI)
+      openAchievementRetryUI(player);
     }
   });
 }
@@ -1969,6 +2246,10 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 
   if (!target) return;
 
+  // Villager trade achievement (買い物の偉業)
+  if (target.typeId === "minecraft:villager" || target.typeId === "minecraft:wandering_trader") {
+    grantAchievement(player, "kaimono");
+  }
 
   // Player-to-Player Direct DM shortcut (Shift + Right Click another player)
   if (target instanceof Player && player.isSneaking) {
@@ -2194,7 +2475,7 @@ world.afterEvents.entityHurt.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 4. Item Complete Use (Baked Mochocho Overeat)
+// 4. Item Complete Use (Baked Mochocho, Hydration & Food Achievements)
 // ----------------------------------------------------
 world.afterEvents.itemCompleteUse.subscribe((event) => {
   const player = event.source;
@@ -2202,6 +2483,24 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   const playerId = player.id;
   const now = Date.now();
 
+  // 1. 水分補給の偉業 (ポーション・牛乳・水)
+  if (
+    itemStack.typeId === "minecraft:potion" ||
+    itemStack.typeId.includes("potion") ||
+    itemStack.typeId === "minecraft:milk_bucket" ||
+    itemStack.typeId === "minecraft:water_bucket"
+  ) {
+    grantAchievement(player, "suibunhokyu");
+  }
+
+  // 2. 食事の偉業 (累計500個)
+  const foodCount = (playerFoodEatCountMap.get(playerId) || 0) + 1;
+  playerFoodEatCountMap.set(playerId, foodCount);
+  if (foodCount >= 500) {
+    grantAchievement(player, "shokuji");
+  }
+
+  // 3. ベイクドモチョチョ食べ過ぎギミック
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
     
@@ -2249,6 +2548,41 @@ system.runInterval(() => {
   // A. Tin Foil Hat Mental Protection & Wave Detection
   const players = overworld.getPlayers();
   for (const p of players) {
+    // 1. 偉業判定: 貯金 (金インゴット/金塊/生の金/金ブロック所持)
+    if (
+      playerHasItem(p, "minecraft:gold_ingot") ||
+      playerHasItem(p, "minecraft:gold_nugget") ||
+      playerHasItem(p, "minecraft:raw_gold") ||
+      playerHasItem(p, "minecraft:gold_block")
+    ) {
+      grantAchievement(p, "chokin");
+    }
+
+    // 2. 偉業判定: アップグレード (鍛冶台を使った直後のみ判定)
+    const lastSmithingTime = playerSmithingTableOpenMap.get(p.id) || 0;
+    if (now - lastSmithingTime < 15000) {
+      const netheriteItems = [
+        "minecraft:netherite_sword", "minecraft:netherite_pickaxe", "minecraft:netherite_axe",
+        "minecraft:netherite_shovel", "minecraft:netherite_hoe", "minecraft:netherite_helmet",
+        "minecraft:netherite_chestplate", "minecraft:netherite_leggings", "minecraft:netherite_boots"
+      ];
+      if (netheriteItems.some(item => playerHasItem(p, item))) {
+        grantAchievement(p, "upgrade");
+        playerSmithingTableOpenMap.delete(p.id);
+      }
+    }
+
+    // 3. 偉業判定: 朝活 (リアル時間朝6時〜9時に累計30分プレイ)
+    const currentHour = (new Date().getUTCHours() + 9) % 24; // JST
+    if (currentHour >= 6 && currentHour < 9) {
+      const pId = p.id;
+      const playSecs = (playerAsakatsuPlaySecondsMap.get(pId) || 0) + 1;
+      playerAsakatsuPlaySecondsMap.set(pId, playSecs);
+      if (playSecs >= 1800) {
+        grantAchievement(p, "asakatsu");
+      }
+    }
+
     const equippable = p.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
     const headItem = equippable?.getEquipment("Head" as any);
     if (headItem?.typeId === "mi:tin_foil_hat") {
@@ -2665,13 +2999,102 @@ system.runInterval(() => {
 }, 20);
 
 // ----------------------------------------------------
-// 0.85. Blueprint Item Handlers (Misskey HQ & Yahata Steelworks)
+// 0.85. Item Use Handlers (Igyo Tool Forging, Blueprints & Dokusho)
 // ----------------------------------------------------
 world.afterEvents.itemUse.subscribe((event) => {
   const player = event.source;
   const itemStack = event.itemStack;
 
-  // 1. Yahata Steelworks Blueprint (mi:yahata_blueprint)
+  // 0. 偉業 (`mi:igyo`) または 偉業アイテム右クリックによる「偉業のツール」錬成 / スニークで再チャレンジUI
+  if (itemStack.typeId === "mi:igyo" || itemStack.typeId.endsWith("_ha_igyo")) {
+    if (player.isSneaking) {
+      openAchievementRetryUI(player);
+      return;
+    }
+
+    const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+    if (inv) {
+      // インベントリ内の11種の偉業アイテムのスロットを走査
+      const foundSlots = new Map<string, number>();
+      for (let i = 0; i < inv.size; i++) {
+        const it = inv.getItem(i);
+        if (it && ALL_IGYO_ITEMS.includes(it.typeId) && !foundSlots.has(it.typeId)) {
+          foundSlots.set(it.typeId, i);
+        }
+      }
+
+      const missingItems = ALL_IGYO_ITEMS.filter(typeId => !foundSlots.has(typeId));
+
+      if (missingItems.length > 0) {
+        // まだ揃っていない場合：進捗状況と不足している偉業一覧を表示
+        const currentCount = ALL_IGYO_ITEMS.length - missingItems.length;
+        player.sendMessage(`§e📜 [偉業の錬成] 現在の進捗: §6${currentCount} / 11§e 個§r`);
+        player.sendMessage(`§7まだ達成・所持していない偉業 (${missingItems.length}個):§r`);
+        for (const missing of missingItems) {
+          const key = missing.replace("mi:", "").replace("_ha_igyo", "");
+          const name = IGYO_NAMES[key] || key;
+          const desc = IGYO_DESCRIPTIONS[key] || "";
+          player.sendMessage(`§c・ ${name} §7(${desc})§r`);
+        }
+      } else {
+        // 11種類すべて揃っている場合！
+        if (playerHasItem(player, "mi:igyo_tool")) {
+          player.sendMessage("§e⚠️ あなたはすでに「偉業のツール」を所持しています！§r");
+        } else {
+          // 11種類の偉業アイテムをインベントリから各1個消費
+          for (const [typeId, slotIdx] of foundSlots.entries()) {
+            const it = inv.getItem(slotIdx);
+            if (it) {
+              if (it.amount > 1) {
+                it.amount -= 1;
+                inv.setItem(slotIdx, it);
+              } else {
+                inv.setItem(slotIdx, undefined);
+              }
+            }
+          }
+
+          // 手持ちの mi:igyo も消費
+          if (itemStack.typeId === "mi:igyo") {
+            decrementPlayerHeldItem(player);
+          }
+
+          // 偉業のツールを生成して付与！
+          const tool = new ItemStack("mi:igyo_tool", 1);
+          tool.setLore([
+            `§6偉業達成者: §f${player.name}§r`,
+            `§e11の偉業を捧げて錬成された万能ツール§r`,
+            `§7鍬・ツルハシ・斧・シャベルすべての能力を持つ§r`
+          ]);
+
+          inv.addItem(tool);
+
+          // 豪華な儀式演出
+          const pLoc = player.location;
+          const dim = player.dimension;
+          dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+          dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+          dim.spawnParticle("minecraft:villager_happy", { x: pLoc.x, y: pLoc.y + 2.0, z: pLoc.z });
+          dim.spawnParticle("minecraft:heart_particle", { x: pLoc.x, y: pLoc.y + 2.2, z: pLoc.z });
+
+          player.sendMessage("§6🏆✨【偉業達成の儀式】11の偉業が共鳴し、万能なる「偉業のツール」が授けられた！§r");
+          world.sendMessage(`§6📢 [Mi_Addon] プレイヤー「${player.name}」が11の偉業をすべて捧げ、「偉業のツール」を錬成しました！§r`);
+        }
+      }
+    }
+  }
+
+  // 1. 読書の偉業 (本・本と羽ペン・記入済みの本・エンチャント本)
+  if (
+    itemStack.typeId === "minecraft:book" ||
+    itemStack.typeId === "minecraft:writable_book" ||
+    itemStack.typeId === "minecraft:written_book" ||
+    itemStack.typeId === "minecraft:enchanted_book"
+  ) {
+    grantAchievement(player, "dokusho");
+  }
+
+  // 2. Yahata Steelworks Blueprint (mi:yahata_blueprint)
   if (itemStack.typeId === "mi:yahata_blueprint") {
     const dim = player.dimension;
     const pLoc = player.location;
@@ -2698,9 +3121,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
 
-  
-
-  // 2. Misskey HQ Blueprint (mi:hq_blueprint)
+  // 3. Misskey HQ Blueprint (mi:hq_blueprint)
   if (itemStack.typeId === "mi:hq_blueprint") {
     const dim = player.dimension;
     const pLoc = player.location;
@@ -2726,6 +3147,75 @@ world.afterEvents.itemUse.subscribe((event) => {
       } catch (e) { }
     }, 5);
     return;
+  }
+});
+
+// ----------------------------------------------------
+// 0.89. Block Break Events (Seichi, Josetsu & Tool Durability Consumption)
+// ----------------------------------------------------
+world.afterEvents.playerBreakBlock.subscribe((event) => {
+  const player = event.player;
+  if (!player) return;
+  const playerId = player.id;
+  const blockPerm = event.brokenBlockPermutation;
+  const blockTypeId = blockPerm?.type?.id || "";
+
+  // 1. 整地の偉業 (土・草・砂・砂利など累計1000個)
+  const groundKeywords = ["dirt", "grass", "podzol", "mycelium", "mud", "sand", "gravel", "clay"];
+  if (groundKeywords.some(kw => blockTypeId.includes(kw))) {
+    const count = (playerSeichiBreakCountMap.get(playerId) || 0) + 1;
+    playerSeichiBreakCountMap.set(playerId, count);
+    if (count >= 1000) {
+      grantAchievement(player, "seichi");
+    }
+  }
+
+  // 2. 除雪の偉業 (雪・粉雪など累計500個)
+  if (blockTypeId.includes("snow")) {
+    const count = (playerSnowBreakCountMap.get(playerId) || 0) + 1;
+    playerSnowBreakCountMap.set(playerId, count);
+    if (count >= 500) {
+      grantAchievement(player, "josetsu");
+    }
+  }
+
+  // 3. カスタムツール耐久値消費 & 耐久力（Unbreaking）エンチャント計算
+  if (player.gameMode !== "creative") {
+    try {
+      const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+      if (!equippable) return;
+      const handItem = equippable.getEquipment("Mainhand" as any);
+      if (!handItem) return;
+
+      const typeId = handItem.typeId;
+      if (typeId === "mi:ota" || typeId === "mi:otaku_cry" || typeId === "mi:igyo_tool") {
+        const durability = handItem.getComponent("minecraft:durability") as any;
+        if (durability) {
+          // Unbreaking レベル取得
+          let unbreakingLevel = 0;
+          const enchantable = handItem.getComponent("minecraft:enchantable") as any;
+          if (enchantable) {
+            const unbreaking = enchantable.getEnchantment("unbreaking");
+            if (unbreaking) unbreakingLevel = unbreaking.level;
+          }
+
+          // 耐久力確率: 1 / (level + 1)
+          const damageChance = 1 / (unbreakingLevel + 1);
+          if (Math.random() < damageChance) {
+            if (durability.damage + 1 >= durability.maxDurability) {
+              // 道具破損
+              equippable.setEquipment("Mainhand" as any, undefined);
+              const pLoc = player.location;
+              player.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 0.8, z: pLoc.z });
+              player.sendMessage("§c💥 [Mi_Addon] 道具が壊れてしまった！§r");
+            } else {
+              durability.damage += 1;
+              equippable.setEquipment("Mainhand" as any, handItem);
+            }
+          }
+        }
+      }
+    } catch (e) { }
   }
 });
 

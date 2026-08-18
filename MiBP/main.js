@@ -46,6 +46,171 @@ var licensedPlayers = /* @__PURE__ */ new Set();
 var accidentCarsMap = /* @__PURE__ */ new Map();
 var momoLuckCooldownMap = /* @__PURE__ */ new Map();
 var syuiloQuoteIndexMap = /* @__PURE__ */ new Map();
+var ALL_IGYO_ITEMS = [
+  "mi:aisatu_ha_igyo",
+  "mi:suimin_ha_igyo",
+  "mi:suibunhokyu_ha_igyo",
+  "mi:asakatsu_ha_igyo",
+  "mi:chokin_ha_igyo",
+  "mi:dokusho_ha_igyo",
+  "mi:josetsu_ha_igyo",
+  "mi:kaimono_ha_igyo",
+  "mi:seichi_ha_igyo",
+  "mi:upgrade_ha_igyo",
+  "mi:shokuji_ha_igyo"
+];
+var IGYO_NAMES = {
+  "aisatu": "\u6328\u62F6\u306E\u5049\u696D",
+  "suimin": "\u7761\u7720\u306E\u5049\u696D",
+  "suibunhokyu": "\u6C34\u5206\u88DC\u7D66\u306E\u5049\u696D",
+  "asakatsu": "\u671D\u6D3B\u306E\u5049\u696D",
+  "chokin": "\u8CAF\u91D1\u306E\u5049\u696D",
+  "dokusho": "\u8AAD\u66F8\u306E\u5049\u696D",
+  "josetsu": "\u9664\u96EA\u306E\u5049\u696D",
+  "kaimono": "\u8CB7\u3044\u7269\u306E\u5049\u696D",
+  "seichi": "\u6574\u5730\u306E\u5049\u696D",
+  "upgrade": "\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9\u306E\u5049\u696D",
+  "shokuji": "\u98DF\u4E8B\u306E\u5049\u696D"
+};
+var IGYO_DESCRIPTIONS = {
+  "aisatu": "\u30C1\u30E3\u30C3\u30C8\u3067\u6328\u62F6\u3059\u308B",
+  "suimin": "\u30D9\u30C3\u30C9\u3067\u7720\u308B",
+  "suibunhokyu": "\u6C34\u3084\u30DD\u30FC\u30B7\u30E7\u30F3\u3092\u98F2\u3080",
+  "asakatsu": "\u671D6\u6642\u301C9\u6642\u306B30\u5206\u30D7\u30EC\u30A4",
+  "chokin": "\u91D1\u30A4\u30F3\u30B4\u30C3\u30C8\u7B49\u3092\u6240\u6301",
+  "dokusho": "\u672C\u3092\u4F7F\u7528\u3059\u308B",
+  "josetsu": "\u96EA\u3092500\u500B\u6398\u308B",
+  "kaimono": "\u6751\u4EBA\u3068\u53D6\u5F15\u3059\u308B",
+  "seichi": "\u571F\u3084\u8349\u30921000\u500B\u6398\u308B",
+  "upgrade": "\u935B\u51B6\u53F0\u3067\u30CD\u30B6\u30E9\u30A4\u30C8\u306B\u5F37\u5316",
+  "shokuji": "\u98DF\u3079\u7269\u3092500\u500B\u98DF\u3079\u308B"
+};
+var playerAsakatsuPlaySecondsMap = /* @__PURE__ */ new Map();
+var playerSnowBreakCountMap = /* @__PURE__ */ new Map();
+var playerSeichiBreakCountMap = /* @__PURE__ */ new Map();
+var playerFoodEatCountMap = /* @__PURE__ */ new Map();
+var playerSmithingTableOpenMap = /* @__PURE__ */ new Map();
+function playerHasItem(player, itemTypeId) {
+  try {
+    const inv = player.getComponent(EntityComponentTypes.Inventory)?.container;
+    if (!inv) return false;
+    for (let i = 0; i < inv.size; i++) {
+      const item = inv.getItem(i);
+      if (item && item.typeId === itemTypeId) return true;
+    }
+  } catch (e) {
+  }
+  return false;
+}
+function hasPlayerAchieved(player, igyoKey) {
+  try {
+    const prop = player.getDynamicProperty(`igyo_${igyoKey}`);
+    if (prop === true) return true;
+  } catch (e) {
+  }
+  return player.hasTag(`igyo_${igyoKey}`);
+}
+function setPlayerAchieved(player, igyoKey) {
+  try {
+    player.setDynamicProperty(`igyo_${igyoKey}`, true);
+  } catch (e) {
+  }
+  player.addTag(`igyo_${igyoKey}`);
+}
+function grantAchievement(player, igyoKey) {
+  if (hasPlayerAchieved(player, igyoKey)) return;
+  setPlayerAchieved(player, igyoKey);
+  const itemTypeId = `mi:${igyoKey}_ha_igyo`;
+  const name = IGYO_NAMES[igyoKey] || igyoKey;
+  system.run(() => {
+    try {
+      const inv = player.getComponent(EntityComponentTypes.Inventory)?.container;
+      if (!inv) return;
+      const item = new ItemStack(itemTypeId, 1);
+      item.setLore([
+        `\xA76\u9054\u6210\u8005: \xA7f${player.name}\xA7r`,
+        `\xA77\u9054\u6210\u6761\u4EF6: ${IGYO_DESCRIPTIONS[igyoKey] || ""}\xA7r`
+      ]);
+      const hasBaseIgyo = hasPlayerAchieved(player, "base_igyo");
+      inv.addItem(item);
+      if (!hasBaseIgyo) {
+        setPlayerAchieved(player, "base_igyo");
+        const baseItem = new ItemStack("mi:igyo", 1);
+        baseItem.setLore([
+          `\xA76\u6240\u6709\u8005: \xA7f${player.name}\xA7r`,
+          `\xA7e11\u7A2E\u985E\u306E\u5049\u696D\u3092\u96C6\u3081\u3066\u53F3\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\xA7r`,
+          `\xA7e\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u932C\u6210\u3067\u304D\u307E\u3059\uFF01\xA7r`
+        ]);
+        inv.addItem(baseItem);
+        player.sendMessage(`\xA76\u{1F3C6} [\u5049\u696D\u9054\u6210] \u521D\u3081\u3066\u306E\u5049\u696D\u3092\u9054\u6210\uFF01\u300C\u5049\u696D (mi:igyo)\u300D\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        player.sendMessage(`\xA7e\u{1F4A1} [\u30D2\u30F3\u30C8] 11\u7A2E\u985E\u3059\u3079\u3066\u306E\u5049\u696D\u3092\u96C6\u3081\u3066\u300C\u5049\u696D\u300D\u3092\u53F3\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\u3001\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u932C\u6210\u3067\u304D\u307E\u3059\uFF01\xA7r`);
+      }
+      player.sendMessage(`\xA76\u{1F3C6} [\u5049\u696D\u9054\u6210] \u300C${name}\u300D\u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+      const loc = player.location;
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.5, z: loc.z });
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+    } catch (e) {
+      console.warn("[Mi_Addon] Error granting achievement: " + e);
+    }
+  });
+}
+function resetAchievement(player, igyoKey) {
+  try {
+    player.setDynamicProperty(`igyo_${igyoKey}`, false);
+  } catch (e) {
+  }
+  player.removeTag(`igyo_${igyoKey}`);
+  if (igyoKey === "asakatsu") playerAsakatsuPlaySecondsMap.delete(player.id);
+  if (igyoKey === "josetsu") playerSnowBreakCountMap.delete(player.id);
+  if (igyoKey === "seichi") playerSeichiBreakCountMap.delete(player.id);
+  if (igyoKey === "shokuji") playerFoodEatCountMap.delete(player.id);
+}
+function openAchievementRetryUI(player) {
+  const form = new ActionFormData().title("\u{1F504} \u5049\u696D\u306E\u518D\u30C1\u30E3\u30EC\u30F3\u30B8 (\u30EA\u30BB\u30C3\u30C8)").body("\u7D1B\u5931\u30FB\u30ED\u30B9\u30C8\u3057\u305F\u5049\u696D\u3092\u9078\u629E\u3057\u3066\u30D5\u30E9\u30B0\u3092\u30EA\u30BB\u30C3\u30C8\u3057\u3001\u3082\u3046\u4E00\u5EA6\u9054\u6210\u6761\u4EF6\u306B\u30C1\u30E3\u30EC\u30F3\u30B8\u3067\u304D\u307E\u3059\u3002\n\uFF08\u203B\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306B\u6240\u6301\u4E2D\u306E\u5049\u696D\u306F\u30EA\u30BB\u30C3\u30C8\u4E0D\u8981\u3067\u3059\uFF09");
+  const allKeys = Object.keys(IGYO_NAMES);
+  for (const key of allKeys) {
+    const itemTypeId = `mi:${key}_ha_igyo`;
+    const isHeld = playerHasItem(player, itemTypeId);
+    const isAchieved = hasPlayerAchieved(player, key);
+    const name = IGYO_NAMES[key];
+    if (isHeld) {
+      form.button(`\u2705 ${name}
+[\u6240\u6301\u4E2D - \u30EA\u30BB\u30C3\u30C8\u4E0D\u8981]`);
+    } else if (isAchieved) {
+      form.button(`\u{1F504} ${name}
+[\u30EA\u30BB\u30C3\u30C8\u3057\u3066\u518D\u6311\u6226\uFF01]`);
+    } else {
+      form.button(`\u23F3 ${name}
+[\u672A\u9054\u6210 - \u30C1\u30E3\u30EC\u30F3\u30B8\u53EF\u80FD]`);
+    }
+  }
+  form.button("\u{1F519} \u9589\u3058\u308B");
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === void 0) return;
+    const selectedIdx = res.selection;
+    if (selectedIdx < allKeys.length) {
+      const key = allKeys[selectedIdx];
+      const itemTypeId = `mi:${key}_ha_igyo`;
+      const isHeld = playerHasItem(player, itemTypeId);
+      const isAchieved = hasPlayerAchieved(player, key);
+      const name = IGYO_NAMES[key];
+      const desc = IGYO_DESCRIPTIONS[key] || "";
+      if (isHeld) {
+        player.sendMessage(`\xA7e\u26A0\uFE0F \u300C${name}\u300D\u306F\u3059\u3067\u306B\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u5185\u306B\u6240\u6301\u3057\u3066\u3044\u307E\u3059\u3002\xA7r`);
+        openAchievementRetryUI(player);
+      } else if (isAchieved) {
+        resetAchievement(player, key);
+        player.sendMessage(`\xA7a\u{1F504} [\u5049\u696D\u30EA\u30BB\u30C3\u30C8] \u300C${name}\u300D\u306E\u5B9F\u7E3E\u30D5\u30E9\u30B0\u3092\u30EA\u30BB\u30C3\u30C8\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        player.sendMessage(`\xA7e\u{1F4A1} \u518D\u9054\u6210\u306E\u6761\u4EF6: ${desc}\xA7r`);
+        const pLoc = player.location;
+        player.dimension.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+      } else {
+        player.sendMessage(`\xA77\u300C${name}\u300D\u306F\u307E\u3060\u9054\u6210\u3057\u3066\u3044\u307E\u305B\u3093\u3002(\u9054\u6210\u6761\u4EF6: ${desc})\xA7r`);
+        openAchievementRetryUI(player);
+      }
+    }
+  });
+}
 var emojiMap = {
   ":blobcat:": "\uE101",
   ":cat:": "\uE101",
@@ -105,7 +270,7 @@ if (world.afterEvents?.chatSend) {
         world.sendMessage(`<${sender.name}> ${message}`);
       });
     }
-    if (/^(hello|hi|hey|こんにちは|こんばんは|おはよう|おはようございます|やあ|やっほー)$/i.test(event.message.trim())) {
+    if (/^(hello|hi|hey|こんにちは|こんばんは|おはよう|おはようございます|やあ|やっほー|おは|こん|おやすみ)/i.test(event.message.trim())) {
       grantAchievement(sender, "aisatu");
     }
   });
@@ -704,15 +869,11 @@ function handlePuddingEat(player, block, isNekomimi) {
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
   const block = event.block;
   const player = event.player;
-  if (block.typeId === "mi:pudding") {
-    event.cancel = true;
-    handlePuddingEat(player, block, false);
-    return;
+  if (block.typeId.includes("bed")) {
+    grantAchievement(player, "suimin");
   }
-  if (block.typeId === "mi:nekomimi_pudding") {
-    event.cancel = true;
-    handlePuddingEat(player, block, true);
-    return;
+  if (block.typeId === "minecraft:smithing_table") {
+    playerSmithingTableOpenMap.set(player.id, Date.now());
   }
   if (block.typeId === "mi:pudding") {
     event.cancel = true;
@@ -741,6 +902,79 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
       openNoteBoardUI(player, loc);
     });
     return;
+  }
+  if (block.typeId === "minecraft:chest" || block.typeId === "minecraft:trapped_chest") {
+    try {
+      const chestContainer = block.getComponent("minecraft:inventory")?.container;
+      if (chestContainer) {
+        const requiredIgyoTypes = [
+          "mi:aisatu_ha_igyo",
+          "mi:suimin_ha_igyo",
+          "mi:suibunhokyu_ha_igyo",
+          "mi:asakatsu_ha_igyo",
+          "mi:chokin_ha_igyo",
+          "mi:dokusho_ha_igyo",
+          "mi:josetsu_ha_igyo",
+          "mi:kaimono_ha_igyo",
+          "mi:seichi_ha_igyo",
+          "mi:upgrade_ha_igyo",
+          "mi:shokuji_ha_igyo"
+        ];
+        const matchedSlots = /* @__PURE__ */ new Map();
+        for (let i = 0; i < chestContainer.size; i++) {
+          const item = chestContainer.getItem(i);
+          if (!item) continue;
+          if (requiredIgyoTypes.includes(item.typeId) && !matchedSlots.has(item.typeId)) {
+            matchedSlots.set(item.typeId, i);
+          }
+        }
+        if (matchedSlots.size === requiredIgyoTypes.length) {
+          if (playerHasItem(player, "mi:igyo_tool")) {
+            player.sendMessage("\xA7e\u26A0\uFE0F [\u5049\u696D\u306E\u5100\u5F0F] \u3042\u306A\u305F\u306F\u3059\u3067\u306B\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u6240\u6301\u3057\u3066\u3044\u307E\u3059\uFF01\xA7r");
+          } else {
+            event.cancel = true;
+            const blockLoc = block.location;
+            const dim = player.dimension;
+            system.run(() => {
+              try {
+                for (const [typeId, slotIdx] of matchedSlots.entries()) {
+                  const item = chestContainer.getItem(slotIdx);
+                  if (item) {
+                    if (item.amount > 1) {
+                      item.amount -= 1;
+                      chestContainer.setItem(slotIdx, item);
+                    } else {
+                      chestContainer.setItem(slotIdx, void 0);
+                    }
+                  }
+                }
+                const toolItem = new ItemStack("mi:igyo_tool", 1);
+                let addedToChest = false;
+                try {
+                  chestContainer.addItem(toolItem);
+                  addedToChest = true;
+                } catch (e) {
+                  addedToChest = false;
+                }
+                if (!addedToChest) {
+                  dim.spawnItem(toolItem, { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+                }
+                dim.spawnParticle("minecraft:totem_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.2, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 1, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:villager_happy", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.5, z: blockLoc.z + 0.5 });
+                dim.spawnParticle("minecraft:heart_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 1.8, z: blockLoc.z + 0.5 });
+                player.sendMessage("\xA76\u{1F3C6}\u2728\u3010\u5049\u696D\u9054\u6210\u306E\u5100\u5F0F\u301111\u306E\u5049\u696D\u304C\u5171\u9CF4\u3057\u3001\u4E07\u80FD\u306A\u308B\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u304C\u6388\u3051\u3089\u308C\u305F\uFF01\xA7r");
+                world.sendMessage(`\xA76\u{1F4E2} [Mi_Addon] \u30D7\u30EC\u30A4\u30E4\u30FC\u300C${player.name}\u300D\u304C11\u306E\u5049\u696D\u3092\u3059\u3079\u3066\u6367\u3052\u3001\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u624B\u306B\u5165\u308C\u307E\u3057\u305F\uFF01\xA7r`);
+              } catch (e) {
+                console.warn("[Mi_Addon] Error during Igyo tool ritual: " + e);
+              }
+            });
+            return;
+          }
+        }
+      }
+    } catch (e) {
+    }
   }
 });
 var generatedSteelworksLocations = [];
@@ -1389,7 +1623,7 @@ world.afterEvents.entityDie.subscribe((event) => {
 });
 var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
 function openSyuiloDialogUI(player, syuiloEntity) {
-  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u307E\u305F\u306D");
+  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u{1F504} \u7D1B\u5931\u3057\u305F\u5049\u696D\u306E\u518D\u30C1\u30E3\u30EC\u30F3\u30B8 (\u30EA\u30BB\u30C3\u30C8)").button("\u307E\u305F\u306D");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0) return;
     if (response.selection === 0) {
@@ -1440,6 +1674,8 @@ function openSyuiloDialogUI(player, syuiloEntity) {
       } else {
         player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300C\u958B\u767A\u6240\u306E\u5834\u6240\u306E\u30D2\u30F3\u30C8\u306F\u3055\u3063\u304D\u6559\u3048\u305F\u3088\uFF01 \u304A\u304A\u3088\u305D \xA7eX: " + approxX + " \u4ED8\u8FD1, Z: " + approxZ + " \u4ED8\u8FD1\xA7b \u306E\u3042\u305F\u308A\u3092\u63A2\u3057\u3066\u307F\u3066\u306D\u3002\u7121\u4E8B\u306B\u305F\u3069\u308A\u7740\u3051\u308B\u3068\u3044\u3044\u306A\uFF01\u300D\xA7r");
       }
+    } else if (response.selection === 2) {
+      openAchievementRetryUI(player);
     }
   });
 }
@@ -1506,6 +1742,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const target = event.target;
   const itemStack = event.itemStack;
   if (!target) return;
+  if (target.typeId === "minecraft:villager" || target.typeId === "minecraft:wandering_trader") {
+    grantAchievement(player, "kaimono");
+  }
   if (target instanceof Player && player.isSneaking) {
     event.cancel = true;
     if (!canOpenUI(player)) return;
@@ -1697,6 +1936,14 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
   const itemStack = event.itemStack;
   const playerId = player.id;
   const now = Date.now();
+  if (itemStack.typeId === "minecraft:potion" || itemStack.typeId.includes("potion") || itemStack.typeId === "minecraft:milk_bucket" || itemStack.typeId === "minecraft:water_bucket") {
+    grantAchievement(player, "suibunhokyu");
+  }
+  const foodCount = (playerFoodEatCountMap.get(playerId) || 0) + 1;
+  playerFoodEatCountMap.set(playerId, foodCount);
+  if (foodCount >= 500) {
+    grantAchievement(player, "shokuji");
+  }
   if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
     if (now - state.lastEatTime > 6e4) {
@@ -1733,6 +1980,36 @@ system.runInterval(() => {
   const now = Date.now();
   const players = overworld.getPlayers();
   for (const p of players) {
+    if (playerHasItem(p, "minecraft:gold_ingot") || playerHasItem(p, "minecraft:gold_nugget") || playerHasItem(p, "minecraft:raw_gold") || playerHasItem(p, "minecraft:gold_block")) {
+      grantAchievement(p, "chokin");
+    }
+    const lastSmithingTime = playerSmithingTableOpenMap.get(p.id) || 0;
+    if (now - lastSmithingTime < 15e3) {
+      const netheriteItems = [
+        "minecraft:netherite_sword",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_boots"
+      ];
+      if (netheriteItems.some((item) => playerHasItem(p, item))) {
+        grantAchievement(p, "upgrade");
+        playerSmithingTableOpenMap.delete(p.id);
+      }
+    }
+    const currentHour = ((/* @__PURE__ */ new Date()).getUTCHours() + 9) % 24;
+    if (currentHour >= 6 && currentHour < 9) {
+      const pId = p.id;
+      const playSecs = (playerAsakatsuPlaySecondsMap.get(pId) || 0) + 1;
+      playerAsakatsuPlaySecondsMap.set(pId, playSecs);
+      if (playSecs >= 1800) {
+        grantAchievement(p, "asakatsu");
+      }
+    }
     const equippable = p.getComponent(EntityComponentTypes.Equippable);
     const headItem = equippable?.getEquipment("Head");
     if (headItem?.typeId === "mi:tin_foil_hat") {
@@ -2081,6 +2358,71 @@ system.runInterval(() => {
 world.afterEvents.itemUse.subscribe((event) => {
   const player = event.source;
   const itemStack = event.itemStack;
+  if (itemStack.typeId === "mi:igyo" || itemStack.typeId.endsWith("_ha_igyo")) {
+    if (player.isSneaking) {
+      openAchievementRetryUI(player);
+      return;
+    }
+    const inv = player.getComponent(EntityComponentTypes.Inventory)?.container;
+    if (inv) {
+      const foundSlots = /* @__PURE__ */ new Map();
+      for (let i = 0; i < inv.size; i++) {
+        const it = inv.getItem(i);
+        if (it && ALL_IGYO_ITEMS.includes(it.typeId) && !foundSlots.has(it.typeId)) {
+          foundSlots.set(it.typeId, i);
+        }
+      }
+      const missingItems = ALL_IGYO_ITEMS.filter((typeId) => !foundSlots.has(typeId));
+      if (missingItems.length > 0) {
+        const currentCount = ALL_IGYO_ITEMS.length - missingItems.length;
+        player.sendMessage(`\xA7e\u{1F4DC} [\u5049\u696D\u306E\u932C\u6210] \u73FE\u5728\u306E\u9032\u6357: \xA76${currentCount} / 11\xA7e \u500B\xA7r`);
+        player.sendMessage(`\xA77\u307E\u3060\u9054\u6210\u30FB\u6240\u6301\u3057\u3066\u3044\u306A\u3044\u5049\u696D (${missingItems.length}\u500B):\xA7r`);
+        for (const missing of missingItems) {
+          const key = missing.replace("mi:", "").replace("_ha_igyo", "");
+          const name = IGYO_NAMES[key] || key;
+          const desc = IGYO_DESCRIPTIONS[key] || "";
+          player.sendMessage(`\xA7c\u30FB ${name} \xA77(${desc})\xA7r`);
+        }
+      } else {
+        if (playerHasItem(player, "mi:igyo_tool")) {
+          player.sendMessage("\xA7e\u26A0\uFE0F \u3042\u306A\u305F\u306F\u3059\u3067\u306B\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u6240\u6301\u3057\u3066\u3044\u307E\u3059\uFF01\xA7r");
+        } else {
+          for (const [typeId, slotIdx] of foundSlots.entries()) {
+            const it = inv.getItem(slotIdx);
+            if (it) {
+              if (it.amount > 1) {
+                it.amount -= 1;
+                inv.setItem(slotIdx, it);
+              } else {
+                inv.setItem(slotIdx, void 0);
+              }
+            }
+          }
+          if (itemStack.typeId === "mi:igyo") {
+            decrementPlayerHeldItem(player);
+          }
+          const tool = new ItemStack("mi:igyo_tool", 1);
+          tool.setLore([
+            `\xA76\u5049\u696D\u9054\u6210\u8005: \xA7f${player.name}\xA7r`,
+            `\xA7e11\u306E\u5049\u696D\u3092\u6367\u3052\u3066\u932C\u6210\u3055\u308C\u305F\u4E07\u80FD\u30C4\u30FC\u30EB\xA7r`,
+            `\xA77\u936C\u30FB\u30C4\u30EB\u30CF\u30B7\u30FB\u65A7\u30FB\u30B7\u30E3\u30D9\u30EB\u3059\u3079\u3066\u306E\u80FD\u529B\u3092\u6301\u3064\xA7r`
+          ]);
+          inv.addItem(tool);
+          const pLoc = player.location;
+          const dim = player.dimension;
+          dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+          dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+          dim.spawnParticle("minecraft:villager_happy", { x: pLoc.x, y: pLoc.y + 2, z: pLoc.z });
+          dim.spawnParticle("minecraft:heart_particle", { x: pLoc.x, y: pLoc.y + 2.2, z: pLoc.z });
+          player.sendMessage("\xA76\u{1F3C6}\u2728\u3010\u5049\u696D\u9054\u6210\u306E\u5100\u5F0F\u301111\u306E\u5049\u696D\u304C\u5171\u9CF4\u3057\u3001\u4E07\u80FD\u306A\u308B\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u304C\u6388\u3051\u3089\u308C\u305F\uFF01\xA7r");
+          world.sendMessage(`\xA76\u{1F4E2} [Mi_Addon] \u30D7\u30EC\u30A4\u30E4\u30FC\u300C${player.name}\u300D\u304C11\u306E\u5049\u696D\u3092\u3059\u3079\u3066\u6367\u3052\u3001\u300C\u5049\u696D\u306E\u30C4\u30FC\u30EB\u300D\u3092\u932C\u6210\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        }
+      }
+    }
+  }
+  if (itemStack.typeId === "minecraft:book" || itemStack.typeId === "minecraft:writable_book" || itemStack.typeId === "minecraft:written_book" || itemStack.typeId === "minecraft:enchanted_book") {
+    grantAchievement(player, "dokusho");
+  }
   if (itemStack.typeId === "mi:yahata_blueprint") {
     const dim = player.dimension;
     const pLoc = player.location;
@@ -2129,6 +2471,61 @@ world.afterEvents.itemUse.subscribe((event) => {
       }
     }, 5);
     return;
+  }
+});
+world.afterEvents.playerBreakBlock.subscribe((event) => {
+  const player = event.player;
+  if (!player) return;
+  const playerId = player.id;
+  const blockPerm = event.brokenBlockPermutation;
+  const blockTypeId = blockPerm?.type?.id || "";
+  const groundKeywords = ["dirt", "grass", "podzol", "mycelium", "mud", "sand", "gravel", "clay"];
+  if (groundKeywords.some((kw) => blockTypeId.includes(kw))) {
+    const count = (playerSeichiBreakCountMap.get(playerId) || 0) + 1;
+    playerSeichiBreakCountMap.set(playerId, count);
+    if (count >= 1e3) {
+      grantAchievement(player, "seichi");
+    }
+  }
+  if (blockTypeId.includes("snow")) {
+    const count = (playerSnowBreakCountMap.get(playerId) || 0) + 1;
+    playerSnowBreakCountMap.set(playerId, count);
+    if (count >= 500) {
+      grantAchievement(player, "josetsu");
+    }
+  }
+  if (player.gameMode !== "creative") {
+    try {
+      const equippable = player.getComponent(EntityComponentTypes.Equippable);
+      if (!equippable) return;
+      const handItem = equippable.getEquipment("Mainhand");
+      if (!handItem) return;
+      const typeId = handItem.typeId;
+      if (typeId === "mi:ota" || typeId === "mi:otaku_cry" || typeId === "mi:igyo_tool") {
+        const durability = handItem.getComponent("minecraft:durability");
+        if (durability) {
+          let unbreakingLevel = 0;
+          const enchantable = handItem.getComponent("minecraft:enchantable");
+          if (enchantable) {
+            const unbreaking = enchantable.getEnchantment("unbreaking");
+            if (unbreaking) unbreakingLevel = unbreaking.level;
+          }
+          const damageChance = 1 / (unbreakingLevel + 1);
+          if (Math.random() < damageChance) {
+            if (durability.damage + 1 >= durability.maxDurability) {
+              equippable.setEquipment("Mainhand", void 0);
+              const pLoc = player.location;
+              player.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 0.8, z: pLoc.z });
+              player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u9053\u5177\u304C\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
+            } else {
+              durability.damage += 1;
+              equippable.setEquipment("Mainhand", handItem);
+            }
+          }
+        }
+      }
+    } catch (e) {
+    }
   }
 });
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
