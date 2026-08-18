@@ -93,6 +93,10 @@ if (world.afterEvents?.chatSend) {
 }
 var MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1e3;
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  const player = event.player;
+  const target = event.target;
+  const itemStack = event.itemStack;
+  if (!target) return;
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
     event.cancel = true;
     system.run(() => {
@@ -116,9 +120,6 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     });
     return;
   }
-  const player = event.player;
-  const target = event.target;
-  if (!target) return;
   if (target.typeId === "mi:momo") {
     event.cancel = true;
     const now = Date.now();
@@ -1485,7 +1486,7 @@ world.afterEvents.entitySpawn.subscribe((event) => {
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
-  const itemStack2 = event.itemStack;
+  const itemStack = event.itemStack;
   if (!target) return;
   if (target instanceof Player && player.isSneaking) {
     event.cancel = true;
@@ -1495,7 +1496,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     });
     return;
   }
-  if (itemStack2 && itemStack2.typeId === "mi:reaction_wand") {
+  if (itemStack && itemStack.typeId === "mi:reaction_wand") {
     event.cancel = true;
     if (!canOpenUI(player)) return;
     const tLoc = target.location;
@@ -1515,7 +1516,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         player.sendMessage("\xA7e\u{1F697} [Mi_Addon] \u9577\u3044\u5909\u306A\u8ECA\u306B\u4E57\u8ECA\u3057\u3001\u904B\u8EE2\u514D\u8A31\u3092\u53D6\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r");
       });
     }
-    if (itemStack2) {
+    if (itemStack) {
       const dyeMap = {
         "minecraft:red_dye": { variant: 0, name: "\u8D64 (Red)" },
         "minecraft:blue_dye": { variant: 1, name: "\u9752 (Blue)" },
@@ -1534,7 +1535,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         "minecraft:gray_dye": { variant: 14, name: "\u7070\u8272 (Gray)" },
         "minecraft:light_gray_dye": { variant: 15, name: "\u8584\u7070\u8272 (Light Gray)" }
       };
-      const dye = dyeMap[itemStack2.typeId];
+      const dye = dyeMap[itemStack.typeId];
       if (dye) {
         event.cancel = true;
         system.run(() => {
@@ -1544,8 +1545,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
           dim.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.2, z: loc.z });
           dim.spawnParticle("minecraft:smoke_particle", { x: loc.x, y: loc.y + 0.8, z: loc.z });
           if (player.gameMode !== "creative") {
-            if (itemStack2.amount > 1) {
-              itemStack2.amount -= 1;
+            if (itemStack.amount > 1) {
+              itemStack.amount -= 1;
             } else {
               const equippable = player.getComponent(EntityComponentTypes.Equippable);
               if (equippable) equippable.setEquipment("Mainhand", void 0);
@@ -1557,15 +1558,15 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       }
     }
   }
-  if (!itemStack2) return;
-  if (target.typeId === "minecraft:cat" && itemStack2.typeId === "mi:blob_aichi") {
+  if (!itemStack) return;
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:blob_aichi") {
     event.cancel = true;
     system.run(() => {
       const loc = target.location;
       const dim = target.dimension;
       if (player.gameMode !== "creative") {
-        if (itemStack2.amount > 1) {
-          itemStack2.amount -= 1;
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
           if (equippable) equippable.setEquipment("Mainhand", void 0);
@@ -1577,14 +1578,14 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       player.sendMessage("\xA7a[Mi_Addon] \u732B\u304C \u306B\u3083\u3093\u3077\u3063\u3077\u30FC (blobcat) \u306B\u9032\u5316\u3057\u307E\u3057\u305F\uFF01\xA7r");
     });
   }
-  if (target.typeId === "minecraft:cat" && itemStack2.typeId === "mi:silenthill") {
+  if (target.typeId === "minecraft:cat" && itemStack.typeId === "mi:silenthill") {
     event.cancel = true;
     system.run(() => {
       const loc = target.location;
       const dim = target.dimension;
       if (player.gameMode !== "creative") {
-        if (itemStack2.amount > 1) {
-          itemStack2.amount -= 1;
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
           if (equippable) equippable.setEquipment("Mainhand", void 0);
@@ -1596,7 +1597,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       player.sendMessage("\xA7a[Mi_Addon] \u732B\u304C \u3092\u306D\u3053 (woneko) \u306B\u9032\u5316\u3057\u307E\u3057\u305F\uFF01\xA7r");
     });
   }
-  if (target.typeId === "mi:yosano" && itemStack2.typeId === "mi:machida") {
+  if (target.typeId === "mi:yosano" && itemStack.typeId === "mi:machida") {
     event.cancel = true;
     system.run(() => {
       const loc = target.location;
@@ -1605,8 +1606,8 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
       let loveLevel = (yosanoLoveMap.get(entityId) || 0) + 1;
       yosanoLoveMap.set(entityId, loveLevel);
       if (player.gameMode !== "creative") {
-        if (itemStack2.amount > 1) {
-          itemStack2.amount -= 1;
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
           if (equippable) equippable.setEquipment("Mainhand", void 0);
@@ -1675,10 +1676,10 @@ world.afterEvents.entityHurt.subscribe((event) => {
 });
 world.afterEvents.itemCompleteUse.subscribe((event) => {
   const player = event.source;
-  const itemStack2 = event.itemStack;
+  const itemStack = event.itemStack;
   const playerId = player.id;
   const now = Date.now();
-  if (itemStack2.typeId === "mi:baked_mochocho") {
+  if (itemStack.typeId === "mi:baked_mochocho") {
     let state = mochochoEatMap.get(playerId) || { count: 0, lastEatTime: now };
     if (now - state.lastEatTime > 6e4) {
       state.count = 0;
@@ -1702,7 +1703,7 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {
       player.sendMessage(`\xA7a[Mi_Addon] \u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u7F8E\u5473\u3057\u304F\u98DF\u3079\u305F\uFF01 (1\u5206\u9593\u306E\u6442\u53D6\u6570: ${state.count}/5)\xA7r`);
     }
   }
-  if (itemStack2.typeId === "minecraft:milk_bucket") {
+  if (itemStack.typeId === "minecraft:milk_bucket") {
     if (mochochoEatMap.has(playerId)) {
       mochochoEatMap.delete(playerId);
       player.sendMessage("\xA7b[Mi_Addon] \u725B\u4E73\u3092\u98F2\u3093\u3067\u80C3\u304C\u3059\u3063\u304D\u308A\u3057\u305F\uFF01\uFF08\u98DF\u3079\u904E\u304E\u30AB\u30A6\u30F3\u30C8\u304C\u30EA\u30BB\u30C3\u30C8\u3055\u308C\u307E\u3057\u305F\uFF09\xA7r");
@@ -2061,8 +2062,8 @@ system.runInterval(() => {
 }, 20);
 world.afterEvents.itemUse.subscribe((event) => {
   const player = event.source;
-  const itemStack2 = event.itemStack;
-  if (itemStack2.typeId === "mi:yahata_blueprint") {
+  const itemStack = event.itemStack;
+  if (itemStack.typeId === "mi:yahata_blueprint") {
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -2086,7 +2087,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     }, 5);
     return;
   }
-  if (itemStack2.typeId.startsWith("mi:zabuton_")) {
+  if (itemStack.typeId.startsWith("mi:zabuton_")) {
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -2096,11 +2097,11 @@ world.afterEvents.itemUse.subscribe((event) => {
       z: Math.floor(pLoc.z + viewDir.z * 2) + 0.5
     };
     try {
-      dim.spawnEntity(itemStack2.typeId, spawnLoc);
+      dim.spawnEntity(itemStack.typeId, spawnLoc);
       dim.spawnParticle("minecraft:smoke_particle", spawnLoc);
       if (player.gameMode !== "creative") {
-        if (itemStack2.amount > 1) {
-          itemStack2.amount -= 1;
+        if (itemStack.amount > 1) {
+          itemStack.amount -= 1;
         } else {
           const equippable = player.getComponent(EntityComponentTypes.Equippable);
           if (equippable) equippable.setEquipment("Mainhand", void 0);
@@ -2110,7 +2111,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     }
     return;
   }
-  if (itemStack2.typeId === "mi:hq_blueprint") {
+  if (itemStack.typeId === "mi:hq_blueprint") {
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();

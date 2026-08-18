@@ -117,6 +117,11 @@ if ((world.afterEvents as any)?.chatSend) {
 const MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1000;
 
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  const player = event.player;
+  const target = event.target;
+  const itemStack = event.itemStack;
+  if (!target) return;
+
   // Zabuton Stacking Interaction (Right-click existing zabuton with another zabuton)
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
     event.cancel = true;
@@ -142,10 +147,6 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     });
     return;
   }
-
-  const player = event.player;
-  const target = event.target;
-  if (!target) return;
 
   if (target.typeId === "mi:momo") {
     event.cancel = true;
