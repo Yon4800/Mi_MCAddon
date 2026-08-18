@@ -5,8 +5,50 @@
       "identifier": "mi:desktop_pc",
       "menu_category": {
         "category": "items"
+      },
+      "traits": {
+        "minecraft:placement_direction": {
+          "enabled_states": [
+            "minecraft:cardinal_direction"
+          ],
+          "y_rotation_offset": 180
+        }
       }
     },
+    "permutations": [
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [0, 0, 0]
+          }
+        }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [0, 180, 0]
+          }
+        }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [0, 270, 0]
+          }
+        }
+      },
+      {
+        "condition": "query.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [0, 90, 0]
+          }
+        }
+      }
+    ],
     "components": {
       "minecraft:geometry": "geometry.desktop_pc",
       "minecraft:material_instances": {
@@ -24,28 +66,12 @@
       "minecraft:map_color": "#282C34",
       "minecraft:light_emission": 2,
       "minecraft:collision_box": {
-        "origin": [
-          -7,
-          0,
-          -7
-        ],
-        "size": [
-          14,
-          13,
-          14
-        ]
+        "origin": [-7, 0, -7],
+        "size": [14, 13, 14]
       },
       "minecraft:selection_box": {
-        "origin": [
-          -7,
-          0,
-          -7
-        ],
-        "size": [
-          14,
-          13,
-          14
-        ]
+        "origin": [-7, 0, -7],
+        "size": [14, 13, 14]
       }
     }
   }

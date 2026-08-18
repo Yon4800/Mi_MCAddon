@@ -1,5 +1,5 @@
 // src/main.ts
-import { world, system, ItemStack, EntityComponentTypes, Player } from "@minecraft/server";
+import { world, system, ItemStack, EntityComponentTypes, Player, BlockPermutation } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 console.warn("[Mi_Addon] Initializing Misskey MC Addon Scripts...");
 var playerUIOpenLock = /* @__PURE__ */ new Map();
@@ -837,10 +837,16 @@ function generateMisskeyHQ(dimension, origin) {
   const ox = Math.floor(origin.x);
   const oy = Math.floor(origin.y);
   const oz = Math.floor(origin.z);
-  const setB = (dx, dy, dz, type) => {
+  const setB = (dx, dy, dz, type, states) => {
     try {
       const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
-      if (b) b.setType(type);
+      if (b) {
+        if (states) {
+          b.setPermutation(BlockPermutation.resolve(type, states));
+        } else {
+          b.setType(type);
+        }
+      }
     } catch (e) {
     }
   };
@@ -922,14 +928,18 @@ function generateMisskeyHQ(dimension, origin) {
   for (let rx = -4; rx <= -1; rx++) {
     setB(rx, 1, -4, "minecraft:smooth_quartz");
   }
-  setB(-3, 2, -4, "mi:desktop_pc");
-  setB(-2, 2, -4, "mi:display_monitor");
-  setB(-3, 1, -5, "minecraft:dark_oak_stairs");
-  for (let lz = -4; lz <= -1; lz++) {
-    setB(3, 1, lz, "minecraft:oak_stairs");
+  setB(-3, 2, -4, "mi:desktop_pc", { "minecraft:cardinal_direction": "south" });
+  setB(-2, 2, -4, "mi:display_monitor", { "minecraft:cardinal_direction": "south" });
+  try {
+    dimension.spawnEntity("mi:zabuton_blue", { x: ox - 3 + 0.5, y: oy + 1, z: oz - 5 + 0.5 });
+  } catch (e) {
   }
-  setB(4, 1, -3, "mi:zabuton_blue");
-  setB(4, 1, -2, "mi:zabuton_red");
+  for (let lz = -4; lz <= -1; lz++) {
+    try {
+      dimension.spawnEntity(lz % 2 === 0 ? "mi:zabuton_red" : "mi:zabuton_yellow", { x: ox + 3.5, y: oy + 1, z: oz + lz + 0.5 });
+    } catch (e) {
+    }
+  }
   setB(2, 1, -3, "minecraft:flower_pot");
   setB(-7, 2, 0, "mi:note_board");
   setB(-7, 2, 1, "mi:instance_server");
@@ -955,20 +965,23 @@ function generateMisskeyHQ(dimension, origin) {
     setB(dx, 6, -3, "minecraft:birch_planks");
     setB(dx, 6, -2, "minecraft:birch_planks");
   }
-  setB(-5, 7, -3, "mi:display_monitor");
-  setB(-4, 7, -3, "mi:desktop_pc");
-  setB(-3, 7, -3, "mi:display_monitor");
-  setB(-2, 7, -3, "mi:laptop_pc");
-  setB(-5, 7, -2, "mi:display_monitor");
-  setB(-4, 7, -2, "mi:laptop_pc");
-  setB(-3, 7, -2, "mi:desktop_pc");
-  setB(-2, 7, -2, "mi:display_monitor");
-  setB(-4, 6, -4, "minecraft:dark_oak_stairs");
-  setB(-3, 6, -4, "minecraft:dark_oak_stairs");
-  setB(-4, 6, -1, "minecraft:dark_oak_stairs");
-  setB(-3, 6, -1, "minecraft:dark_oak_stairs");
-  setB(1, 6, -4, "mi:ecology_server_block");
-  setB(1, 7, -4, "mi:ecology_server_block");
+  setB(-5, 7, -3, "mi:display_monitor", { "minecraft:cardinal_direction": "north" });
+  setB(-4, 7, -3, "mi:desktop_pc", { "minecraft:cardinal_direction": "north" });
+  setB(-3, 7, -3, "mi:display_monitor", { "minecraft:cardinal_direction": "north" });
+  setB(-2, 7, -3, "mi:laptop_pc", { "minecraft:cardinal_direction": "north" });
+  setB(-5, 7, -2, "mi:display_monitor", { "minecraft:cardinal_direction": "south" });
+  setB(-4, 7, -2, "mi:laptop_pc", { "minecraft:cardinal_direction": "south" });
+  setB(-3, 7, -2, "mi:desktop_pc", { "minecraft:cardinal_direction": "south" });
+  setB(-2, 7, -2, "mi:display_monitor", { "minecraft:cardinal_direction": "south" });
+  try {
+    dimension.spawnEntity("mi:zabuton_blue", { x: ox - 4 + 0.5, y: oy + 6, z: oz - 4 + 0.5 });
+    dimension.spawnEntity("mi:zabuton_green", { x: ox - 3 + 0.5, y: oy + 6, z: oz - 4 + 0.5 });
+    dimension.spawnEntity("mi:zabuton_red", { x: ox - 4 + 0.5, y: oy + 6, z: oz - 1 + 0.5 });
+    dimension.spawnEntity("mi:zabuton_yellow", { x: ox - 3 + 0.5, y: oy + 6, z: oz - 1 + 0.5 });
+  } catch (e) {
+  }
+  setB(1, 6, -4, "mi:ecology_server_block", { "minecraft:cardinal_direction": "south" });
+  setB(1, 7, -4, "mi:ecology_server_block", { "minecraft:cardinal_direction": "south" });
   setB(-7, 7, -1, "minecraft:white_concrete");
   setB(-7, 7, 0, "minecraft:white_concrete");
   setB(-7, 7, 1, "minecraft:white_concrete");
@@ -1002,10 +1015,10 @@ function generateMisskeyHQ(dimension, origin) {
     }
   }
   for (let sz = -5; sz <= 2; sz += 2) {
-    setB(-5, 11, sz, "mi:ecology_server_block");
-    setB(-5, 12, sz, "mi:ecology_server_block");
-    setB(-3, 11, sz, "mi:ecology_server_block");
-    setB(-3, 12, sz, "mi:ecology_server_block");
+    setB(-5, 11, sz, "mi:ecology_server_block", { "minecraft:cardinal_direction": "east" });
+    setB(-5, 12, sz, "mi:ecology_server_block", { "minecraft:cardinal_direction": "east" });
+    setB(-3, 11, sz, "mi:ecology_server_block", { "minecraft:cardinal_direction": "west" });
+    setB(-3, 12, sz, "mi:ecology_server_block", { "minecraft:cardinal_direction": "west" });
     setB(-4, 13, sz, "minecraft:iron_bars");
   }
   setB(-6, 11, -3, "mi:instance_server");
@@ -1015,15 +1028,18 @@ function generateMisskeyHQ(dimension, origin) {
       setB(mx, 11, mz, "minecraft:dark_oak_planks");
     }
   }
-  setB(3, 12, -2, "mi:laptop_pc");
-  setB(4, 12, -2, "mi:laptop_pc");
-  setB(3, 12, 0, "mi:laptop_pc");
-  setB(4, 12, 0, "mi:laptop_pc");
-  setB(3, 12, -3, "mi:display_monitor");
-  setB(4, 12, -3, "mi:display_monitor");
+  setB(3, 12, -2, "mi:laptop_pc", { "minecraft:cardinal_direction": "west" });
+  setB(3, 12, 0, "mi:laptop_pc", { "minecraft:cardinal_direction": "west" });
+  setB(4, 12, -2, "mi:laptop_pc", { "minecraft:cardinal_direction": "east" });
+  setB(4, 12, 0, "mi:laptop_pc", { "minecraft:cardinal_direction": "east" });
+  setB(3, 12, -3, "mi:display_monitor", { "minecraft:cardinal_direction": "south" });
+  setB(4, 12, -3, "mi:display_monitor", { "minecraft:cardinal_direction": "south" });
   for (let cz = -2; cz <= 0; cz++) {
-    setB(1, 11, cz, "minecraft:birch_stairs");
-    setB(6, 11, cz, "minecraft:birch_stairs");
+    try {
+      dimension.spawnEntity(cz % 2 === 0 ? "mi:zabuton_blue" : "mi:zabuton_green", { x: ox + 1.5, y: oy + 11, z: oz + cz + 0.5 });
+      dimension.spawnEntity(cz % 2 === 0 ? "mi:zabuton_red" : "mi:zabuton_yellow", { x: ox + 6.5, y: oy + 11, z: oz + cz + 0.5 });
+    } catch (e) {
+    }
   }
   for (let sz = -3; sz <= 0; sz++) {
     for (let sy = 12; sy <= 14; sy++) {
@@ -1057,10 +1073,13 @@ function generateMisskeyHQ(dimension, origin) {
   for (let px = -2; px <= 2; px++) {
     setB(px, 16, 4, "minecraft:dark_oak_planks");
   }
-  setB(-1, 17, 4, "mi:display_monitor");
-  setB(0, 17, 4, "mi:desktop_pc");
-  setB(1, 17, 4, "mi:display_monitor");
-  setB(0, 16, 5, "minecraft:dark_oak_stairs");
+  setB(-1, 17, 4, "mi:display_monitor", { "minecraft:cardinal_direction": "north" });
+  setB(0, 17, 4, "mi:desktop_pc", { "minecraft:cardinal_direction": "north" });
+  setB(1, 17, 4, "mi:display_monitor", { "minecraft:cardinal_direction": "north" });
+  try {
+    dimension.spawnEntity("mi:zabuton_red", { x: ox + 0.5, y: oy + 16, z: oz + 5 + 0.5 });
+  } catch (e) {
+  }
   setB(-4, 16, 5, "mi:ecology_server_block");
   setB(-4, 17, 5, "mi:ecology_server_block");
   setB(-4, 18, 5, "mi:ecology_server_block");
