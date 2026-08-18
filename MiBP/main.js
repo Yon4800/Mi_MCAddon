@@ -1292,7 +1292,7 @@ world.afterEvents.entitySpawn.subscribe((event) => {
       const block = dim.getBlock({ x: Math.floor(loc.x), y: Math.floor(loc.y + dy), z: Math.floor(loc.z) });
       if (block && block.typeId === "mi:tin_foil_block") {
         system.run(() => {
-          dim.spawnParticle("minecraft:electric_spark_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
+          dim.spawnParticle("minecraft:witch_spell_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
           dim.spawnParticle("minecraft:smoke_particle", { x: loc.x, y: loc.y + 0.5, z: loc.z });
           if (entity.isValid()) entity.remove();
         });
@@ -1471,8 +1471,8 @@ world.afterEvents.entityHurt.subscribe((event) => {
       const pLoc = hurtEntity.location;
       const dim = hurtEntity.dimension;
       dim.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
-      dim.spawnParticle("minecraft:mobspell_emitter", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
-      dim.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+      dim.spawnParticle("minecraft:villager_angry", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+      dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
     } catch (e) {
     }
   }
@@ -1551,7 +1551,7 @@ system.runInterval(() => {
         families: ["monster", "blebcat"]
       });
       if (nearbyMonsters.length > 0) {
-        overworld.spawnParticle("minecraft:electric_spark_particle", { x: pLoc.x, y: pLoc.y + 1.8, z: pLoc.z });
+        overworld.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.8, z: pLoc.z });
       }
     }
   }
