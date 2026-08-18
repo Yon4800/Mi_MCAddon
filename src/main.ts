@@ -1240,8 +1240,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     setB(0, ly, 0, "minecraft:sea_lantern");
   }
 
-  // 4. Stable U-Shaped Quartz Staircase between all floors
-  // Floors are at y: 0 (1F), y: 5 (2F), y: 10 (3F), y: 15 (4F), y: 21 (Roof)
+  // 4. Smooth Quartz Staircase between all floors (1F -> 2F -> 3F -> 4F -> Roof)
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
     // Clear head space above stairs
@@ -1253,18 +1252,18 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
       }
     }
 
-    // Step 1
-    setB(4, yBase + 1, 4, "minecraft:smooth_quartz");
-    // Step 2
-    setB(4, yBase + 2, 5, "minecraft:smooth_quartz");
+    // Ascending flight going South
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
+    
     // Landing (Step 3)
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
-    // Step 4
-    setB(6, yBase + 4, 5, "minecraft:smooth_quartz");
-    // Step 5 (connects to next floor level)
-    setB(6, yBase + 5, 4, "minecraft:smooth_quartz");
+
+    // Ascending flight going North
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
   }
 
   // ----------------------------------------------------

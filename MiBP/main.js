@@ -959,13 +959,13 @@ function generateMisskeyHQ(dimension, origin) {
         }
       }
     }
-    setB(4, yBase + 1, 4, "minecraft:smooth_quartz");
-    setB(4, yBase + 2, 5, "minecraft:smooth_quartz");
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(6, yBase + 4, 5, "minecraft:smooth_quartz");
-    setB(6, yBase + 5, 4, "minecraft:smooth_quartz");
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
   }
   for (let rx = -4; rx <= -1; rx++) {
     setB(rx, 1, -4, "minecraft:smooth_quartz");
