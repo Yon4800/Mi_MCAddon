@@ -1228,7 +1228,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
         // Staircase opening area: dx: 4..6, dz: 4..6
-        const isStairHole = (dx >= 4 && dx <= 6 && dz >= 4 && dz <= 6);
+        const isStairHole = (dx >= 5 && dx <= 6 && dz >= -5 && dz <= -1);
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
