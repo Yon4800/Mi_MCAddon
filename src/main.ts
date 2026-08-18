@@ -1603,6 +1603,119 @@ system.runInterval(() => {
   }
 }, 10);
 // ----------------------------------------------------
+// ----------------------------------------------------
+// Floor Mob Clear Monitoring Function & Loops
+// ----------------------------------------------------
+function checkAllFloorClears() {
+  const overworld = world.getDimension("overworld");
+
+  for (const [key, floorData] of hqFloorActiveMap.entries()) {
+    if (!floorData.spawned || floorData.cleared) continue;
+
+    const { hqLoc, type } = floorData;
+    const dim = world.getDimension(hqLoc.dimensionId || "overworld") || overworld;
+
+    if (type === "floor1") {
+      try {
+        const blebcats = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 1, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:blebcat"
+        });
+
+        if (blebcats.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x - 3, y: hqLoc.y + 1, z: hqLoc.z - 4 };
+          spawnRewardChest(dim, chestLoc, "lobby");
+
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("§a🎉⚔️【1F エントランス 制覇！】警備 blebcat 部隊を全滅させました！ 報酬チェストが出現！§r");
+          }
+        }
+      } catch (e) { }
+    } else if (type === "floor2") {
+      try {
+        const researchers = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:researcher"
+        });
+
+        if (researchers.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "dev");
+
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("§a🎉⚔️【2F 開発室 制覇！】研究者部隊を全滅させました！ 報酬チェストが出現！§r");
+          }
+        }
+      } catch (e) { }
+    } else if (type === "floor3") {
+      try {
+        const tutinokos = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:m_tutinoko_hostile"
+        });
+
+        if (tutinokos.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "server");
+
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("§a🎉⚔️【3F サーバー室 制覇！】ツチノコ複製軍団を全滅させました！ 報酬チェストが出現！§r");
+          }
+        }
+      } catch (e) { }
+    } else if (type === "floor4") {
+      try {
+        const bosses = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z },
+          maxDistance: 24,
+          type: "mi:murakami_boss"
+        });
+
+        if (bosses.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "boss");
+
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("§6👑🏆【Misskey開発所 完全制覇！】ボス・村上さんを討伐しました！ 社長秘蔵の金庫マスターチェストが出現！§r");
+          }
+        }
+      } catch (e) { }
+    }
+  }
+}
+
+// 1. Periodic Loop (Every 0.5s)
+system.runInterval(() => {
+  checkAllFloorClears();
+}, 10);
+
+// 2. Immediate Entity Death Event Check
+world.afterEvents.entityDie.subscribe((event) => {
+  const deadType = event.deadEntity?.typeId;
+  if (
+    deadType === "mi:blebcat" ||
+    deadType === "mi:researcher" ||
+    deadType === "mi:m_tutinoko_hostile" ||
+    deadType === "mi:murakami_boss"
+  ) {
+    system.runTimeout(() => {
+      checkAllFloorClears();
+    }, 2);
+  }
+});
+
+// ----------------------------------------------------
 // 0.88. Syuilo NPC Dialog & Misskey HQ Guide (1-Time Hint System)
 // ----------------------------------------------------
 const syuiloHintGivenPlayers = new Set<string>();

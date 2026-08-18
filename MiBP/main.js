@@ -1095,6 +1095,51 @@ function generateMisskeyHQ(dimension, origin) {
   return true;
 }
 var hqFloorActiveMap = /* @__PURE__ */ new Map();
+function spawnRewardChest(dimension, loc, rewardType) {
+  try {
+    const block = dimension.getBlock(loc);
+    if (!block) return;
+    block.setType("minecraft:chest");
+    dimension.spawnParticle("minecraft:totem_particle", { x: loc.x + 0.5, y: loc.y + 1.2, z: loc.z + 0.5 });
+    dimension.spawnParticle("minecraft:large_explosion", { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 });
+    system.runTimeout(() => {
+      try {
+        const inv = block.getComponent("minecraft:inventory")?.container;
+        if (!inv) return;
+        if (rewardType === "lobby") {
+          inv.addItem(new ItemStack("minecraft:bread", 16));
+          inv.addItem(new ItemStack("minecraft:cookie", 12));
+          inv.addItem(new ItemStack("mi:pudding", 4));
+          inv.addItem(new ItemStack("mi:reaction_wand", 1));
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 8));
+          inv.addItem(new ItemStack("minecraft:torch", 16));
+        } else if (rewardType === "dev") {
+          inv.addItem(new ItemStack("minecraft:diamond", 2));
+          inv.addItem(new ItemStack("minecraft:emerald", 8));
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 12));
+          inv.addItem(new ItemStack("minecraft:bread", 16));
+          inv.addItem(new ItemStack("mi:machida", 2));
+        } else if (rewardType === "server") {
+          inv.addItem(new ItemStack("mi:ecology_server", 2));
+          inv.addItem(new ItemStack("mi:sanjuu", 3));
+          inv.addItem(new ItemStack("mi:gif", 3));
+          inv.addItem(new ItemStack("mi:silenthill", 3));
+          inv.addItem(new ItemStack("minecraft:gold_ingot", 8));
+          inv.addItem(new ItemStack("minecraft:ender_pearl", 4));
+        } else if (rewardType === "boss") {
+          inv.addItem(new ItemStack("minecraft:netherite_ingot", 2));
+          inv.addItem(new ItemStack("minecraft:diamond", 6));
+          inv.addItem(new ItemStack("minecraft:golden_apple", 4));
+          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
+          inv.addItem(new ItemStack("mi:igyo_tool", 1));
+          inv.addItem(new ItemStack("mi:kanagawa", 2));
+        }
+      } catch (e) {
+      }
+    }, 2);
+  } catch (e) {
+  }
+}
 var allMisskeyHQLocations = [];
 var hqSpawnedFloors = /* @__PURE__ */ new Set();
 function registerMisskeyHQ(loc) {
@@ -1188,6 +1233,98 @@ system.runInterval(() => {
     }
   }
 }, 10);
+function checkAllFloorClears() {
+  const overworld = world.getDimension("overworld");
+  for (const [key, floorData] of hqFloorActiveMap.entries()) {
+    if (!floorData.spawned || floorData.cleared) continue;
+    const { hqLoc, type } = floorData;
+    const dim = world.getDimension(hqLoc.dimensionId || "overworld") || overworld;
+    if (type === "floor1") {
+      try {
+        const blebcats = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 1, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:blebcat"
+        });
+        if (blebcats.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x - 3, y: hqLoc.y + 1, z: hqLoc.z - 4 };
+          spawnRewardChest(dim, chestLoc, "lobby");
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("\xA7a\u{1F389}\u2694\uFE0F\u30101F \u30A8\u30F3\u30C8\u30E9\u30F3\u30B9 \u5236\u8987\uFF01\u3011\u8B66\u5099 blebcat \u90E8\u968A\u3092\u5168\u6EC5\u3055\u305B\u307E\u3057\u305F\uFF01 \u5831\u916C\u30C1\u30A7\u30B9\u30C8\u304C\u51FA\u73FE\uFF01\xA7r");
+          }
+        }
+      } catch (e) {
+      }
+    } else if (type === "floor2") {
+      try {
+        const researchers = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:researcher"
+        });
+        if (researchers.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 6, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "dev");
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("\xA7a\u{1F389}\u2694\uFE0F\u30102F \u958B\u767A\u5BA4 \u5236\u8987\uFF01\u3011\u7814\u7A76\u8005\u90E8\u968A\u3092\u5168\u6EC5\u3055\u305B\u307E\u3057\u305F\uFF01 \u5831\u916C\u30C1\u30A7\u30B9\u30C8\u304C\u51FA\u73FE\uFF01\xA7r");
+          }
+        }
+      } catch (e) {
+      }
+    } else if (type === "floor3") {
+      try {
+        const tutinokos = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z },
+          maxDistance: 16,
+          type: "mi:m_tutinoko_hostile"
+        });
+        if (tutinokos.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 11, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "server");
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("\xA7a\u{1F389}\u2694\uFE0F\u30103F \u30B5\u30FC\u30D0\u30FC\u5BA4 \u5236\u8987\uFF01\u3011\u30C4\u30C1\u30CE\u30B3\u8907\u88FD\u8ECD\u56E3\u3092\u5168\u6EC5\u3055\u305B\u307E\u3057\u305F\uFF01 \u5831\u916C\u30C1\u30A7\u30B9\u30C8\u304C\u51FA\u73FE\uFF01\xA7r");
+          }
+        }
+      } catch (e) {
+      }
+    } else if (type === "floor4") {
+      try {
+        const bosses = dim.getEntities({
+          location: { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z },
+          maxDistance: 24,
+          type: "mi:murakami_boss"
+        });
+        if (bosses.length === 0) {
+          floorData.cleared = true;
+          const chestLoc = { x: hqLoc.x, y: hqLoc.y + 16, z: hqLoc.z };
+          spawnRewardChest(dim, chestLoc, "boss");
+          const nearbyP = dim.getPlayers({ location: chestLoc, maxDistance: 32 });
+          for (const p of nearbyP) {
+            p.sendMessage("\xA76\u{1F451}\u{1F3C6}\u3010Misskey\u958B\u767A\u6240 \u5B8C\u5168\u5236\u8987\uFF01\u3011\u30DC\u30B9\u30FB\u6751\u4E0A\u3055\u3093\u3092\u8A0E\u4F10\u3057\u307E\u3057\u305F\uFF01 \u793E\u9577\u79D8\u8535\u306E\u91D1\u5EAB\u30DE\u30B9\u30BF\u30FC\u30C1\u30A7\u30B9\u30C8\u304C\u51FA\u73FE\uFF01\xA7r");
+          }
+        }
+      } catch (e) {
+      }
+    }
+  }
+}
+system.runInterval(() => {
+  checkAllFloorClears();
+}, 10);
+world.afterEvents.entityDie.subscribe((event) => {
+  const deadType = event.deadEntity?.typeId;
+  if (deadType === "mi:blebcat" || deadType === "mi:researcher" || deadType === "mi:m_tutinoko_hostile" || deadType === "mi:murakami_boss") {
+    system.runTimeout(() => {
+      checkAllFloorClears();
+    }, 2);
+  }
+});
 var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
 function openSyuiloDialogUI(player, syuiloEntity) {
   const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u307E\u305F\u306D");
