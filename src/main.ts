@@ -1256,18 +1256,24 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
       }
     }
 
-    // Flight 1: Ascending going South (x: 4)
-    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
-    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
-    
-    // Landing (Step 3)
+    // Flight 1: Ascending going South (+Z) -> weirdo_direction: 2
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    setB(4, yBase + 1, 5, "minecraft:smooth_quartz"); // Base support
+
+    // Landing (Step 3 at yBase + 3)
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(4, yBase + 2, 6, "minecraft:smooth_quartz");
+    setB(5, yBase + 2, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 2, 6, "minecraft:smooth_quartz");
 
-    // Flight 2: Ascending going North (x: 6)
-    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
-    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
+    // Flight 2: Ascending going North (-Z) -> weirdo_direction: 3
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
+    setB(6, yBase + 3, 5, "minecraft:smooth_quartz"); // Base support
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
+    setB(6, yBase + 4, 4, "minecraft:smooth_quartz"); // Base support
   }
 
   // ----------------------------------------------------

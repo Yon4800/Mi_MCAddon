@@ -963,13 +963,19 @@ function generateMisskeyHQ(dimension, origin) {
         }
       }
     }
-    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
-    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
+    setB(4, yBase + 1, 5, "minecraft:smooth_quartz");
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
-    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
+    setB(4, yBase + 2, 6, "minecraft:smooth_quartz");
+    setB(5, yBase + 2, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 2, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
+    setB(6, yBase + 3, 5, "minecraft:smooth_quartz");
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 3 });
+    setB(6, yBase + 4, 4, "minecraft:smooth_quartz");
   }
   for (let rx = -4; rx <= -1; rx++) {
     setB(rx, 1, -4, "minecraft:smooth_quartz");
