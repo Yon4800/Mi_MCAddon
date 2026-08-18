@@ -4,8 +4,9 @@
   "description": "Minecraft Bedrock Addon with Script API",
   "main": "MiBP/scripts/main.js",
   "scripts": {
-    "build": "node scripts/build_emojis.js && esbuild src/main.ts --bundle --outfile=MiBP/scripts/main.js --format=esm --external:@minecraft/server --external:@minecraft/server-ui",
+    "build": "node scripts/build_emojis.js && esbuild src/main.ts --bundle --outfile=MiBP/scripts/main.js --format=esm --external:@minecraft/server --external:@minecraft/server-ui && node scripts/pack.js",
     "watch": "esbuild src/main.ts --bundle --outfile=MiBP/scripts/main.js --format=esm --external:@minecraft/server --external:@minecraft/server-ui --watch",
+    "pack": "node scripts/pack.js",
     "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {
