@@ -1888,6 +1888,26 @@ world.afterEvents.entityHurt.subscribe((event) => {
   const damageSource = event.damageSource;
   const attacker = damageSource.damagingEntity;
 
+  // 1. Murakami Tutinoko Copy Poison Attack (mi:m_tutinoko_hostile)
+  if (attacker && attacker.typeId === "mi:m_tutinoko_hostile" && hurtEntity instanceof Player) {
+    try {
+      hurtEntity.addEffect("poison", 120, { amplifier: 1, showParticles: true }); // Poison II (6s)
+      hurtEntity.addEffect("hunger", 160, { amplifier: 0, showParticles: true });
+      const pLoc = hurtEntity.location;
+      hurtEntity.dimension.spawnParticle("minecraft:villager_angry", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+    } catch (e) { }
+  }
+
+  // 2. Misskey Researcher Debuff Attack (mi:researcher)
+  if (attacker && attacker.typeId === "mi:researcher" && hurtEntity instanceof Player) {
+    try {
+      hurtEntity.addEffect("slowness", 100, { amplifier: 0, showParticles: true }); // Slowness I (5s)
+      hurtEntity.addEffect("weakness", 100, { amplifier: 0, showParticles: true }); // Weakness I (5s)
+      const pLoc = hurtEntity.location;
+      hurtEntity.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1.0, z: pLoc.z });
+    } catch (e) { }
+  }
+
   if (hurtEntity.typeId === "mi:regretcar" && attacker instanceof Player) {
     const playerId = attacker.id;
 

@@ -1517,6 +1517,24 @@ world.afterEvents.entityHurt.subscribe((event) => {
   const hurtEntity = event.hurtEntity;
   const damageSource = event.damageSource;
   const attacker = damageSource.damagingEntity;
+  if (attacker && attacker.typeId === "mi:m_tutinoko_hostile" && hurtEntity instanceof Player) {
+    try {
+      hurtEntity.addEffect("poison", 120, { amplifier: 1, showParticles: true });
+      hurtEntity.addEffect("hunger", 160, { amplifier: 0, showParticles: true });
+      const pLoc = hurtEntity.location;
+      hurtEntity.dimension.spawnParticle("minecraft:villager_angry", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+    } catch (e) {
+    }
+  }
+  if (attacker && attacker.typeId === "mi:researcher" && hurtEntity instanceof Player) {
+    try {
+      hurtEntity.addEffect("slowness", 100, { amplifier: 0, showParticles: true });
+      hurtEntity.addEffect("weakness", 100, { amplifier: 0, showParticles: true });
+      const pLoc = hurtEntity.location;
+      hurtEntity.dimension.spawnParticle("minecraft:smoke_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+    } catch (e) {
+    }
+  }
   if (hurtEntity.typeId === "mi:regretcar" && attacker instanceof Player) {
     const playerId = attacker.id;
     if (!licensedPlayers.has(playerId)) {
