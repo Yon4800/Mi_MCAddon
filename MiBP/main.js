@@ -941,7 +941,7 @@ function generateMisskeyHQ(dimension, origin) {
   for (const fl of floorLevels) {
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
-        const isStairHole = dx >= 5 && dx <= 6 && dz >= -5 && dz <= -1;
+        const isStairHole = dx >= 6 && dx <= 7 && dz >= -5 && dz <= -1;
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
