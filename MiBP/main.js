@@ -1186,7 +1186,7 @@ system.runInterval(() => {
             dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
           } catch (e) {
           }
-          const spawnCount = 6 + players.length * 2;
+          const spawnCount = 4 + players.length;
           for (let i = 0; i < spawnCount; i++) {
             const sx = hq.x + (Math.random() * 8 - 4);
             const sz = hq.z + (Math.random() * 8 - 4);
@@ -1206,7 +1206,7 @@ system.runInterval(() => {
             dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
           } catch (e) {
           }
-          const spawnCount = 8 + players.length * 3;
+          const spawnCount = 5 + players.length;
           for (let i = 0; i < spawnCount; i++) {
             const sx = hq.x + (Math.random() * 8 - 4);
             const sz = hq.z + (Math.random() * 8 - 4);
@@ -2005,7 +2005,7 @@ system.runInterval(() => {
         boss.addEffect("speed", 300, { amplifier: 1 });
       } catch (e) {
       }
-      const summonCount = 6 + nearbyPlayers.length * 3;
+      const summonCount = 3 + nearbyPlayers.length;
       for (let i = 0; i < summonCount; i++) {
         const sx = bLoc.x + (Math.random() * 8 - 4);
         const sz = bLoc.z + (Math.random() * 8 - 4);

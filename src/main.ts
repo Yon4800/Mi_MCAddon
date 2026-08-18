@@ -1551,7 +1551,7 @@ system.runInterval(() => {
             dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
           } catch (e) { }
 
-          const spawnCount = 6 + (players.length * 2);
+          const spawnCount = 4 + players.length;
           for (let i = 0; i < spawnCount; i++) {
             const sx = hq.x + (Math.random() * 8 - 4);
             const sz = hq.z + (Math.random() * 8 - 4);
@@ -1573,7 +1573,7 @@ system.runInterval(() => {
             dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
           } catch (e) { }
 
-          const spawnCount = 8 + (players.length * 3);
+          const spawnCount = 5 + players.length;
           for (let i = 0; i < spawnCount; i++) {
             const sx = hq.x + (Math.random() * 8 - 4);
             const sz = hq.z + (Math.random() * 8 - 4);
@@ -2567,7 +2567,7 @@ system.runInterval(() => {
       } catch (e) { }
 
       // 3. Summon White Phantoms (村上ツチノコ複製体 + 暴走研究者 + blebcat)
-      const summonCount = 6 + (nearbyPlayers.length * 3);
+      const summonCount = 3 + nearbyPlayers.length;
       for (let i = 0; i < summonCount; i++) {
         const sx = bLoc.x + (Math.random() * 8 - 4);
         const sz = bLoc.z + (Math.random() * 8 - 4);
