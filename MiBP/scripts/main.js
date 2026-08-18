@@ -100,22 +100,22 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   if (!target) return;
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
     event.cancel = true;
+    const zabutonTypeId = itemStack.typeId;
+    const loc = target.location;
+    const dim = target.dimension;
     const now = Date.now();
     const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 300) return;
+    if (now - lastPlace < 250) return;
     zabutonPlaceCooldownMap.set(player.id, now);
     system.run(() => {
       try {
-        const dim = target.dimension;
-        const loc = target.location;
         const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
-        const consumed = decrementPlayerHeldItem(player);
-        if (consumed) {
-          dim.spawnEntity(itemStack.typeId, stackLoc);
-          dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
-          player.sendMessage("\xA7a\u{1F6CB}\uFE0F [Mi_Addon] \u5EA7\u5E03\u56E3\u3092\u4E0A\u306B\u91CD\u306D\u307E\u3057\u305F\uFF01\xA7r");
-        }
+        dim.spawnEntity(zabutonTypeId, stackLoc);
+        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
+        decrementPlayerHeldItem(player);
+        player.sendMessage("\xA7a\u{1F6CB}\uFE0F [Mi_Addon] \u5EA7\u5E03\u56E3\u3092\u4E0A\u306B\u91CD\u306D\u307E\u3057\u305F\uFF01\xA7r");
       } catch (e) {
+        console.warn("[Mi_Addon] Error stacking zabuton: " + e);
       }
     });
     return;

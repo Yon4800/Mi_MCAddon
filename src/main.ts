@@ -125,26 +125,27 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 
   // Zabuton Stacking Interaction (Right-click existing zabuton with another zabuton item)
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
-    event.cancel = true;
+    event.cancel = true; // Prevent mounting when holding a zabuton item
+    const zabutonTypeId = itemStack.typeId;
+    const loc = target.location;
+    const dim = target.dimension;
+
     const now = Date.now();
     const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 300) return;
+    if (now - lastPlace < 250) return;
     zabutonPlaceCooldownMap.set(player.id, now);
 
     system.run(() => {
       try {
-        const dim = target.dimension;
-        const loc = target.location;
         const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
+        dim.spawnEntity(zabutonTypeId, stackLoc);
+        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
 
-        // Decrement item FIRST in survival
-        const consumed = decrementPlayerHeldItem(player);
-        if (consumed) {
-          dim.spawnEntity(itemStack.typeId, stackLoc);
-          dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
-          player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
-        }
-      } catch (e) { }
+        decrementPlayerHeldItem(player);
+        player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
+      } catch (e) {
+        console.warn("[Mi_Addon] Error stacking zabuton: " + e);
+      }
     });
     return;
   }
