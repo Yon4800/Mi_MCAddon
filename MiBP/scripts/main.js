@@ -1191,6 +1191,7 @@ system.runInterval(() => {
         const key2 = `${hq.x}_${hq.z}_floor2`;
         if (relY >= 6 && relY <= 9 && !hqSpawnedFloors.has(key2)) {
           hqSpawnedFloors.add(key2);
+          hqFloorActiveMap.set(key2, { type: "floor2", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("\xA7c\u26A0\uFE0F [2F \u958B\u767A\u5BA4] \u66B4\u8D70\u3057\u305FMisskey\u7814\u7A76\u8005\u305F\u3061\u304C\u8972\u3044\u304B\u304B\u3063\u3066\u304D\u305F\uFF01\xA7r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
           const spawnSpots = [
@@ -1209,6 +1210,7 @@ system.runInterval(() => {
         const key3 = `${hq.x}_${hq.z}_floor3`;
         if (relY >= 11 && relY <= 14 && !hqSpawnedFloors.has(key3)) {
           hqSpawnedFloors.add(key3);
+          hqFloorActiveMap.set(key3, { type: "floor3", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("\xA7c\u26A0\uFE0F [3F \u30B5\u30FC\u30D0\u30FC\u5BA4] \u751F\u4F53\u30B5\u30FC\u30D0\u30FC\u304B\u3089\u6751\u4E0A\u30C4\u30C1\u30CE\u30B3\uFF08\u8907\u88FD\u4F53\uFF09\u304C\u98DB\u3073\u51FA\u3057\u3066\u304D\u305F\uFF01\xA7r");
           dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
           for (let i = 0; i < 5; i++) {
@@ -1222,6 +1224,7 @@ system.runInterval(() => {
         const key4 = `${hq.x}_${hq.z}_floor4`;
         if (relY >= 16 && relY <= 20 && !hqSpawnedFloors.has(key4)) {
           hqSpawnedFloors.add(key4);
+          hqFloorActiveMap.set(key4, { type: "floor4", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("\xA76\u2694\uFE0F [4F \u793E\u9577\u5BA4] \u30DC\u30B9\uFF1A\u6751\u4E0A\u3055\u3093\u304C\u73FE\u308C\u305F\uFF01\u300C\u958B\u767A\u6240\u3078\u3088\u3046\u3053\u305D\u2026\u899A\u609F\u306F\u3067\u304D\u3066\u3044\u308B\u304B\u306D\uFF1F\u300D\xA7r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 16.5, z: hq.z + 2 });
           try {

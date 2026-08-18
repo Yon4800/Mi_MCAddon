@@ -1505,7 +1505,7 @@ system.runInterval(() => {
         // 2F Dev Room (y: 6..9) -> Spawn hostile Misskey Researchers
         const key2 = `${hq.x}_${hq.z}_floor2`;
         if (relY >= 6 && relY <= 9 && !hqSpawnedFloors.has(key2)) {
-          hqSpawnedFloors.add(key2);
+          hqSpawnedFloors.add(key2); hqFloorActiveMap.set(key2, { type: "floor2", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§c⚠️ [2F 開発室] 暴走したMisskey研究者たちが襲いかかってきた！§r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
           const spawnSpots = [
@@ -1522,7 +1522,7 @@ system.runInterval(() => {
         // 3F Server Room (y: 11..14) -> Spawn hostile Murakami Tutinoko copies
         const key3 = `${hq.x}_${hq.z}_floor3`;
         if (relY >= 11 && relY <= 14 && !hqSpawnedFloors.has(key3)) {
-          hqSpawnedFloors.add(key3);
+          hqSpawnedFloors.add(key3); hqFloorActiveMap.set(key3, { type: "floor3", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§c⚠️ [3F サーバー室] 生体サーバーから村上ツチノコ（複製体）が飛び出してきた！§r");
           dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
           for (let i = 0; i < 5; i++) {
@@ -1534,7 +1534,7 @@ system.runInterval(() => {
         // 4F President Boss Room (y: 16..20) -> Spawn Boss: Murakami-san
         const key4 = `${hq.x}_${hq.z}_floor4`;
         if (relY >= 16 && relY <= 20 && !hqSpawnedFloors.has(key4)) {
-          hqSpawnedFloors.add(key4);
+          hqSpawnedFloors.add(key4); hqFloorActiveMap.set(key4, { type: "floor4", hqLoc: hq, spawned: true, cleared: false });
           player.sendMessage("§6⚔️ [4F 社長室] ボス：村上さんが現れた！「開発所へようこそ…覚悟はできているかね？」§r");
           dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 16.5, z: hq.z + 2 });
           try { dim.spawnEntity("mi:murakami_boss", { x: hq.x + 0.5, y: hq.y + 16, z: hq.z + 2 + 0.5 }); } catch (e) { }
