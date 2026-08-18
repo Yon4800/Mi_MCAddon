@@ -884,7 +884,11 @@ function generateMisskeyHQ(dimension, origin) {
       const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
       if (b) {
         if (states) {
-          b.setPermutation(BlockPermutation.resolve(type, states));
+          try {
+            b.setPermutation(BlockPermutation.resolve(type, states));
+          } catch (e) {
+            b.setType(type);
+          }
         } else {
           b.setType(type);
         }
@@ -953,19 +957,19 @@ function generateMisskeyHQ(dimension, origin) {
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
     for (let cdx = 4; cdx <= 6; cdx++) {
-      for (let cdz = 4; cdz <= 6; cdz++) {
+      for (let cdz = 3; cdz <= 7; cdz++) {
         for (let cy = 1; cy <= 5; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
       }
     }
-    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
-    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
-    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
-    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
   }
   for (let rx = -4; rx <= -1; rx++) {
     setB(rx, 1, -4, "minecraft:smooth_quartz");

@@ -1164,7 +1164,11 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
       const b = dimension.getBlock({ x: ox + dx, y: oy + dy, z: oz + dz });
       if (b) {
         if (states) {
-          b.setPermutation(BlockPermutation.resolve(type, states));
+          try {
+            b.setPermutation(BlockPermutation.resolve(type, states));
+          } catch (e) {
+            b.setType(type);
+          }
         } else {
           b.setType(type);
         }
@@ -1245,25 +1249,25 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   for (const yBase of stairBases) {
     // Clear head space above stairs
     for (let cdx = 4; cdx <= 6; cdx++) {
-      for (let cdz = 4; cdz <= 6; cdz++) {
+      for (let cdz = 3; cdz <= 7; cdz++) {
         for (let cy = 1; cy <= 5; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
       }
     }
 
-    // Ascending flight going South
-    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
-    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "south" });
+    // Flight 1: Ascending going South (x: 4)
+    setB(4, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
+    setB(4, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 0 });
     
     // Landing (Step 3)
     setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
     setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
 
-    // Ascending flight going North
-    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
-    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "minecraft:cardinal_direction": "north" });
+    // Flight 2: Ascending going North (x: 6)
+    setB(6, yBase + 4, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
+    setB(6, yBase + 5, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 1 });
   }
 
   // ----------------------------------------------------
