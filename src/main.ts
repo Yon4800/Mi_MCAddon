@@ -30,6 +30,7 @@ function showFormSafe(player: Player, form: any, onResponse: (response: any) => 
 // ----------------------------------------------------
 // Global State Maps
 // ----------------------------------------------------
+const zabutonPlaceCooldownMap = new Map<string, number>(); // playerId -> timestamp
 const yosanoLoveMap = new Map<string, number>();
 const mochochoEatMap = new Map<string, { count: number, lastEatTime: number }>();
 const licensedPlayers = new Set<string>();
@@ -122,25 +123,25 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const itemStack = event.itemStack;
   if (!target) return;
 
-  // Zabuton Stacking Interaction (Right-click existing zabuton with another zabuton)
+  // Zabuton Stacking Interaction (Right-click existing zabuton with another zabuton item)
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
     event.cancel = true;
-    system.run(() => {
-      const loc = target.location;
-      const dim = target.dimension;
-      const stackLoc = { x: loc.x, y: loc.y + 0.18, z: loc.z };
+    const now = Date.now();
+    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
+    if (now - lastPlace < 350) return; // Debounce double-trigger!
+    zabutonPlaceCooldownMap.set(player.id, now);
 
+    system.run(() => {
       try {
+        const dim = target.dimension;
+        const loc = target.location;
+        const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
+
         dim.spawnEntity(itemStack.typeId, stackLoc);
-        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.2, z: stackLoc.z });
+        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
 
         if (player.gameMode !== "creative") {
-          if (itemStack.amount > 1) {
-            itemStack.amount -= 1;
-          } else {
-            const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
-            if (equippable) equippable.setEquipment("Mainhand" as any, undefined);
-          }
+          consumeOneMainHandItem(player);
         }
         player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
       } catch (e) { }
@@ -2661,8 +2662,13 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
 
-  // 3. Zabuton Placement Items (mi:zabuton_blue, etc.)
+  // 3. Zabuton Ground Placement (mi:zabuton_blue, etc.)
   if (itemStack.typeId.startsWith("mi:zabuton_")) {
+    const now = Date.now();
+    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
+    if (now - lastPlace < 350) return; // Debounce double-trigger!
+    zabutonPlaceCooldownMap.set(player.id, now);
+
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -2674,15 +2680,10 @@ world.afterEvents.itemUse.subscribe((event) => {
 
     try {
       dim.spawnEntity(itemStack.typeId, spawnLoc);
-      dim.spawnParticle("minecraft:smoke_particle", spawnLoc);
+      dim.spawnParticle("minecraft:smoke_particle", { x: spawnLoc.x, y: spawnLoc.y + 0.1, z: spawnLoc.z });
 
       if (player.gameMode !== "creative") {
-        if (itemStack.amount > 1) {
-          itemStack.amount -= 1;
-        } else {
-          const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
-          if (equippable) equippable.setEquipment("Mainhand" as any, undefined);
-        }
+        consumeOneMainHandItem(player);
       }
     } catch (e) { }
     return;

@@ -21,6 +21,7 @@ function showFormSafe(player, form, onResponse) {
     });
   }, 1);
 }
+var zabutonPlaceCooldownMap = /* @__PURE__ */ new Map();
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
@@ -99,20 +100,19 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   if (!target) return;
   if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
     event.cancel = true;
+    const now = Date.now();
+    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
+    if (now - lastPlace < 350) return;
+    zabutonPlaceCooldownMap.set(player.id, now);
     system.run(() => {
-      const loc = target.location;
-      const dim = target.dimension;
-      const stackLoc = { x: loc.x, y: loc.y + 0.18, z: loc.z };
       try {
+        const dim = target.dimension;
+        const loc = target.location;
+        const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
         dim.spawnEntity(itemStack.typeId, stackLoc);
-        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.2, z: stackLoc.z });
+        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
         if (player.gameMode !== "creative") {
-          if (itemStack.amount > 1) {
-            itemStack.amount -= 1;
-          } else {
-            const equippable = player.getComponent(EntityComponentTypes.Equippable);
-            if (equippable) equippable.setEquipment("Mainhand", void 0);
-          }
+          consumeOneMainHandItem(player);
         }
         player.sendMessage("\xA7a\u{1F6CB}\uFE0F [Mi_Addon] \u5EA7\u5E03\u56E3\u3092\u4E0A\u306B\u91CD\u306D\u307E\u3057\u305F\uFF01\xA7r");
       } catch (e) {
@@ -2088,6 +2088,10 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
   if (itemStack.typeId.startsWith("mi:zabuton_")) {
+    const now = Date.now();
+    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
+    if (now - lastPlace < 350) return;
+    zabutonPlaceCooldownMap.set(player.id, now);
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -2098,14 +2102,9 @@ world.afterEvents.itemUse.subscribe((event) => {
     };
     try {
       dim.spawnEntity(itemStack.typeId, spawnLoc);
-      dim.spawnParticle("minecraft:smoke_particle", spawnLoc);
+      dim.spawnParticle("minecraft:smoke_particle", { x: spawnLoc.x, y: spawnLoc.y + 0.1, z: spawnLoc.z });
       if (player.gameMode !== "creative") {
-        if (itemStack.amount > 1) {
-          itemStack.amount -= 1;
-        } else {
-          const equippable = player.getComponent(EntityComponentTypes.Equippable);
-          if (equippable) equippable.setEquipment("Mainhand", void 0);
-        }
+        consumeOneMainHandItem(player);
       }
     } catch (e) {
     }
