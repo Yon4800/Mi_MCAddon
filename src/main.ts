@@ -1436,6 +1436,64 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
 // ----------------------------------------------------
 // 0.87. Misskey HQ Floor Dungeon & Spawning System (Robust & Multi-HQ Compatible)
 // ----------------------------------------------------
+// ----------------------------------------------------
+// Misskey HQ Floor Clear & Active State Registry
+// ----------------------------------------------------
+const hqFloorActiveMap = new Map<string, {
+  type: "floor1" | "floor2" | "floor3" | "floor4",
+  hqLoc: { x: number, y: number, z: number },
+  spawned: boolean,
+  cleared: boolean
+}>();
+
+// Helper to spawn and fill reward chests
+function spawnRewardChest(dimension: any, loc: { x: number, y: number, z: number }, rewardType: "lobby" | "dev" | "server" | "boss") {
+  try {
+    const block = dimension.getBlock(loc);
+    if (!block) return;
+
+    block.setType("minecraft:chest");
+    dimension.spawnParticle("minecraft:totem_particle", { x: loc.x + 0.5, y: loc.y + 1.2, z: loc.z + 0.5 });
+    dimension.spawnParticle("minecraft:large_explosion", { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 });
+
+    system.runTimeout(() => {
+      try {
+        const inv = (block as any).getComponent("minecraft:inventory")?.container;
+        if (!inv) return;
+
+        if (rewardType === "lobby") {
+          inv.addItem(new ItemStack("minecraft:bread", 16));
+          inv.addItem(new ItemStack("minecraft:cookie", 12));
+          inv.addItem(new ItemStack("mi:pudding", 4));
+          inv.addItem(new ItemStack("mi:reaction_wand", 1));
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 8));
+          inv.addItem(new ItemStack("minecraft:torch", 16));
+        } else if (rewardType === "dev") {
+          inv.addItem(new ItemStack("minecraft:diamond", 2));
+          inv.addItem(new ItemStack("minecraft:emerald", 8));
+          inv.addItem(new ItemStack("minecraft:iron_ingot", 12));
+          inv.addItem(new ItemStack("minecraft:bread", 16));
+          inv.addItem(new ItemStack("mi:machida", 2));
+        } else if (rewardType === "server") {
+          inv.addItem(new ItemStack("mi:ecology_server", 2));
+          inv.addItem(new ItemStack("mi:sanjuu", 3));
+          inv.addItem(new ItemStack("mi:gif", 3));
+          inv.addItem(new ItemStack("mi:silenthill", 3));
+          inv.addItem(new ItemStack("minecraft:gold_ingot", 8));
+          inv.addItem(new ItemStack("minecraft:ender_pearl", 4));
+        } else if (rewardType === "boss") {
+          inv.addItem(new ItemStack("minecraft:netherite_ingot", 2));
+          inv.addItem(new ItemStack("minecraft:diamond", 6));
+          inv.addItem(new ItemStack("minecraft:golden_apple", 4));
+          inv.addItem(new ItemStack("mi:tin_foil_hat", 1));
+          inv.addItem(new ItemStack("mi:igyo_tool", 1));
+          inv.addItem(new ItemStack("mi:kanagawa", 2));
+        }
+      } catch (e) { }
+    }, 2);
+  } catch (e) { }
+}
+
 const allMisskeyHQLocations: { x: number, y: number, z: number, dimensionId: string }[] = [];
 const hqSpawnedFloors = new Set<string>(); // key: `${hqX}_${hqZ}_floor${floorNum}`
 
