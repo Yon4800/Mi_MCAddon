@@ -102,19 +102,19 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     event.cancel = true;
     const now = Date.now();
     const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 350) return;
+    if (now - lastPlace < 300) return;
     zabutonPlaceCooldownMap.set(player.id, now);
     system.run(() => {
       try {
         const dim = target.dimension;
         const loc = target.location;
         const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
-        dim.spawnEntity(itemStack.typeId, stackLoc);
-        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
-        if (player.gameMode !== "creative") {
-          consumeOneMainHandItem(player);
+        const consumed = decrementPlayerHeldItem(player);
+        if (consumed) {
+          dim.spawnEntity(itemStack.typeId, stackLoc);
+          dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
+          player.sendMessage("\xA7a\u{1F6CB}\uFE0F [Mi_Addon] \u5EA7\u5E03\u56E3\u3092\u4E0A\u306B\u91CD\u306D\u307E\u3057\u305F\uFF01\xA7r");
         }
-        player.sendMessage("\xA7a\u{1F6CB}\uFE0F [Mi_Addon] \u5EA7\u5E03\u56E3\u3092\u4E0A\u306B\u91CD\u306D\u307E\u3057\u305F\uFF01\xA7r");
       } catch (e) {
       }
     });
@@ -2085,29 +2085,6 @@ world.afterEvents.itemUse.subscribe((event) => {
       } catch (e) {
       }
     }, 5);
-    return;
-  }
-  if (itemStack.typeId.startsWith("mi:zabuton_")) {
-    const now = Date.now();
-    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 350) return;
-    zabutonPlaceCooldownMap.set(player.id, now);
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-    const spawnLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 2) + 0.5,
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 2) + 0.5
-    };
-    try {
-      dim.spawnEntity(itemStack.typeId, spawnLoc);
-      dim.spawnParticle("minecraft:smoke_particle", { x: spawnLoc.x, y: spawnLoc.y + 0.1, z: spawnLoc.z });
-      if (player.gameMode !== "creative") {
-        consumeOneMainHandItem(player);
-      }
-    } catch (e) {
-    }
     return;
   }
   if (itemStack.typeId === "mi:hq_blueprint") {

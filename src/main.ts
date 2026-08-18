@@ -128,7 +128,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
     event.cancel = true;
     const now = Date.now();
     const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 350) return; // Debounce double-trigger!
+    if (now - lastPlace < 300) return;
     zabutonPlaceCooldownMap.set(player.id, now);
 
     system.run(() => {
@@ -137,13 +137,13 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         const loc = target.location;
         const stackLoc = { x: loc.x, y: loc.y + 0.16, z: loc.z };
 
-        dim.spawnEntity(itemStack.typeId, stackLoc);
-        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
-
-        if (player.gameMode !== "creative") {
-          consumeOneMainHandItem(player);
+        // Decrement item FIRST in survival
+        const consumed = decrementPlayerHeldItem(player);
+        if (consumed) {
+          dim.spawnEntity(itemStack.typeId, stackLoc);
+          dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.1, z: stackLoc.z });
+          player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
         }
-        player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
       } catch (e) { }
     });
     return;
@@ -2662,32 +2662,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
 
-  // 3. Zabuton Ground Placement (mi:zabuton_blue, etc.)
-  if (itemStack.typeId.startsWith("mi:zabuton_")) {
-    const now = Date.now();
-    const lastPlace = zabutonPlaceCooldownMap.get(player.id) || 0;
-    if (now - lastPlace < 350) return; // Debounce double-trigger!
-    zabutonPlaceCooldownMap.set(player.id, now);
-
-    const dim = player.dimension;
-    const pLoc = player.location;
-    const viewDir = player.getViewDirection();
-    const spawnLoc = {
-      x: Math.floor(pLoc.x + viewDir.x * 2) + 0.5,
-      y: Math.floor(pLoc.y),
-      z: Math.floor(pLoc.z + viewDir.z * 2) + 0.5
-    };
-
-    try {
-      dim.spawnEntity(itemStack.typeId, spawnLoc);
-      dim.spawnParticle("minecraft:smoke_particle", { x: spawnLoc.x, y: spawnLoc.y + 0.1, z: spawnLoc.z });
-
-      if (player.gameMode !== "creative") {
-        consumeOneMainHandItem(player);
-      }
-    } catch (e) { }
-    return;
-  }
+  
 
   // 2. Misskey HQ Blueprint (mi:hq_blueprint)
   if (itemStack.typeId === "mi:hq_blueprint") {
