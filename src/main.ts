@@ -30,6 +30,30 @@ function showFormSafe(player: Player, form: any, onResponse: (response: any) => 
 // ----------------------------------------------------
 // Global State Maps
 // ----------------------------------------------------
+// ----------------------------------------------------
+// Helper: Decrement 1 Item from Player Mainhand (Survival Mode)
+// ----------------------------------------------------
+function decrementPlayerHeldItem(player: Player): boolean {
+  try {
+    if (player.gameMode === "creative") return true;
+
+    const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+    if (!equippable) return false;
+    const handItem = equippable.getEquipment("Mainhand" as any);
+    if (!handItem) return false;
+
+    if (handItem.amount > 1) {
+      handItem.amount -= 1;
+      equippable.setEquipment("Mainhand" as any, handItem);
+    } else {
+      equippable.setEquipment("Mainhand" as any, undefined);
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 const zabutonPlaceCooldownMap = new Map<string, number>(); // playerId -> timestamp
 const yosanoLoveMap = new Map<string, number>();
 const mochochoEatMap = new Map<string, { count: number, lastEatTime: number }>();

@@ -21,6 +21,24 @@ function showFormSafe(player, form, onResponse) {
     });
   }, 1);
 }
+function decrementPlayerHeldItem(player) {
+  try {
+    if (player.gameMode === "creative") return true;
+    const equippable = player.getComponent(EntityComponentTypes.Equippable);
+    if (!equippable) return false;
+    const handItem = equippable.getEquipment("Mainhand");
+    if (!handItem) return false;
+    if (handItem.amount > 1) {
+      handItem.amount -= 1;
+      equippable.setEquipment("Mainhand", handItem);
+    } else {
+      equippable.setEquipment("Mainhand", void 0);
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 var zabutonPlaceCooldownMap = /* @__PURE__ */ new Map();
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
