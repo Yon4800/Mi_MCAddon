@@ -7,6 +7,51 @@
       "is_summonable": true
     },
     "component_groups": {
+      "mi:woneko_wild": {
+        "minecraft:tameable": {
+          "probability": 0.33,
+          "tame_items": [
+            "cod",
+            "salmon",
+            "tropical_fish",
+            "minecraft:cod",
+            "minecraft:salmon",
+            "minecraft:tropical_fish"
+          ],
+          "tame_event": {
+            "event": "minecraft:on_tame",
+            "target": "self"
+          }
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 6,
+          "speed_multiplier": 0.8
+        },
+        "minecraft:behavior.look_at_player": {
+          "priority": 7,
+          "look_distance": 8.0
+        }
+      },
+      "mi:woneko_tamed": {
+        "minecraft:is_tamed": {},
+        "minecraft:sittable": {},
+        "minecraft:behavior.stay_while_sitting": {
+          "priority": 3
+        },
+        "minecraft:behavior.follow_owner": {
+          "priority": 4,
+          "speed_multiplier": 1.25,
+          "start_distance": 5,
+          "stop_distance": 2,
+          "can_teleport": true
+        },
+        "minecraft:behavior.owner_hurt_by_target": {
+          "priority": 1
+        },
+        "minecraft:behavior.owner_hurt_target": {
+          "priority": 2
+        }
+      },
       "mi:variant_relax": {
         "minecraft:variant": {
           "value": 0
@@ -32,8 +77,48 @@
         ]
       },
       "minecraft:health": {
-        "value": 10,
-        "max": 10
+        "value": 12,
+        "max": 12
+      },
+      "minecraft:healable": {
+        "items": [
+          {
+            "item": "cod",
+            "heal_amount": 4
+          },
+          {
+            "item": "salmon",
+            "heal_amount": 4
+          },
+          {
+            "item": "tropical_fish",
+            "heal_amount": 5
+          },
+          {
+            "item": "pufferfish",
+            "heal_amount": 2
+          },
+          {
+            "item": "minecraft:cod",
+            "heal_amount": 4
+          },
+          {
+            "item": "minecraft:salmon",
+            "heal_amount": 4
+          },
+          {
+            "item": "minecraft:tropical_fish",
+            "heal_amount": 5
+          },
+          {
+            "item": "minecraft:pufferfish",
+            "heal_amount": 2
+          },
+          {
+            "item": "mi:baked_mochocho",
+            "heal_amount": 6
+          }
+        ]
       },
       "minecraft:physics": {},
       "minecraft:collision_box": {
@@ -49,7 +134,8 @@
       },
       "minecraft:movement.basic": {},
       "minecraft:navigation.walk": {
-        "can_path_over_water": true
+        "can_path_over_water": true,
+        "avoid_damage_blocks": true
       },
       "minecraft:attack": {
         "damage": 6
@@ -57,16 +143,11 @@
       "minecraft:variant": {
         "value": 0
       },
-      "minecraft:tameable": {
-        "probability": 0.33,
-        "tame_items": [
-          "cod",
-          "salmon",
-          "tropical_fish"
-        ]
+      "minecraft:behavior.float": {
+        "priority": 0
       },
       "minecraft:behavior.nearest_attackable_target": {
-        "priority": 2,
+        "priority": 3,
         "entity_types": [
           {
             "filters": {
@@ -81,15 +162,40 @@
       "minecraft:behavior.melee_attack": {
         "priority": 3
       },
-      "minecraft:behavior.random_stroll": {
-        "priority": 5
-      },
       "minecraft:nameable": {
         "always_show": false,
         "allow_name_tag_renaming": true
       }
     },
     "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "mi:woneko_wild",
+            "mi:variant_relax"
+          ]
+        }
+      },
+      "minecraft:entity_transformed": {
+        "add": {
+          "component_groups": [
+            "mi:woneko_tamed",
+            "mi:variant_relax"
+          ]
+        }
+      },
+      "minecraft:on_tame": {
+        "remove": {
+          "component_groups": [
+            "mi:woneko_wild"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "mi:woneko_tamed"
+          ]
+        }
+      },
       "mi:set_relax": {
         "add": {
           "component_groups": [

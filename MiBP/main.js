@@ -899,21 +899,32 @@ function generateMisskeyHQ(dimension, origin) {
   for (const ly of [5, 10, 15]) {
     setB(-4, ly, -4, "minecraft:sea_lantern");
     setB(-4, ly, 4, "minecraft:sea_lantern");
-    setB(4, ly, -4, "minecraft:sea_lantern");
+    setB(2, ly, -4, "minecraft:sea_lantern");
     setB(0, ly, 0, "minecraft:sea_lantern");
   }
-  for (let dy = 1; dy <= 21; dy++) {
-    const stairStep = (dy - 1) % 5;
-    const currentZ = 4 + stairStep % 3;
-    const currentX = 5;
-    setB(currentX, dy, currentZ, "minecraft:quartz_stairs");
-    setB(currentX - 1, dy, currentZ, "minecraft:quartz_block");
+  const stairBases = [0, 5, 10, 15];
+  for (const yBase of stairBases) {
+    for (let cdx = 4; cdx <= 6; cdx++) {
+      for (let cdz = 4; cdz <= 6; cdz++) {
+        for (let cy = 1; cy <= 5; cy++) {
+          setB(cdx, yBase + cy, cdz, "minecraft:air");
+        }
+      }
+    }
+    setB(4, yBase + 1, 4, "minecraft:smooth_quartz");
+    setB(4, yBase + 2, 5, "minecraft:smooth_quartz");
+    setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 4, 5, "minecraft:smooth_quartz");
+    setB(6, yBase + 5, 4, "minecraft:smooth_quartz");
   }
   for (let rx = -4; rx <= -1; rx++) {
-    setB(rx, 1, -4, "minecraft:smooth_quartz_stairs");
+    setB(rx, 1, -4, "minecraft:smooth_quartz");
   }
   setB(-3, 2, -4, "mi:desktop_pc");
-  setB(-2, 1, -5, "minecraft:birch_stairs");
+  setB(-2, 2, -4, "mi:display_monitor");
+  setB(-3, 1, -5, "minecraft:dark_oak_stairs");
   for (let lz = -4; lz <= -1; lz++) {
     setB(3, 1, lz, "minecraft:oak_stairs");
   }
@@ -941,29 +952,21 @@ function generateMisskeyHQ(dimension, origin) {
     }, 2);
   }
   for (let dx = -5; dx <= -2; dx++) {
-    setB(dx, 6, -3, "minecraft:birch_slab");
-    setB(dx, 6, -1, "minecraft:birch_slab");
+    setB(dx, 6, -3, "minecraft:birch_planks");
+    setB(dx, 6, -2, "minecraft:birch_planks");
   }
   setB(-5, 7, -3, "mi:display_monitor");
   setB(-4, 7, -3, "mi:desktop_pc");
-  setB(-3, 7, -3, "mi:laptop_pc");
-  setB(-2, 7, -3, "mi:display_monitor");
-  setB(-4, 7, -1, "mi:laptop_pc");
-  setB(-3, 7, -1, "mi:desktop_pc");
-  setB(-2, 7, -1, "mi:display_monitor");
+  setB(-3, 7, -3, "mi:display_monitor");
+  setB(-2, 7, -3, "mi:laptop_pc");
+  setB(-5, 7, -2, "mi:display_monitor");
+  setB(-4, 7, -2, "mi:laptop_pc");
+  setB(-3, 7, -2, "mi:desktop_pc");
+  setB(-2, 7, -2, "mi:display_monitor");
   setB(-4, 6, -4, "minecraft:dark_oak_stairs");
   setB(-3, 6, -4, "minecraft:dark_oak_stairs");
-  setB(-4, 6, 0, "minecraft:dark_oak_stairs");
-  setB(-3, 6, 0, "minecraft:dark_oak_stairs");
-  for (let dx = -5; dx <= -2; dx++) {
-    setB(dx, 6, 2, "minecraft:birch_slab");
-  }
-  setB(-5, 7, 2, "mi:display_monitor");
-  setB(-4, 7, 2, "mi:desktop_pc");
-  setB(-3, 7, 2, "mi:laptop_pc");
-  setB(-2, 7, 2, "mi:display_monitor");
-  setB(-4, 6, 1, "minecraft:dark_oak_stairs");
-  setB(-3, 6, 1, "minecraft:dark_oak_stairs");
+  setB(-4, 6, -1, "minecraft:dark_oak_stairs");
+  setB(-3, 6, -1, "minecraft:dark_oak_stairs");
   setB(1, 6, -4, "mi:ecology_server_block");
   setB(1, 7, -4, "mi:ecology_server_block");
   setB(-7, 7, -1, "minecraft:white_concrete");
@@ -1007,15 +1010,20 @@ function generateMisskeyHQ(dimension, origin) {
   }
   setB(-6, 11, -3, "mi:instance_server");
   setB(-6, 11, 0, "mi:instance_server");
-  for (let mz = -4; mz <= 1; mz++) {
-    setB(3, 11, mz, "minecraft:dark_oak_slab");
-    setB(4, 11, mz, "minecraft:dark_oak_slab");
-    if (mz % 2 === 0) {
-      setB(3, 12, mz, "mi:laptop_pc");
-      setB(4, 12, mz, "mi:laptop_pc");
+  for (let mx = 2; mx <= 5; mx++) {
+    for (let mz = -3; mz <= 1; mz++) {
+      setB(mx, 11, mz, "minecraft:dark_oak_planks");
     }
-    setB(2, 11, mz, "minecraft:birch_stairs");
-    setB(5, 11, mz, "minecraft:birch_stairs");
+  }
+  setB(3, 12, -2, "mi:laptop_pc");
+  setB(4, 12, -2, "mi:laptop_pc");
+  setB(3, 12, 0, "mi:laptop_pc");
+  setB(4, 12, 0, "mi:laptop_pc");
+  setB(3, 12, -3, "mi:display_monitor");
+  setB(4, 12, -3, "mi:display_monitor");
+  for (let cz = -2; cz <= 0; cz++) {
+    setB(1, 11, cz, "minecraft:birch_stairs");
+    setB(6, 11, cz, "minecraft:birch_stairs");
   }
   for (let sz = -3; sz <= 0; sz++) {
     for (let sy = 12; sy <= 14; sy++) {
@@ -1046,9 +1054,9 @@ function generateMisskeyHQ(dimension, origin) {
   setB(1, 19, 0, "minecraft:end_rod");
   setB(0, 19, -1, "minecraft:end_rod");
   setB(0, 19, 1, "minecraft:end_rod");
-  setB(-1, 16, 4, "minecraft:dark_oak_stairs");
-  setB(0, 16, 4, "minecraft:dark_oak_slab");
-  setB(1, 16, 4, "minecraft:dark_oak_stairs");
+  for (let px = -2; px <= 2; px++) {
+    setB(px, 16, 4, "minecraft:dark_oak_planks");
+  }
   setB(-1, 17, 4, "mi:display_monitor");
   setB(0, 17, 4, "mi:desktop_pc");
   setB(1, 17, 4, "mi:display_monitor");
@@ -1100,8 +1108,9 @@ function generateMisskeyHQ(dimension, origin) {
   lastMisskeyHQLocation = { x: ox, y: oy, z: oz, dimensionId: dimension.id };
   return true;
 }
+var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
 function openSyuiloDialogUI(player, syuiloEntity) {
-  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306B\u884C\u304D\u305F\u3044\uFF01").button("\u{1F4DC} \u958B\u767A\u6240\u306E\u8A2D\u8A08\u56F3\u3092\u3082\u3089\u3046").button("\u307E\u305F\u306D");
+  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u307E\u305F\u306D");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0) return;
     if (response.selection === 0) {
@@ -1122,43 +1131,35 @@ function openSyuiloDialogUI(player, syuiloEntity) {
       player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
     } else if (response.selection === 1) {
       const dim = player.dimension;
-      let hqLoc = lastMisskeyHQLocation;
-      if (!hqLoc || hqLoc.dimensionId !== dim.id) {
+      if (!lastMisskeyHQLocation || lastMisskeyHQLocation.dimensionId !== dim.id) {
         const pLoc = player.location;
-        const genLoc = {
-          x: Math.floor(pLoc.x + 24),
-          y: Math.floor(pLoc.y),
-          z: Math.floor(pLoc.z + 24)
-        };
-        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300CMisskey\u958B\u767A\u6240\u3067\u3059\u306D\uFF01 \u3059\u3050\u8FD1\u304F\u306B\u30AA\u30D5\u30A3\u30B9\u3092\u7528\u610F\u3057\u307E\u3057\u305F\u3088\u3002\u6848\u5185\u3057\u307E\u3059\u306D\uFF01\u300D\xA7r");
-        dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
-        generateMisskeyHQ(dim, genLoc);
-        hqLoc = lastMisskeyHQLocation;
-      } else {
-        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300CMisskey\u958B\u767A\u6240\u3067\u3059\u306D\uFF01 \u30A8\u30F3\u30C8\u30E9\u30F3\u30B9\u3078\u304A\u9023\u308C\u3057\u307E\u3059\uFF01\u300D\xA7r");
-      }
-      system.runTimeout(() => {
+        const targetX = Math.floor(pLoc.x + 600 + Math.floor(Math.random() * 200));
+        const targetZ = Math.floor(pLoc.z + 600 + Math.floor(Math.random() * 200));
+        let groundY = 64;
         try {
-          player.teleport({ x: hqLoc.x + 0.5, y: hqLoc.y + 1, z: hqLoc.z - 6.5 }, {
-            dimension: dim
-          });
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: hqLoc.x, y: hqLoc.y + 1.5, z: hqLoc.z - 6 });
-          player.sendMessage("\xA7a\u2728 [Misskey\u958B\u767A\u6240] \u672C\u793E\u30D3\u30EB\uFF081F \u30A8\u30F3\u30C8\u30E9\u30F3\u30B9\u30ED\u30D3\u30FC\uFF09\u306B\u5230\u7740\u3057\u307E\u3057\u305F\uFF01\xA7r");
-          player.sendMessage("\xA77\u{1F4A1} 2F: \u958B\u767A\u5BA4 | 3F: \u30B5\u30FC\u30D0\u30FC\u5BA4 & \u4F1A\u8B70\u5BA4 | 4F: \u793E\u9577\u5BA4 (\u30DC\u30B9\u90E8\u5C4B) | \u5C4B\u4E0A: \u30A2\u30F3\u30C6\u30CA\xA7r");
+          for (let y = 120; y >= 60; y--) {
+            const b = dim.getBlock({ x: targetX, y, z: targetZ });
+            if (b && !b.isAir && !b.isLiquid) {
+              groundY = y + 1;
+              break;
+            }
+          }
         } catch (e) {
         }
-      }, 5);
-    } else if (response.selection === 2) {
-      player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300C\u3044\u3064\u3067\u3082\u597D\u304D\u306A\u5834\u6240\u306BMisskey\u958B\u767A\u6240\u3092\u5EFA\u3066\u3089\u308C\u308B\u8A2D\u8A08\u56F3\u3067\u3059\uFF01 \u3069\u3046\u305E\uFF01\u300D\xA7r");
-      try {
-        const inv = player.getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("mi:hq_blueprint", 1));
-        } else {
-          player.dimension.spawnItem(new ItemStack("mi:hq_blueprint", 1), player.location);
-        }
-        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-      } catch (e) {
+        generateMisskeyHQ(dim, { x: targetX, y: groundY, z: targetZ });
+      }
+      const hq = lastMisskeyHQLocation;
+      const approxX = Math.round(hq.x / 50) * 50;
+      const approxZ = Math.round(hq.z / 50) * 50;
+      const playerId = player.id;
+      if (!syuiloHintGivenPlayers.has(playerId)) {
+        syuiloHintGivenPlayers.add(playerId);
+        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300CMisskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u3060\u306D\uFF01\n\u98A8\u306E\u5642\u306B\u3088\u308B\u3068\u2026\u3053\u3053\u304B\u3089\u3010\u5317\u6771\u3011\u306E\u65B9\u89D2\u3001\u304A\u304A\u3088\u305D \xA7eX: " + approxX + " \u4ED8\u8FD1, Z: " + approxZ + " \u4ED8\u8FD1\xA7b \u306E\u5E73\u539F\u306B\u305D\u3073\u3048\u7ACB\u3063\u3066\u3044\u308B\u3089\u3057\u3044\u3088\uFF01\xA7r");
+        player.sendMessage("\xA7d\u2728 [\u63A2\u7D22\u30AF\u30A8\u30B9\u30C8] \u4E16\u754C\u306B\u6570\u30AB\u6240\u3057\u304B\u306A\u3044\u8CB4\u91CD\u306A\u672C\u793E\u30D3\u30EB\u3067\u3059\u3002\u81EA\u529B\u3067\u63A2\u691C\u3057\u3066\u76EE\u6307\u3057\u3066\u307F\u3088\u3046\uFF01\xA7r");
+        player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 2, z: player.location.z });
+      } else {
+        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300C\u958B\u767A\u6240\u306E\u5834\u6240\u306E\u30D2\u30F3\u30C8\u306F\u3055\u3063\u304D\u6559\u3048\u305F\u3088\uFF01 \u304A\u304A\u3088\u305D \xA7eX: " + approxX + " \u4ED8\u8FD1, Z: " + approxZ + " \u4ED8\u8FD1\xA7b \u306E\u3042\u305F\u308A\u3092\u63A2\u3057\u3066\u307F\u3066\u306D\u3002\u7121\u4E8B\u306B\u305F\u3069\u308A\u7740\u3051\u308B\u3068\u3044\u3044\u306A\uFF01\u300D\xA7r");
       }
     }
   });

@@ -4,12 +4,53 @@
     "description": {
       "identifier": "mi:blobcat",
       "is_spawnable": true,
-      "is_summonable": true,
-      "is_experimental": false
+      "is_summonable": true
     },
     "component_groups": {
-      "mi:tamed": {
-        "minecraft:is_tamed": {}
+      "mi:blobcat_wild": {
+        "minecraft:tameable": {
+          "probability": 0.33,
+          "tame_items": [
+            "cod",
+            "salmon",
+            "tropical_fish",
+            "minecraft:cod",
+            "minecraft:salmon",
+            "minecraft:tropical_fish"
+          ],
+          "tame_event": {
+            "event": "minecraft:on_tame",
+            "target": "self"
+          }
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 6,
+          "speed_multiplier": 0.8
+        },
+        "minecraft:behavior.look_at_player": {
+          "priority": 7,
+          "look_distance": 8.0
+        }
+      },
+      "mi:blobcat_tamed": {
+        "minecraft:is_tamed": {},
+        "minecraft:sittable": {},
+        "minecraft:behavior.stay_while_sitting": {
+          "priority": 3
+        },
+        "minecraft:behavior.follow_owner": {
+          "priority": 4,
+          "speed_multiplier": 1.25,
+          "start_distance": 5,
+          "stop_distance": 2,
+          "can_teleport": true
+        },
+        "minecraft:behavior.owner_hurt_by_target": {
+          "priority": 1
+        },
+        "minecraft:behavior.owner_hurt_target": {
+          "priority": 2
+        }
       }
     },
     "components": {
@@ -21,8 +62,48 @@
         ]
       },
       "minecraft:health": {
-        "value": 8,
-        "max": 8
+        "value": 10,
+        "max": 10
+      },
+      "minecraft:healable": {
+        "items": [
+          {
+            "item": "cod",
+            "heal_amount": 4
+          },
+          {
+            "item": "salmon",
+            "heal_amount": 4
+          },
+          {
+            "item": "tropical_fish",
+            "heal_amount": 5
+          },
+          {
+            "item": "pufferfish",
+            "heal_amount": 2
+          },
+          {
+            "item": "minecraft:cod",
+            "heal_amount": 4
+          },
+          {
+            "item": "minecraft:salmon",
+            "heal_amount": 4
+          },
+          {
+            "item": "minecraft:tropical_fish",
+            "heal_amount": 5
+          },
+          {
+            "item": "minecraft:pufferfish",
+            "heal_amount": 2
+          },
+          {
+            "item": "mi:baked_mochocho",
+            "heal_amount": 6
+          }
+        ]
       },
       "minecraft:physics": {},
       "minecraft:collision_box": {
@@ -38,25 +119,17 @@
       },
       "minecraft:movement.basic": {},
       "minecraft:navigation.walk": {
-        "can_path_over_water": true
+        "can_path_over_water": true,
+        "avoid_damage_blocks": true
       },
       "minecraft:attack": {
         "damage": 6
       },
-      "minecraft:tameable": {
-        "probability": 0.33,
-        "tame_items": [
-          "cod",
-          "salmon",
-          "tropical_fish"
-        ],
-        "tame_event": {
-          "event": "mi:on_tame",
-          "target": "self"
-        }
+      "minecraft:behavior.float": {
+        "priority": 0
       },
       "minecraft:behavior.nearest_attackable_target": {
-        "priority": 2,
+        "priority": 3,
         "entity_types": [
           {
             "filters": {
@@ -71,28 +144,35 @@
       "minecraft:behavior.melee_attack": {
         "priority": 3
       },
-      "minecraft:behavior.follow_owner": {
-        "priority": 4,
-        "speed_multiplier": 1.2,
-        "start_distance": 6,
-        "stop_distance": 2
-      },
-      "minecraft:behavior.random_stroll": {
-        "priority": 6
-      },
-      "minecraft:behavior.look_at_player": {
-        "priority": 7
-      },
       "minecraft:nameable": {
         "always_show": false,
         "allow_name_tag_renaming": true
       }
     },
     "events": {
-      "mi:on_tame": {
+      "minecraft:entity_spawned": {
         "add": {
           "component_groups": [
-            "mi:tamed"
+            "mi:blobcat_wild"
+          ]
+        }
+      },
+      "minecraft:entity_transformed": {
+        "add": {
+          "component_groups": [
+            "mi:blobcat_tamed"
+          ]
+        }
+      },
+      "minecraft:on_tame": {
+        "remove": {
+          "component_groups": [
+            "mi:blobcat_wild"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "mi:blobcat_tamed"
           ]
         }
       }

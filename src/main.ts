@@ -1164,6 +1164,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   for (const fl of floorLevels) {
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
+        // Staircase opening area: dx: 4..6, dz: 4..6
         const isStairHole = (dx >= 4 && dx <= 6 && dz >= 4 && dz <= 6);
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
@@ -1176,29 +1177,49 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   for (const ly of [5, 10, 15]) {
     setB(-4, ly, -4, "minecraft:sea_lantern");
     setB(-4, ly, 4, "minecraft:sea_lantern");
-    setB(4, ly, -4, "minecraft:sea_lantern");
+    setB(2, ly, -4, "minecraft:sea_lantern");
     setB(0, ly, 0, "minecraft:sea_lantern");
   }
 
-  // 4. Central Inter-Floor Staircase (dx: 4..6, dz: 4..6)
-  for (let dy = 1; dy <= 21; dy++) {
-    const stairStep = (dy - 1) % 5;
-    const currentZ = 4 + (stairStep % 3);
-    const currentX = 5;
-    setB(currentX, dy, currentZ, "minecraft:quartz_stairs");
-    setB(currentX - 1, dy, currentZ, "minecraft:quartz_block");
+  // 4. Stable U-Shaped Quartz Staircase between all floors
+  // Floors are at y: 0 (1F), y: 5 (2F), y: 10 (3F), y: 15 (4F), y: 21 (Roof)
+  const stairBases = [0, 5, 10, 15];
+  for (const yBase of stairBases) {
+    // Clear head space above stairs
+    for (let cdx = 4; cdx <= 6; cdx++) {
+      for (let cdz = 4; cdz <= 6; cdz++) {
+        for (let cy = 1; cy <= 5; cy++) {
+          setB(cdx, yBase + cy, cdz, "minecraft:air");
+        }
+      }
+    }
+
+    // Step 1
+    setB(4, yBase + 1, 4, "minecraft:smooth_quartz");
+    // Step 2
+    setB(4, yBase + 2, 5, "minecraft:smooth_quartz");
+    // Landing (Step 3)
+    setB(4, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(5, yBase + 3, 6, "minecraft:smooth_quartz");
+    setB(6, yBase + 3, 6, "minecraft:smooth_quartz");
+    // Step 4
+    setB(6, yBase + 4, 5, "minecraft:smooth_quartz");
+    // Step 5 (connects to next floor level)
+    setB(6, yBase + 5, 4, "minecraft:smooth_quartz");
   }
 
   // ----------------------------------------------------
   // 5. Floor Furnishing & Gimmicks
   // ----------------------------------------------------
 
-  // === 1F: Entrance Lobby (Reception, Lounge, Note Board, Instance Server) ===
+  // === 1F: Entrance Lobby (Flat Reception Desk, Lounge, Note Board, Instance Server) ===
+  // Flat Quartz Counter Desk
   for (let rx = -4; rx <= -1; rx++) {
-    setB(rx, 1, -4, "minecraft:smooth_quartz_stairs");
+    setB(rx, 1, -4, "minecraft:smooth_quartz");
   }
-  setB(-3, 2, -4, "mi:desktop_pc"); // Reception Desktop PC
-  setB(-2, 1, -5, "minecraft:birch_stairs"); // Receptionist Chair
+  setB(-3, 2, -4, "mi:desktop_pc");       // Reception Desktop PC
+  setB(-2, 2, -4, "mi:display_monitor");   // Reception Sub Monitor
+  setB(-3, 1, -5, "minecraft:dark_oak_stairs"); // Receptionist Chair
 
   // Waiting Lounge (Sofas & Zabutons)
   for (let lz = -4; lz <= -1; lz++) {
@@ -1231,33 +1252,27 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     }, 2);
   }
 
-  // === 2F: Developer Room (Desks, Desktop/Laptop PCs, Display Monitors, Bio Server Prototype, Whiteboard) ===
+  // === 2F: Developer Room (Solid Planks Desks, PCs, Monitors, Bio Server Prototype, Whiteboard) ===
+  // Desk Island 1 (Solid flat table)
   for (let dx = -5; dx <= -2; dx++) {
-    setB(dx, 6, -3, "minecraft:birch_slab");
-    setB(dx, 6, -1, "minecraft:birch_slab");
+    setB(dx, 6, -3, "minecraft:birch_planks");
+    setB(dx, 6, -2, "minecraft:birch_planks");
   }
-  setB(-5, 7, -3, "mi:display_monitor"); // Dual monitor setup
+  setB(-5, 7, -3, "mi:display_monitor");
   setB(-4, 7, -3, "mi:desktop_pc");
-  setB(-3, 7, -3, "mi:laptop_pc");
-  setB(-2, 7, -3, "mi:display_monitor");
-  setB(-4, 7, -1, "mi:laptop_pc");
-  setB(-3, 7, -1, "mi:desktop_pc");
-  setB(-2, 7, -1, "mi:display_monitor");
-  setB(-4, 6, -4, "minecraft:dark_oak_stairs"); // Chairs
-  setB(-3, 6, -4, "minecraft:dark_oak_stairs");
-  setB(-4, 6, 0, "minecraft:dark_oak_stairs");
-  setB(-3, 6, 0, "minecraft:dark_oak_stairs");
+  setB(-3, 7, -3, "mi:display_monitor");
+  setB(-2, 7, -3, "mi:laptop_pc");
 
-  // Desk Island 2
-  for (let dx = -5; dx <= -2; dx++) {
-    setB(dx, 6, 2, "minecraft:birch_slab");
-  }
-  setB(-5, 7, 2, "mi:display_monitor");
-  setB(-4, 7, 2, "mi:desktop_pc");
-  setB(-3, 7, 2, "mi:laptop_pc");
-  setB(-2, 7, 2, "mi:display_monitor");
-  setB(-4, 6, 1, "minecraft:dark_oak_stairs");
-  setB(-3, 6, 1, "minecraft:dark_oak_stairs");
+  setB(-5, 7, -2, "mi:display_monitor");
+  setB(-4, 7, -2, "mi:laptop_pc");
+  setB(-3, 7, -2, "mi:desktop_pc");
+  setB(-2, 7, -2, "mi:display_monitor");
+
+  // Chairs (North & South of table)
+  setB(-4, 6, -4, "minecraft:dark_oak_stairs");
+  setB(-3, 6, -4, "minecraft:dark_oak_stairs");
+  setB(-4, 6, -1, "minecraft:dark_oak_stairs");
+  setB(-3, 6, -1, "minecraft:dark_oak_stairs");
 
   // Ecology Server Prototype in Dev Room
   setB(1, 6, -4, "mi:ecology_server_block");
@@ -1293,7 +1308,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     }, 2);
   }
 
-  // === 3F: Server Room & Meeting Room (Bio Server Rows & Conference Table) ===
+  // === 3F: Server Room & Meeting Room (Bio Server Rows & Solid Conference Table) ===
   for (let pz = -6; pz <= 3; pz++) {
     for (let py = 11; py <= 14; py++) {
       setB(0, py, pz, "minecraft:glass_pane");
@@ -1311,16 +1326,25 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(-6, 11, -3, "mi:instance_server");
   setB(-6, 11, 0, "mi:instance_server");
 
-  // Meeting Room (Conference Table with Laptops)
-  for (let mz = -4; mz <= 1; mz++) {
-    setB(3, 11, mz, "minecraft:dark_oak_slab");
-    setB(4, 11, mz, "minecraft:dark_oak_slab");
-    if (mz % 2 === 0) {
-      setB(3, 12, mz, "mi:laptop_pc");
-      setB(4, 12, mz, "mi:laptop_pc");
+  // Meeting Room (Solid Full Block Conference Table with Laptops)
+  for (let mx = 2; mx <= 5; mx++) {
+    for (let mz = -3; mz <= 1; mz++) {
+      setB(mx, 11, mz, "minecraft:dark_oak_planks");
     }
-    setB(2, 11, mz, "minecraft:birch_stairs");
-    setB(5, 11, mz, "minecraft:birch_stairs");
+  }
+
+  // Laptops and Presentation Monitors centered on Conference Table
+  setB(3, 12, -2, "mi:laptop_pc");
+  setB(4, 12, -2, "mi:laptop_pc");
+  setB(3, 12, 0, "mi:laptop_pc");
+  setB(4, 12, 0, "mi:laptop_pc");
+  setB(3, 12, -3, "mi:display_monitor");
+  setB(4, 12, -3, "mi:display_monitor");
+
+  // Conference Chairs (Left & Right sides)
+  for (let cz = -2; cz <= 0; cz++) {
+    setB(1, 11, cz, "minecraft:birch_stairs");
+    setB(6, 11, cz, "minecraft:birch_stairs");
   }
 
   // Presentation Screen
@@ -1357,10 +1381,10 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
   setB(0, 19, -1, "minecraft:end_rod");
   setB(0, 19, 1, "minecraft:end_rod");
 
-  // Executive President Desk
-  setB(-1, 16, 4, "minecraft:dark_oak_stairs");
-  setB(0, 16, 4, "minecraft:dark_oak_slab");
-  setB(1, 16, 4, "minecraft:dark_oak_stairs");
+  // Executive Solid President Desk
+  for (let px = -2; px <= 2; px++) {
+    setB(px, 16, 4, "minecraft:dark_oak_planks");
+  }
   setB(-1, 17, 4, "mi:display_monitor"); // President Sub Monitor
   setB(0, 17, 4, "mi:desktop_pc");       // President Desktop PC
   setB(1, 17, 4, "mi:display_monitor");  // President Sub Monitor 2
@@ -1425,15 +1449,16 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
 }
 
 // ----------------------------------------------------
-// 0.86. Syuilo NPC Dialog & Misskey HQ Guide
+// 0.86. Syuilo NPC Dialog & Misskey HQ Guide (1-Time Hint System)
 // ----------------------------------------------------
+const syuiloHintGivenPlayers = new Set<string>();
+
 function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
   const form = new ActionFormData()
     .title("🏢 しゅいろさん (Misskey)")
     .body("「やあ！ Misskey MC Addonへようこそ！\n何かお手伝いできることはありますか？」")
     .button("💬 世間話をする (開発トーク)")
-    .button("🏢 Misskey開発所（本社ビル）に行きたい！")
-    .button("📜 開発所の設計図をもらう")
+    .button("🏢 Misskey開発所（本社ビル）の場所を聞く")
     .button("またね");
 
   showFormSafe(player, form, (response) => {
@@ -1458,49 +1483,45 @@ function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
       player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
       player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
     } else if (response.selection === 1) {
-      // 🏢 Visit Misskey HQ
+      // 🏢 1-Time Location Hint Exploration System
       const dim = player.dimension;
-      let hqLoc = lastMisskeyHQLocation;
 
-      if (!hqLoc || hqLoc.dimensionId !== dim.id) {
+      // Determine world's unique HQ location if not already placed
+      if (!lastMisskeyHQLocation || lastMisskeyHQLocation.dimensionId !== dim.id) {
         const pLoc = player.location;
-        const genLoc = {
-          x: Math.floor(pLoc.x + 24),
-          y: Math.floor(pLoc.y),
-          z: Math.floor(pLoc.z + 24)
-        };
-        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所ですね！ すぐ近くにオフィスを用意しましたよ。案内しますね！」§r");
-        dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+        // Place HQ in a far, adventurous distance (e.g. +650, +650 from player)
+        const targetX = Math.floor(pLoc.x + 600 + Math.floor(Math.random() * 200));
+        const targetZ = Math.floor(pLoc.z + 600 + Math.floor(Math.random() * 200));
 
-        generateMisskeyHQ(dim, genLoc);
-        hqLoc = lastMisskeyHQLocation!;
-      } else {
-        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所ですね！ エントランスへお連れします！」§r");
+        let groundY = 64;
+        try {
+          for (let y = 120; y >= 60; y--) {
+            const b = dim.getBlock({ x: targetX, y, z: targetZ });
+            if (b && !b.isAir && !b.isLiquid) {
+              groundY = y + 1;
+              break;
+            }
+          }
+        } catch (e) { }
+
+        generateMisskeyHQ(dim, { x: targetX, y: groundY, z: targetZ });
       }
 
-      // Teleport player to HQ Entrance
-      system.runTimeout(() => {
-        try {
-          player.teleport({ x: hqLoc!.x + 0.5, y: hqLoc!.y + 1, z: hqLoc!.z - 6.5 }, {
-            dimension: dim
-          });
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: hqLoc!.x, y: hqLoc!.y + 1.5, z: hqLoc!.z - 6 });
-          player.sendMessage("§a✨ [Misskey開発所] 本社ビル（1F エントランスロビー）に到着しました！§r");
-          player.sendMessage("§7💡 2F: 開発室 | 3F: サーバー室 & 会議室 | 4F: 社長室 (ボス部屋) | 屋上: アンテナ§r");
-        } catch (e) { }
-      }, 5);
-    } else if (response.selection === 2) {
-      // 📜 Give Blueprint
-      player.sendMessage("§b🏢 しゅいろ: 「いつでも好きな場所にMisskey開発所を建てられる設計図です！ どうぞ！」§r");
-      try {
-        const inv = (player as any).getComponent("minecraft:inventory")?.container;
-        if (inv) {
-          inv.addItem(new ItemStack("mi:hq_blueprint", 1));
-        } else {
-          player.dimension.spawnItem(new ItemStack("mi:hq_blueprint", 1), player.location);
-        }
-        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-      } catch (e) { }
+      const hq = lastMisskeyHQLocation!;
+      const approxX = Math.round(hq.x / 50) * 50; // Approx coordinate for adventure hint
+      const approxZ = Math.round(hq.z / 50) * 50;
+
+      const playerId = player.id;
+      if (!syuiloHintGivenPlayers.has(playerId)) {
+        syuiloHintGivenPlayers.add(playerId);
+
+        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所（本社ビル）だね！\n風の噂によると…ここから【北東】の方角、おおよそ §eX: " + approxX + " 付近, Z: " + approxZ + " 付近§b の平原にそびえ立っているらしいよ！§r");
+        player.sendMessage("§d✨ [探索クエスト] 世界に数カ所しかない貴重な本社ビルです。自力で探検して目指してみよう！§r");
+        player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 2, z: player.location.z });
+      } else {
+        player.sendMessage("§b🏢 しゅいろ: 「開発所の場所のヒントはさっき教えたよ！ おおよそ §eX: " + approxX + " 付近, Z: " + approxZ + " 付近§b のあたりを探してみてね。無事にたどり着けるといいな！」§r");
+      }
     }
   });
 }
