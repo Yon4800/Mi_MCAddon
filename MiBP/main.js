@@ -894,11 +894,21 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     });
     return;
   }
-  if (block.typeId === "mi:note_board") {
+  if (block.typeId === "mi:note_board" || block.typeId === "mi:desktop_pc" || block.typeId === "mi:laptop_pc" || block.typeId === "mi:display_monitor") {
     event.cancel = true;
     if (!canOpenUI(player)) return;
     const loc = block.location;
+    const blockType = block.typeId;
     system.run(() => {
+      const bLoc = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
+      player.dimension.spawnParticle("minecraft:villager_happy", bLoc);
+      if (blockType === "mi:desktop_pc") {
+        player.sendMessage("\xA7b\u{1F4BB} [PC\u30AF\u30E9\u30A4\u30A2\u30F3\u30C8] \u30C7\u30B9\u30AF\u30C8\u30C3\u30D7PC\u3092\u8D77\u52D5\u3057\u3001Misskey\u30AF\u30E9\u30A4\u30A2\u30F3\u30C8\u3092\u958B\u304D\u307E\u3057\u305F\uFF01\xA7r");
+      } else if (blockType === "mi:laptop_pc") {
+        player.sendMessage("\xA7a\u{1F4BB} [\u30CE\u30FC\u30C8PC] \u30CE\u30FC\u30C8\u30D1\u30BD\u30B3\u30F3\u3092\u958B\u304D\u3001Misskey\u306B\u63A5\u7D9A\u3057\u307E\u3057\u305F\uFF01\xA7r");
+      } else if (blockType === "mi:display_monitor") {
+        player.sendMessage("\xA7e\u{1F5A5}\uFE0F [\u30E2\u30CB\u30BF\u30FC] \u753B\u9762\u306E\u96FB\u6E90\u3092\u5165\u308C\u3001Misskey\u30BF\u30A4\u30E0\u30E9\u30A4\u30F3\u3092\u8868\u793A\u3057\u307E\u3057\u305F\uFF01\xA7r");
+      }
       openNoteBoardUI(player, loc);
     });
     return;

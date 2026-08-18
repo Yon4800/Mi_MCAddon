@@ -1162,7 +1162,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     return;
   }
 
-  // 3. Fediverse Instance Server & Note Board UI
+  // 3. Fediverse Instance Server & Note Board & PC Client UI
   if (block.typeId === "mi:instance_server") {
     event.cancel = true;
     if (!canOpenUI(player)) return;
@@ -1173,11 +1173,21 @@ world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
     return;
   }
 
-  if (block.typeId === "mi:note_board") {
+  if (block.typeId === "mi:note_board" || block.typeId === "mi:desktop_pc" || block.typeId === "mi:laptop_pc" || block.typeId === "mi:display_monitor") {
     event.cancel = true;
     if (!canOpenUI(player)) return;
     const loc = block.location;
+    const blockType = block.typeId;
     system.run(() => {
+      const bLoc = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
+      player.dimension.spawnParticle("minecraft:villager_happy", bLoc);
+      if (blockType === "mi:desktop_pc") {
+        player.sendMessage("§b💻 [PCクライアント] デスクトップPCを起動し、Misskeyクライアントを開きました！§r");
+      } else if (blockType === "mi:laptop_pc") {
+        player.sendMessage("§a💻 [ノートPC] ノートパソコンを開き、Misskeyに接続しました！§r");
+      } else if (blockType === "mi:display_monitor") {
+        player.sendMessage("§e🖥️ [モニター] 画面の電源を入れ、Misskeyタイムラインを表示しました！§r");
+      }
       openNoteBoardUI(player, loc);
     });
     return;
