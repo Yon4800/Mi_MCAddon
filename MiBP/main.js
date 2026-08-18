@@ -941,7 +941,7 @@ function generateMisskeyHQ(dimension, origin) {
   for (const fl of floorLevels) {
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
-        const isStairHole = dx >= 5 && dx <= 6 && dz >= 4 && dz <= 8;
+        const isStairHole = dx >= 5 && dx <= 6 && dz >= 2 && dz <= 7;
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
@@ -961,7 +961,7 @@ function generateMisskeyHQ(dimension, origin) {
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
     for (let cdx = 5; cdx <= 6; cdx++) {
-      for (let cdz = 4; cdz <= 8; cdz++) {
+      for (let cdz = 2; cdz <= 8; cdz++) {
         for (let cy = 1; cy <= 6; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
@@ -971,25 +971,19 @@ function generateMisskeyHQ(dimension, origin) {
       setB(cdx, yBase + 1, 3, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 4, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 1, 4, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 });
       setB(cdx, yBase + 2, 4, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 5, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 2, 5, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 2, 5, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 });
       setB(cdx, yBase + 3, 5, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 6, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 2, 6, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 3, 6, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 3, 6, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 });
       setB(cdx, yBase + 4, 6, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
     for (let cdx = 5; cdx <= 6; cdx++) {
-      setB(cdx, yBase + 1, 7, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 2, 7, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 3, 7, "minecraft:smooth_quartz");
-      setB(cdx, yBase + 4, 7, "minecraft:smooth_quartz");
+      setB(cdx, yBase + 4, 7, "minecraft:quartz_stairs", { "upside_down_bit": true, "weirdo_direction": 3 });
       setB(cdx, yBase + 5, 7, "minecraft:quartz_stairs", { "upside_down_bit": false, "weirdo_direction": 2 });
     }
   }
