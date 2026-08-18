@@ -75,3 +75,12 @@ tile.mi:laptop_pc.name=Laptop PC
 tile.mi:display_monitor.name=Display Monitor
 item.mi:hq_blueprint.name=Misskey HQ Blueprint
 
+entity.mi:researcher.name=Misskey Researcher
+item.spawn_egg.entity.mi:researcher.name=Misskey Researcher Spawn Egg
+
+entity.mi:m_tutinoko_hostile.name=Murakami Tutinoko
+item.spawn_egg.entity.mi:m_tutinoko_hostile.name=Murakami Tutinoko Spawn Egg
+
+entity.mi:murakami_boss.name=Murakami-san
+item.spawn_egg.entity.mi:murakami_boss.name=Murakami-san Spawn Egg
+

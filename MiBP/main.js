@@ -1127,6 +1127,78 @@ function generateMisskeyHQ(dimension, origin) {
   lastMisskeyHQLocation = { x: ox, y: oy, z: oz, dimensionId: dimension.id };
   return true;
 }
+var hqSpawnedFloors = /* @__PURE__ */ new Set();
+system.runInterval(() => {
+  if (!lastMisskeyHQLocation) return;
+  const hq = lastMisskeyHQLocation;
+  try {
+    const dim = world.getDimension(hq.dimensionId);
+    if (!dim) return;
+    for (const player of world.getAllPlayers()) {
+      if (player.dimension.id !== hq.dimensionId) continue;
+      const pLoc = player.location;
+      if (Math.abs(pLoc.x - hq.x) <= 8 && Math.abs(pLoc.z - hq.z) <= 8) {
+        const relY = pLoc.y - hq.y;
+        const key1 = `${hq.x}_${hq.z}_floor1`;
+        if (relY >= 1 && relY <= 4 && !hqSpawnedFloors.has(key1)) {
+          hqSpawnedFloors.add(key1);
+          player.sendMessage("\xA7c\u26A0\uFE0F [1F \u30A8\u30F3\u30C8\u30E9\u30F3\u30B9] \u3076\u308C\u3076\u304D\u3083\u3063\u3068\u306E\u7FA4\u308C\u304C\u73FE\u308C\u305F\uFF01\xA7r");
+          dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 1.5, z: hq.z });
+          for (let i = 0; i < 5; i++) {
+            const sx = hq.x + (Math.random() * 6 - 3);
+            const sz = hq.z + (Math.random() * 6 - 3);
+            try {
+              dim.spawnEntity("mi:blebcat", { x: sx, y: hq.y + 1, z: sz });
+            } catch (e) {
+            }
+          }
+        }
+        const key2 = `${hq.x}_${hq.z}_floor2`;
+        if (relY >= 6 && relY <= 9 && !hqSpawnedFloors.has(key2)) {
+          hqSpawnedFloors.add(key2);
+          player.sendMessage("\xA7c\u26A0\uFE0F [2F \u958B\u767A\u5BA4] \u66B4\u8D70\u3057\u305FMisskey\u7814\u7A76\u8005\u305F\u3061\u304C\u8972\u3044\u304B\u304B\u3063\u3066\u304D\u305F\uFF01\xA7r");
+          dim.spawnParticle("minecraft:totem_particle", { x: hq.x - 3, y: hq.y + 6.5, z: hq.z - 2 });
+          const spawnSpots = [
+            { x: hq.x - 4, z: hq.z - 3 },
+            { x: hq.x - 3, z: hq.z - 1 },
+            { x: hq.x - 1, z: hq.z + 1 },
+            { x: hq.x - 5, z: hq.z + 1 }
+          ];
+          for (const spot of spawnSpots) {
+            try {
+              dim.spawnEntity("mi:researcher", { x: spot.x + 0.5, y: hq.y + 6, z: spot.z + 0.5 });
+            } catch (e) {
+            }
+          }
+        }
+        const key3 = `${hq.x}_${hq.z}_floor3`;
+        if (relY >= 11 && relY <= 14 && !hqSpawnedFloors.has(key3)) {
+          hqSpawnedFloors.add(key3);
+          player.sendMessage("\xA7c\u26A0\uFE0F [3F \u30B5\u30FC\u30D0\u30FC\u5BA4] \u751F\u4F53\u30B5\u30FC\u30D0\u30FC\u304B\u3089\u6751\u4E0A\u30C4\u30C1\u30CE\u30B3\uFF08\u8907\u88FD\u4F53\uFF09\u304C\u98DB\u3073\u51FA\u3057\u3066\u304D\u305F\uFF01\xA7r");
+          dim.spawnParticle("minecraft:mob_portal", { x: hq.x - 4, y: hq.y + 11.5, z: hq.z });
+          for (let i = 0; i < 5; i++) {
+            const sz = hq.z + (i * 2 - 4);
+            try {
+              dim.spawnEntity("mi:m_tutinoko_hostile", { x: hq.x - 4 + 0.5, y: hq.y + 11, z: sz + 0.5 });
+            } catch (e) {
+            }
+          }
+        }
+        const key4 = `${hq.x}_${hq.z}_floor4`;
+        if (relY >= 16 && relY <= 20 && !hqSpawnedFloors.has(key4)) {
+          hqSpawnedFloors.add(key4);
+          player.sendMessage("\xA76\u2694\uFE0F [4F \u793E\u9577\u5BA4] \u30DC\u30B9\uFF1A\u6751\u4E0A\u3055\u3093\u304C\u73FE\u308C\u305F\uFF01\u300C\u958B\u767A\u6240\u3078\u3088\u3046\u3053\u305D\u2026\u899A\u609F\u306F\u3067\u304D\u3066\u3044\u308B\u304B\u306D\uFF1F\u300D\xA7r");
+          dim.spawnParticle("minecraft:totem_particle", { x: hq.x, y: hq.y + 16.5, z: hq.z + 2 });
+          try {
+            dim.spawnEntity("mi:murakami_boss", { x: hq.x + 0.5, y: hq.y + 16, z: hq.z + 2 + 0.5 });
+          } catch (e) {
+          }
+        }
+      }
+    }
+  } catch (e) {
+  }
+}, 20);
 var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
 function openSyuiloDialogUI(player, syuiloEntity) {
   const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u307E\u305F\u306D");

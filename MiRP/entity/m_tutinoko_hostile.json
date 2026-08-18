@@ -1,0 +1,24 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mi:m_tutinoko_hostile",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entities/m_tutinoko_copy"
+      },
+      "geometry": {
+        "default": "geometry.m_tutinoko"
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ],
+      "spawn_egg": {
+        "base_color": "#4A1525",
+        "overlay_color": "#20C880"
+      }
+    }
+  }
+}

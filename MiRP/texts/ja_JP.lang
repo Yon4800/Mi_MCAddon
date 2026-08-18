@@ -78,3 +78,12 @@ tile.mi:laptop_pc.name=ノートPC
 tile.mi:display_monitor.name=ディスプレイ
 item.mi:hq_blueprint.name=Misskey開発所の設計図
 
+entity.mi:researcher.name=Misskey研究者
+item.spawn_egg.entity.mi:researcher.name=Misskey研究者のスポーンエッグ
+
+entity.mi:m_tutinoko_hostile.name=村上ツチノコ
+item.spawn_egg.entity.mi:m_tutinoko_hostile.name=村上ツチノコのスポーンエッグ
+
+entity.mi:murakami_boss.name=村上さん
+item.spawn_egg.entity.mi:murakami_boss.name=村上さんのスポーンエッグ
+
