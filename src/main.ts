@@ -117,6 +117,32 @@ if ((world.afterEvents as any)?.chatSend) {
 const MOMO_LUCK_COOLDOWN_MS = 5 * 60 * 1000;
 
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+  // Zabuton Stacking Interaction (Right-click existing zabuton with another zabuton)
+  if (target.typeId.startsWith("mi:zabuton_") && itemStack && itemStack.typeId.startsWith("mi:zabuton_")) {
+    event.cancel = true;
+    system.run(() => {
+      const loc = target.location;
+      const dim = target.dimension;
+      const stackLoc = { x: loc.x, y: loc.y + 0.18, z: loc.z };
+
+      try {
+        dim.spawnEntity(itemStack.typeId, stackLoc);
+        dim.spawnParticle("minecraft:smoke_particle", { x: stackLoc.x, y: stackLoc.y + 0.2, z: stackLoc.z });
+
+        if (player.gameMode !== "creative") {
+          if (itemStack.amount > 1) {
+            itemStack.amount -= 1;
+          } else {
+            const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+            if (equippable) equippable.setEquipment("Mainhand" as any, undefined);
+          }
+        }
+        player.sendMessage("§a🛋️ [Mi_Addon] 座布団を上に重ねました！§r");
+      } catch (e) { }
+    });
+    return;
+  }
+
   const player = event.player;
   const target = event.target;
   if (!target) return;
