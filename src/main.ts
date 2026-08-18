@@ -2354,4 +2354,68 @@ system.runInterval(() => {
   }
 }, 20);
 
+
+// ----------------------------------------------------
+// 0.85. Blueprint Item Handlers (Misskey HQ & Yahata Steelworks)
+// ----------------------------------------------------
+world.afterEvents.itemUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+
+  // 1. Yahata Steelworks Blueprint (mi:yahata_blueprint)
+  if (itemStack.typeId === "mi:yahata_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 8),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 8)
+    };
+
+    player.sendMessage("§e🏭 [官営八幡製鉄所] 設計図を展開し、歴史ある製鉄所廃墟を建設中...！§r");
+    try {
+      dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+    } catch (e) { }
+
+    system.runTimeout(() => {
+      generateYahataSteelworks(dim, targetLoc);
+      player.sendMessage("§a✨ 官営八幡製鉄所の遺構（廃墟ダンジョン）が目の前に現れました！§r");
+      try {
+        dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
+      } catch (e) { }
+    }, 5);
+    return;
+  }
+
+  // 2. Misskey HQ Blueprint (mi:hq_blueprint)
+  if (itemStack.typeId === "mi:hq_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 12),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 12)
+    };
+
+    player.sendMessage("§b🏢 [Misskey開発所] 設計図を展開し、開発所ビル（4階建てダンジョン）を建設中...！§r");
+    try {
+      dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 6, z: targetLoc.z });
+    } catch (e) { }
+
+    system.runTimeout(() => {
+      generateMisskeyHQ(dim, targetLoc);
+      player.sendMessage("§a✨ Misskey開発所（4階建てダンジョン）の建設が完了しました！§r");
+      try {
+        dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 8, z: targetLoc.z });
+      } catch (e) { }
+    }, 5);
+    return;
+  }
+});
+
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");

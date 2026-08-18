@@ -1904,4 +1904,57 @@ system.runInterval(() => {
     }
   }
 }, 20);
+world.afterEvents.itemUse.subscribe((event) => {
+  const player = event.source;
+  const itemStack = event.itemStack;
+  if (itemStack.typeId === "mi:yahata_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 8),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 8)
+    };
+    player.sendMessage("\xA7e\u{1F3ED} [\u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u6B74\u53F2\u3042\u308B\u88FD\u9244\u6240\u5EC3\u589F\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
+    try {
+      dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+    } catch (e) {
+    }
+    system.runTimeout(() => {
+      generateYahataSteelworks(dim, targetLoc);
+      player.sendMessage("\xA7a\u2728 \u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240\u306E\u907A\u69CB\uFF08\u5EC3\u589F\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u304C\u76EE\u306E\u524D\u306B\u73FE\u308C\u307E\u3057\u305F\uFF01\xA7r");
+      try {
+        dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 4, z: targetLoc.z });
+      } catch (e) {
+      }
+    }, 5);
+    return;
+  }
+  if (itemStack.typeId === "mi:hq_blueprint") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const viewDir = player.getViewDirection();
+    const targetLoc = {
+      x: Math.floor(pLoc.x + viewDir.x * 12),
+      y: Math.floor(pLoc.y),
+      z: Math.floor(pLoc.z + viewDir.z * 12)
+    };
+    player.sendMessage("\xA7b\u{1F3E2} [Misskey\u958B\u767A\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u958B\u767A\u6240\u30D3\u30EB\uFF084\u968E\u5EFA\u3066\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
+    try {
+      dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
+      dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 6, z: targetLoc.z });
+    } catch (e) {
+    }
+    system.runTimeout(() => {
+      generateMisskeyHQ(dim, targetLoc);
+      player.sendMessage("\xA7a\u2728 Misskey\u958B\u767A\u6240\uFF084\u968E\u5EFA\u3066\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u306E\u5EFA\u8A2D\u304C\u5B8C\u4E86\u3057\u307E\u3057\u305F\uFF01\xA7r");
+      try {
+        dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 8, z: targetLoc.z });
+      } catch (e) {
+      }
+    }, 5);
+    return;
+  }
+});
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
