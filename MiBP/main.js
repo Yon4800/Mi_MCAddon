@@ -941,7 +941,7 @@ function generateMisskeyHQ(dimension, origin) {
   for (const fl of floorLevels) {
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
-        const isStairHole = dx >= 5 && dx <= 6 && dz >= 3 && dz <= 7;
+        const isStairHole = dx >= 5 && dx <= 6 && dz >= 4 && dz <= 8;
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
@@ -961,7 +961,7 @@ function generateMisskeyHQ(dimension, origin) {
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
     for (let cdx = 5; cdx <= 6; cdx++) {
-      for (let cdz = 2; cdz <= 8; cdz++) {
+      for (let cdz = 4; cdz <= 8; cdz++) {
         for (let cy = 1; cy <= 6; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }

@@ -1228,7 +1228,7 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     for (let dx = -7; dx <= 7; dx++) {
       for (let dz = -7; dz <= 7; dz++) {
         // Staircase opening area: dx: 4..6, dz: 4..6
-        const isStairHole = (dx >= 5 && dx <= 6 && dz >= 3 && dz <= 7);
+        const isStairHole = (dx >= 5 && dx <= 6 && dz >= 4 && dz <= 8);
         if (!isStairHole) {
           setB(dx, fl.y, dz, fl.type);
         }
@@ -1248,13 +1248,13 @@ function generateMisskeyHQ(dimension: any, origin: { x: number, y: number, z: nu
     setB(0, ly, 4, "minecraft:sea_lantern");
   }
 
-  // 4. Wide 2-Block Straight Quartz Staircase at Correct Position (x: 5..6, z: 3..7)
-  // Ascending smoothly from z: 3 to z: 7, connecting flush to next floor with full head clearance!
+  // 4. Wide 2-Block Straight Quartz Staircase (1F -> 2F -> 3F -> 4F -> Roof)
+  // Perfectly matches user diagrams: x: 5..6, ascent from z: 3 to z: 7, head clearance z: 4..8
   const stairBases = [0, 5, 10, 15];
   for (const yBase of stairBases) {
-    // Clear head space above entire staircase path (x: 5..6, z: 2..8, y: 1..6)
+    // Clear head space strictly on stair walkway and exit path (x: 5..6, z: 4..8, y: 1..6)
     for (let cdx = 5; cdx <= 6; cdx++) {
-      for (let cdz = 2; cdz <= 8; cdz++) {
+      for (let cdz = 4; cdz <= 8; cdz++) {
         for (let cy = 1; cy <= 6; cy++) {
           setB(cdx, yBase + cy, cdz, "minecraft:air");
         }
