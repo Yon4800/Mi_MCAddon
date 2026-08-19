@@ -4046,13 +4046,57 @@ world.afterEvents.entityDie.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 0.88. Syuilo NPC Dialog & Misskey HQ Guide (1-Time Hint System)
+// 0.88. Syuilo NPC Dialog & Misskey HQ Guide (Unified Stronghold System)
 // ----------------------------------------------------
-const syuiloHintGivenPlayers = new Set<string>();
+function getNearestOrPlannedHQ(player: Player): { x: number, z: number } {
+  const pLoc = player.location;
+  if (allMisskeyHQLocations.length > 0) {
+    let minDist = Infinity;
+    let nearest: { x: number, z: number } | null = null;
+    for (const hq of allMisskeyHQLocations) {
+      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
+      if (d < minDist) {
+        minDist = d;
+        nearest = { x: hq.x, z: hq.z };
+      }
+    }
+    if (nearest) return nearest;
+  }
+
+  if (!plannedHQLocation) {
+    // Stronghold-like Epic Distance: 1,800m - 2,400m away in an angular direction
+    const angle = (Math.PI / 4) * (1 + (Math.abs(Math.floor(pLoc.x + 123)) % 7));
+    const dist = 1800 + (Math.abs(Math.floor(pLoc.z + 456)) % 600);
+    plannedHQLocation = {
+      x: Math.round(pLoc.x + Math.cos(angle) * dist),
+      z: Math.round(pLoc.z + Math.sin(angle) * dist)
+    };
+  }
+  return plannedHQLocation;
+}
+
+function getCompassDirectionName(fromLoc: { x: number, z: number }, targetLoc: { x: number, z: number }): { dirName: string, dist: number } {
+  const dx = targetLoc.x - fromLoc.x;
+  const dz = targetLoc.z - fromLoc.z;
+  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+
+  let dirName = "北 (North)";
+  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
+  if (deg >= 337.5 || deg < 22.5) dirName = "北 (North)";
+  else if (deg >= 22.5 && deg < 67.5) dirName = "北東 (North-East)";
+  else if (deg >= 67.5 && deg < 112.5) dirName = "東 (East)";
+  else if (deg >= 112.5 && deg < 157.5) dirName = "南東 (South-East)";
+  else if (deg >= 157.5 && deg < 202.5) dirName = "南 (South)";
+  else if (deg >= 202.5 && deg < 247.5) dirName = "南西 (South-West)";
+  else if (deg >= 247.5 && deg < 292.5) dirName = "西 (West)";
+  else dirName = "北西 (North-West)";
+
+  return { dirName, dist };
+}
 
 function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
   const form = new ActionFormData()
-    .title("🏢 しゅいろさん (Misskey)")
+    .title("🏢 しゅいろ (Misskey)")
     .body("「やあ！ Misskey MC Addonへようこそ！\n何かお手伝いできることはありますか？」")
     .button("💬 世間話をする (開発トーク)")
     .button("🏢 Misskey開発所（本社ビル）の場所を聞く")
@@ -4081,45 +4125,18 @@ function openSyuiloDialogUI(player: Player, syuiloEntity: any) {
       player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
       player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
     } else if (response.selection === 1) {
-      // 🏢 1-Time Location Hint Exploration System
-      const dim = player.dimension;
+      // 🏢 Stronghold Scale HQ Location Guide
+      const pLoc = player.location;
+      const targetHQ = getNearestOrPlannedHQ(player);
+      const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
 
-      // Determine world's unique HQ location if not already placed
-      if (!lastMisskeyHQLocation || lastMisskeyHQLocation.dimensionId !== dim.id) {
-        const pLoc = player.location;
-        // Place HQ in a far, adventurous distance (e.g. +650, +650 from player)
-        const targetX = Math.floor(pLoc.x + 600 + Math.floor(Math.random() * 200));
-        const targetZ = Math.floor(pLoc.z + 600 + Math.floor(Math.random() * 200));
+      player.sendMessage(`§6🏢📍【Misskey開発所（本社ビル）の遠征座標】§r`);
+      player.sendMessage(`§f開発所ビルはここから遥か彼方の【§a${dirName}§f 方向 / 約 §e${dist}m 先§f（X: §b${targetHQ.x}§f, Z: §b${targetHQ.z}§f 付近）】に聳え立っているよ！§r`);
+      player.sendMessage(`§7💡 エンド要塞のような長旅になるから車や食料を準備してね！ 道に迷ったら『生態サーバー』を右クリックすると電波で方角を教えてくれるよ！§r`);
 
-        let groundY = 64;
-        try {
-          for (let y = 120; y >= 60; y--) {
-            const b = dim.getBlock({ x: targetX, y, z: targetZ });
-            if (b && !b.isAir && !b.isLiquid) {
-              groundY = y + 1;
-              break;
-            }
-          }
-        } catch (e) { }
-
-        generateMisskeyHQ(dim, { x: targetX, y: groundY, z: targetZ });
-      }
-
-      const hq = lastMisskeyHQLocation!;
-      const approxX = Math.round(hq.x / 50) * 50; // Approx coordinate for adventure hint
-      const approxZ = Math.round(hq.z / 50) * 50;
-
-      const playerId = player.id;
-      if (!syuiloHintGivenPlayers.has(playerId)) {
-        syuiloHintGivenPlayers.add(playerId);
-
-        player.sendMessage("§b🏢 しゅいろ: 「Misskey開発所（本社ビル）だね！\n風の噂によると…ここから【北東】の方角、おおよそ §eX: " + approxX + " 付近, Z: " + approxZ + " 付近§b の平原にそびえ立っているらしいよ！§r");
-        player.sendMessage("§d✨ [探索クエスト] 世界に数カ所しかない貴重な本社ビルです。自力で探検して目指してみよう！§r");
-        player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 2, z: player.location.z });
-      } else {
-        player.sendMessage("§b🏢 しゅいろ: 「開発所の場所のヒントはさっき教えたよ！ おおよそ §eX: " + approxX + " 付近, Z: " + approxZ + " 付近§b のあたりを探してみてね。無事にたどり着けるといいな！」§r");
-      }
+      const loc = syuiloEntity.location;
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 2.0, z: loc.z });
     } else if (response.selection === 2) {
       // 🔄 偉業の再チャレンジ (リセットUI)
       openAchievementRetryUI(player);
@@ -4209,76 +4226,6 @@ world.afterEvents.entitySpawn.subscribe((event) => {
 // ----------------------------------------------------
 // 2. Interaction Events (Syuilo, Momo, Cat, Yosano, Car, Reaction Wand)
 // ----------------------------------------------------
-function getNearestOrPlannedHQ(player: Player): { x: number, z: number } {
-  const pLoc = player.location;
-  if (allMisskeyHQLocations.length > 0) {
-    let minDist = Infinity;
-    let nearest: { x: number, z: number } | null = null;
-    for (const hq of allMisskeyHQLocations) {
-      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
-      if (d < minDist) {
-        minDist = d;
-        nearest = { x: hq.x, z: hq.z };
-      }
-    }
-    if (nearest) return nearest;
-  }
-
-  if (!plannedHQLocation) {
-    // Stronghold-like Epic Distance: 1,800m - 2,400m away in an angular direction
-    const angle = (Math.PI / 4) * (1 + (Math.abs(Math.floor(pLoc.x + 123)) % 7));
-    const dist = 1800 + (Math.abs(Math.floor(pLoc.z + 456)) % 600);
-    plannedHQLocation = {
-      x: Math.round(pLoc.x + Math.cos(angle) * dist),
-      z: Math.round(pLoc.z + Math.sin(angle) * dist)
-    };
-  }
-  return plannedHQLocation;
-}
-
-function getCompassDirectionName(fromLoc: { x: number, z: number }, targetLoc: { x: number, z: number }): { dirName: string, dist: number } {
-  const dx = targetLoc.x - fromLoc.x;
-  const dz = targetLoc.z - fromLoc.z;
-  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
-
-  let dirName = "北 (North)";
-  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
-  if (deg >= 337.5 || deg < 22.5) dirName = "北 (North)";
-  else if (deg >= 22.5 && deg < 67.5) dirName = "北東 (North-East)";
-  else if (deg >= 67.5 && deg < 112.5) dirName = "東 (East)";
-  else if (deg >= 112.5 && deg < 157.5) dirName = "南東 (South-East)";
-  else if (deg >= 157.5 && deg < 202.5) dirName = "南 (South)";
-  else if (deg >= 202.5 && deg < 247.5) dirName = "南西 (South-West)";
-  else if (deg >= 247.5 && deg < 292.5) dirName = "西 (West)";
-  else dirName = "北西 (North-West)";
-
-  return { dirName, dist };
-}
-
-function handleSyuiloTalk(player: Player, syuiloEntity: any) {
-  const pLoc = player.location;
-  const dim = player.dimension;
-  const sLoc = syuiloEntity.location;
-  dim.spawnParticle("minecraft:villager_happy", { x: sLoc.x, y: sLoc.y + 1.8, z: sLoc.z });
-
-  const targetHQ = getNearestOrPlannedHQ(player);
-  const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
-
-  const quotes = [
-    "「Misskeyへようこそ！ ノートを投稿したり、絵文字リアクションで遊んでみてね。」",
-    "「開発所の最上階にはボスの村上さんがいるよ。怒らせると『白鬼夜行』を使うから気をつけて！」",
-    "「ベイクドモチョチョを食べ過ぎて気持ち悪くなったら、アルミホイル帽子が効くよ。」",
-    "「インスタンスサーバーを建てて他の人と連合を結ぶと、採掘速度や移動速度が上がるよ！」",
-    "「困ったら金融ポータルを開いてみてね。ATMでお金をおろしたり為替取引ができるよ。」"
-  ];
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
-
-  player.sendMessage(`§eしゅいろ: ${quote}§r`);
-  player.sendMessage(`§6🏢📍【Misskey開発所（本社ビル）の遠征座標】§r`);
-  player.sendMessage(`§f開発所ビルはここから遥か彼方の【§a${dirName}§f 方向 / 約 §e${dist}m 先§f（X: §b${targetHQ.x}§f, Z: §b${targetHQ.z}§f 付近）】に聳え立っているよ！§r`);
-  player.sendMessage(`§7💡 エンド要塞のような長旅になるから車や食料を準備してね！ 道に迷ったら『生態サーバー』を右クリックすると電波で方角を教えてくれるよ！§r`);
-}
-
 function handleMomoPet(player: Player, momoEntity: any) {
   const now = Date.now();
   const lastPet = momoLastPetTimeMap.get(player.id) || 0;
@@ -4309,11 +4256,12 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
 
   if (!target) return;
 
-  // Syuilo Conversation & Misskey HQ Location Hint
+  // Syuilo Conversation & Misskey HQ Guide Dialog
   if (target.typeId === "mi:syuilo") {
     event.cancel = true;
+    if (!canOpenUI(player)) return;
     system.run(() => {
-      handleSyuiloTalk(player, target);
+      openSyuiloDialogUI(player, target);
     });
     return;
   }

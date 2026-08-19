@@ -3189,9 +3189,48 @@ world.afterEvents.entityDie.subscribe((event) => {
     }, 2);
   }
 });
-var syuiloHintGivenPlayers = /* @__PURE__ */ new Set();
+function getNearestOrPlannedHQ(player) {
+  const pLoc = player.location;
+  if (allMisskeyHQLocations.length > 0) {
+    let minDist = Infinity;
+    let nearest = null;
+    for (const hq of allMisskeyHQLocations) {
+      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
+      if (d < minDist) {
+        minDist = d;
+        nearest = { x: hq.x, z: hq.z };
+      }
+    }
+    if (nearest) return nearest;
+  }
+  if (!plannedHQLocation) {
+    const angle = Math.PI / 4 * (1 + Math.abs(Math.floor(pLoc.x + 123)) % 7);
+    const dist = 1800 + Math.abs(Math.floor(pLoc.z + 456)) % 600;
+    plannedHQLocation = {
+      x: Math.round(pLoc.x + Math.cos(angle) * dist),
+      z: Math.round(pLoc.z + Math.sin(angle) * dist)
+    };
+  }
+  return plannedHQLocation;
+}
+function getCompassDirectionName(fromLoc, targetLoc) {
+  const dx = targetLoc.x - fromLoc.x;
+  const dz = targetLoc.z - fromLoc.z;
+  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+  let dirName = "\u5317 (North)";
+  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
+  if (deg >= 337.5 || deg < 22.5) dirName = "\u5317 (North)";
+  else if (deg >= 22.5 && deg < 67.5) dirName = "\u5317\u6771 (North-East)";
+  else if (deg >= 67.5 && deg < 112.5) dirName = "\u6771 (East)";
+  else if (deg >= 112.5 && deg < 157.5) dirName = "\u5357\u6771 (South-East)";
+  else if (deg >= 157.5 && deg < 202.5) dirName = "\u5357 (South)";
+  else if (deg >= 202.5 && deg < 247.5) dirName = "\u5357\u897F (South-West)";
+  else if (deg >= 247.5 && deg < 292.5) dirName = "\u897F (West)";
+  else dirName = "\u5317\u897F (North-West)";
+  return { dirName, dist };
+}
 function openSyuiloDialogUI(player, syuiloEntity) {
-  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D\u3055\u3093 (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u{1F504} \u7D1B\u5931\u3057\u305F\u5049\u696D\u306E\u518D\u30C1\u30E3\u30EC\u30F3\u30B8 (\u30EA\u30BB\u30C3\u30C8)").button("\u307E\u305F\u306D");
+  const form = new ActionFormData().title("\u{1F3E2} \u3057\u3085\u3044\u308D (Misskey)").body("\u300C\u3084\u3042\uFF01 Misskey MC Addon\u3078\u3088\u3046\u3053\u305D\uFF01\n\u4F55\u304B\u304A\u624B\u4F1D\u3044\u3067\u304D\u308B\u3053\u3068\u306F\u3042\u308A\u307E\u3059\u304B\uFF1F\u300D").button("\u{1F4AC} \u4E16\u9593\u8A71\u3092\u3059\u308B (\u958B\u767A\u30C8\u30FC\u30AF)").button("\u{1F3E2} Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u5834\u6240\u3092\u805E\u304F").button("\u{1F504} \u7D1B\u5931\u3057\u305F\u5049\u696D\u306E\u518D\u30C1\u30E3\u30EC\u30F3\u30B8 (\u30EA\u30BB\u30C3\u30C8)").button("\u307E\u305F\u306D");
   showFormSafe(player, form, (response) => {
     if (response.canceled || response.selection === void 0) return;
     if (response.selection === 0) {
@@ -3211,37 +3250,15 @@ function openSyuiloDialogUI(player, syuiloEntity) {
       player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
       player.dimension.spawnParticle("minecraft:heart_particle", { x: loc.x, y: loc.y + 1.6, z: loc.z });
     } else if (response.selection === 1) {
-      const dim = player.dimension;
-      if (!lastMisskeyHQLocation || lastMisskeyHQLocation.dimensionId !== dim.id) {
-        const pLoc = player.location;
-        const targetX = Math.floor(pLoc.x + 600 + Math.floor(Math.random() * 200));
-        const targetZ = Math.floor(pLoc.z + 600 + Math.floor(Math.random() * 200));
-        let groundY = 64;
-        try {
-          for (let y = 120; y >= 60; y--) {
-            const b = dim.getBlock({ x: targetX, y, z: targetZ });
-            if (b && !b.isAir && !b.isLiquid) {
-              groundY = y + 1;
-              break;
-            }
-          }
-        } catch (e) {
-        }
-        generateMisskeyHQ(dim, { x: targetX, y: groundY, z: targetZ });
-      }
-      const hq = lastMisskeyHQLocation;
-      const approxX = Math.round(hq.x / 50) * 50;
-      const approxZ = Math.round(hq.z / 50) * 50;
-      const playerId = player.id;
-      if (!syuiloHintGivenPlayers.has(playerId)) {
-        syuiloHintGivenPlayers.add(playerId);
-        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300CMisskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u3060\u306D\uFF01\n\u98A8\u306E\u5642\u306B\u3088\u308B\u3068\u2026\u3053\u3053\u304B\u3089\u3010\u5317\u6771\u3011\u306E\u65B9\u89D2\u3001\u304A\u304A\u3088\u305D \xA7eX: " + approxX + " \u4ED8\u8FD1, Z: " + approxZ + " \u4ED8\u8FD1\xA7b \u306E\u5E73\u539F\u306B\u305D\u3073\u3048\u7ACB\u3063\u3066\u3044\u308B\u3089\u3057\u3044\u3088\uFF01\xA7r");
-        player.sendMessage("\xA7d\u2728 [\u63A2\u7D22\u30AF\u30A8\u30B9\u30C8] \u4E16\u754C\u306B\u6570\u30AB\u6240\u3057\u304B\u306A\u3044\u8CB4\u91CD\u306A\u672C\u793E\u30D3\u30EB\u3067\u3059\u3002\u81EA\u529B\u3067\u63A2\u691C\u3057\u3066\u76EE\u6307\u3057\u3066\u307F\u3088\u3046\uFF01\xA7r");
-        player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 2, z: player.location.z });
-      } else {
-        player.sendMessage("\xA7b\u{1F3E2} \u3057\u3085\u3044\u308D: \u300C\u958B\u767A\u6240\u306E\u5834\u6240\u306E\u30D2\u30F3\u30C8\u306F\u3055\u3063\u304D\u6559\u3048\u305F\u3088\uFF01 \u304A\u304A\u3088\u305D \xA7eX: " + approxX + " \u4ED8\u8FD1, Z: " + approxZ + " \u4ED8\u8FD1\xA7b \u306E\u3042\u305F\u308A\u3092\u63A2\u3057\u3066\u307F\u3066\u306D\u3002\u7121\u4E8B\u306B\u305F\u3069\u308A\u7740\u3051\u308B\u3068\u3044\u3044\u306A\uFF01\u300D\xA7r");
-      }
+      const pLoc = player.location;
+      const targetHQ = getNearestOrPlannedHQ(player);
+      const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
+      player.sendMessage(`\xA76\u{1F3E2}\u{1F4CD}\u3010Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u9060\u5F81\u5EA7\u6A19\u3011\xA7r`);
+      player.sendMessage(`\xA7f\u958B\u767A\u6240\u30D3\u30EB\u306F\u3053\u3053\u304B\u3089\u9065\u304B\u5F7C\u65B9\u306E\u3010\xA7a${dirName}\xA7f \u65B9\u5411 / \u7D04 \xA7e${dist}m \u5148\xA7f\uFF08X: \xA7b${targetHQ.x}\xA7f, Z: \xA7b${targetHQ.z}\xA7f \u4ED8\u8FD1\uFF09\u3011\u306B\u8073\u3048\u7ACB\u3063\u3066\u3044\u308B\u3088\uFF01\xA7r`);
+      player.sendMessage(`\xA77\u{1F4A1} \u30A8\u30F3\u30C9\u8981\u585E\u306E\u3088\u3046\u306A\u9577\u65C5\u306B\u306A\u308B\u304B\u3089\u8ECA\u3084\u98DF\u6599\u3092\u6E96\u5099\u3057\u3066\u306D\uFF01 \u9053\u306B\u8FF7\u3063\u305F\u3089\u300E\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u300F\u3092\u53F3\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\u96FB\u6CE2\u3067\u65B9\u89D2\u3092\u6559\u3048\u3066\u304F\u308C\u308B\u3088\uFF01\xA7r`);
+      const loc = syuiloEntity.location;
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.8, z: loc.z });
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 2, z: loc.z });
     } else if (response.selection === 2) {
       openAchievementRetryUI(player);
     }
@@ -3305,66 +3322,6 @@ world.afterEvents.entitySpawn.subscribe((event) => {
     }
   }
 });
-function getNearestOrPlannedHQ(player) {
-  const pLoc = player.location;
-  if (allMisskeyHQLocations.length > 0) {
-    let minDist = Infinity;
-    let nearest = null;
-    for (const hq of allMisskeyHQLocations) {
-      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
-      if (d < minDist) {
-        minDist = d;
-        nearest = { x: hq.x, z: hq.z };
-      }
-    }
-    if (nearest) return nearest;
-  }
-  if (!plannedHQLocation) {
-    const angle = Math.PI / 4 * (1 + Math.abs(Math.floor(pLoc.x + 123)) % 7);
-    const dist = 1800 + Math.abs(Math.floor(pLoc.z + 456)) % 600;
-    plannedHQLocation = {
-      x: Math.round(pLoc.x + Math.cos(angle) * dist),
-      z: Math.round(pLoc.z + Math.sin(angle) * dist)
-    };
-  }
-  return plannedHQLocation;
-}
-function getCompassDirectionName(fromLoc, targetLoc) {
-  const dx = targetLoc.x - fromLoc.x;
-  const dz = targetLoc.z - fromLoc.z;
-  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
-  let dirName = "\u5317 (North)";
-  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
-  if (deg >= 337.5 || deg < 22.5) dirName = "\u5317 (North)";
-  else if (deg >= 22.5 && deg < 67.5) dirName = "\u5317\u6771 (North-East)";
-  else if (deg >= 67.5 && deg < 112.5) dirName = "\u6771 (East)";
-  else if (deg >= 112.5 && deg < 157.5) dirName = "\u5357\u6771 (South-East)";
-  else if (deg >= 157.5 && deg < 202.5) dirName = "\u5357 (South)";
-  else if (deg >= 202.5 && deg < 247.5) dirName = "\u5357\u897F (South-West)";
-  else if (deg >= 247.5 && deg < 292.5) dirName = "\u897F (West)";
-  else dirName = "\u5317\u897F (North-West)";
-  return { dirName, dist };
-}
-function handleSyuiloTalk(player, syuiloEntity) {
-  const pLoc = player.location;
-  const dim = player.dimension;
-  const sLoc = syuiloEntity.location;
-  dim.spawnParticle("minecraft:villager_happy", { x: sLoc.x, y: sLoc.y + 1.8, z: sLoc.z });
-  const targetHQ = getNearestOrPlannedHQ(player);
-  const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
-  const quotes = [
-    "\u300CMisskey\u3078\u3088\u3046\u3053\u305D\uFF01 \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001\u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3067\u904A\u3093\u3067\u307F\u3066\u306D\u3002\u300D",
-    "\u300C\u958B\u767A\u6240\u306E\u6700\u4E0A\u968E\u306B\u306F\u30DC\u30B9\u306E\u6751\u4E0A\u3055\u3093\u304C\u3044\u308B\u3088\u3002\u6012\u3089\u305B\u308B\u3068\u300E\u767D\u9B3C\u591C\u884C\u300F\u3092\u4F7F\u3046\u304B\u3089\u6C17\u3092\u3064\u3051\u3066\uFF01\u300D",
-    "\u300C\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u904E\u304E\u3066\u6C17\u6301\u3061\u60AA\u304F\u306A\u3063\u305F\u3089\u3001\u30A2\u30EB\u30DF\u30DB\u30A4\u30EB\u5E3D\u5B50\u304C\u52B9\u304F\u3088\u3002\u300D",
-    "\u300C\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u30B5\u30FC\u30D0\u30FC\u3092\u5EFA\u3066\u3066\u4ED6\u306E\u4EBA\u3068\u9023\u5408\u3092\u7D50\u3076\u3068\u3001\u63A1\u6398\u901F\u5EA6\u3084\u79FB\u52D5\u901F\u5EA6\u304C\u4E0A\u304C\u308B\u3088\uFF01\u300D",
-    "\u300C\u56F0\u3063\u305F\u3089\u91D1\u878D\u30DD\u30FC\u30BF\u30EB\u3092\u958B\u3044\u3066\u307F\u3066\u306D\u3002ATM\u3067\u304A\u91D1\u3092\u304A\u308D\u3057\u305F\u308A\u70BA\u66FF\u53D6\u5F15\u304C\u3067\u304D\u308B\u3088\u3002\u300D"
-  ];
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
-  player.sendMessage(`\xA7e\u3057\u3085\u3044\u308D: ${quote}\xA7r`);
-  player.sendMessage(`\xA76\u{1F3E2}\u{1F4CD}\u3010Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u9060\u5F81\u5EA7\u6A19\u3011\xA7r`);
-  player.sendMessage(`\xA7f\u958B\u767A\u6240\u30D3\u30EB\u306F\u3053\u3053\u304B\u3089\u9065\u304B\u5F7C\u65B9\u306E\u3010\xA7a${dirName}\xA7f \u65B9\u5411 / \u7D04 \xA7e${dist}m \u5148\xA7f\uFF08X: \xA7b${targetHQ.x}\xA7f, Z: \xA7b${targetHQ.z}\xA7f \u4ED8\u8FD1\uFF09\u3011\u306B\u8073\u3048\u7ACB\u3063\u3066\u3044\u308B\u3088\uFF01\xA7r`);
-  player.sendMessage(`\xA77\u{1F4A1} \u30A8\u30F3\u30C9\u8981\u585E\u306E\u3088\u3046\u306A\u9577\u65C5\u306B\u306A\u308B\u304B\u3089\u8ECA\u3084\u98DF\u6599\u3092\u6E96\u5099\u3057\u3066\u306D\uFF01 \u9053\u306B\u8FF7\u3063\u305F\u3089\u300E\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u300F\u3092\u53F3\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\u96FB\u6CE2\u3067\u65B9\u89D2\u3092\u6559\u3048\u3066\u304F\u308C\u308B\u3088\uFF01\xA7r`);
-}
 function handleMomoPet(player, momoEntity) {
   const now = Date.now();
   const lastPet = momoLastPetTimeMap.get(player.id) || 0;
@@ -3391,8 +3348,9 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   if (!target) return;
   if (target.typeId === "mi:syuilo") {
     event.cancel = true;
+    if (!canOpenUI(player)) return;
     system.run(() => {
-      handleSyuiloTalk(player, target);
+      openSyuiloDialogUI(player, target);
     });
     return;
   }
