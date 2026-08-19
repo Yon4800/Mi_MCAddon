@@ -3781,6 +3781,10 @@ function spawnRewardChest(dimension: any, loc: { x: number, y: number, z: number
 }
 
 const allMisskeyHQLocations: { x: number, y: number, z: number, dimensionId: string }[] = [];
+const generatedHQLocations: { x: number, z: number }[] = [];
+let plannedHQLocation: { x: number, z: number } | null = null;
+const momoLastPetTimeMap = new Map<string, number>(); // playerId -> timestamp
+
 const hqSpawnedFloors = new Set<string>(); // key: `${hqX}_${hqZ}_floor${floorNum}`
 const spawnedChestLocationsSet = new Set<string>(); // key: `${x}_${y}_${z}`
 
@@ -4203,14 +4207,125 @@ world.afterEvents.entitySpawn.subscribe((event) => {
 });
 
 // ----------------------------------------------------
-// 2. Interaction Events (Cat, Yosano, Car, Reaction Wand)
+// 2. Interaction Events (Syuilo, Momo, Cat, Yosano, Car, Reaction Wand)
 // ----------------------------------------------------
+function getNearestOrPlannedHQ(player: Player): { x: number, z: number } {
+  const pLoc = player.location;
+  if (allMisskeyHQLocations.length > 0) {
+    let minDist = Infinity;
+    let nearest: { x: number, z: number } | null = null;
+    for (const hq of allMisskeyHQLocations) {
+      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
+      if (d < minDist) {
+        minDist = d;
+        nearest = { x: hq.x, z: hq.z };
+      }
+    }
+    if (nearest) return nearest;
+  }
+
+  if (!plannedHQLocation) {
+    // Stronghold-like Epic Distance: 1,800m - 2,400m away in an angular direction
+    const angle = (Math.PI / 4) * (1 + (Math.abs(Math.floor(pLoc.x + 123)) % 7));
+    const dist = 1800 + (Math.abs(Math.floor(pLoc.z + 456)) % 600);
+    plannedHQLocation = {
+      x: Math.round(pLoc.x + Math.cos(angle) * dist),
+      z: Math.round(pLoc.z + Math.sin(angle) * dist)
+    };
+  }
+  return plannedHQLocation;
+}
+
+function getCompassDirectionName(fromLoc: { x: number, z: number }, targetLoc: { x: number, z: number }): { dirName: string, dist: number } {
+  const dx = targetLoc.x - fromLoc.x;
+  const dz = targetLoc.z - fromLoc.z;
+  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+
+  let dirName = "北 (North)";
+  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
+  if (deg >= 337.5 || deg < 22.5) dirName = "北 (North)";
+  else if (deg >= 22.5 && deg < 67.5) dirName = "北東 (North-East)";
+  else if (deg >= 67.5 && deg < 112.5) dirName = "東 (East)";
+  else if (deg >= 112.5 && deg < 157.5) dirName = "南東 (South-East)";
+  else if (deg >= 157.5 && deg < 202.5) dirName = "南 (South)";
+  else if (deg >= 202.5 && deg < 247.5) dirName = "南西 (South-West)";
+  else if (deg >= 247.5 && deg < 292.5) dirName = "西 (West)";
+  else dirName = "北西 (North-West)";
+
+  return { dirName, dist };
+}
+
+function handleSyuiloTalk(player: Player, syuiloEntity: any) {
+  const pLoc = player.location;
+  const dim = player.dimension;
+  const sLoc = syuiloEntity.location;
+  dim.spawnParticle("minecraft:villager_happy", { x: sLoc.x, y: sLoc.y + 1.8, z: sLoc.z });
+
+  const targetHQ = getNearestOrPlannedHQ(player);
+  const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
+
+  const quotes = [
+    "「Misskeyへようこそ！ ノートを投稿したり、絵文字リアクションで遊んでみてね。」",
+    "「開発所の最上階にはボスの村上さんがいるよ。怒らせると『白鬼夜行』を使うから気をつけて！」",
+    "「ベイクドモチョチョを食べ過ぎて気持ち悪くなったら、アルミホイル帽子が効くよ。」",
+    "「インスタンスサーバーを建てて他の人と連合を結ぶと、採掘速度や移動速度が上がるよ！」",
+    "「困ったら金融ポータルを開いてみてね。ATMでお金をおろしたり為替取引ができるよ。」"
+  ];
+  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+
+  player.sendMessage(`§eしゅいろ: ${quote}§r`);
+  player.sendMessage(`§6🏢📍【Misskey開発所（本社ビル）の遠征座標】§r`);
+  player.sendMessage(`§f開発所ビルはここから遥か彼方の【§a${dirName}§f 方向 / 約 §e${dist}m 先§f（X: §b${targetHQ.x}§f, Z: §b${targetHQ.z}§f 付近）】に聳え立っているよ！§r`);
+  player.sendMessage(`§7💡 エンド要塞のような長旅になるから車や食料を準備してね！ 道に迷ったら『生態サーバー』を右クリックすると電波で方角を教えてくれるよ！§r`);
+}
+
+function handleMomoPet(player: Player, momoEntity: any) {
+  const now = Date.now();
+  const lastPet = momoLastPetTimeMap.get(player.id) || 0;
+  const dim = player.dimension;
+  const mLoc = momoEntity.location;
+
+  if (now - lastPet < 300000) { // 5 min cooldown
+    const remainSec = Math.ceil((300000 - (now - lastPet)) / 1000);
+    dim.spawnParticle("minecraft:heart_particle", { x: mLoc.x, y: mLoc.y + 1.2, z: mLoc.z });
+    player.sendMessage(`§dモモ: ぽよぽよ…（なでなでされて嬉しそうにしている！ / クールダウン: 残り${remainSec}秒）§r`);
+    return;
+  }
+
+  momoLastPetTimeMap.set(player.id, now);
+  dim.spawnParticle("minecraft:heart_particle", { x: mLoc.x, y: mLoc.y + 1.5, z: mLoc.z });
+  dim.spawnParticle("minecraft:totem_particle", { x: mLoc.x, y: mLoc.y + 1.2, z: mLoc.z });
+  player.addEffect("hero_of_the_village", 6000, { amplifier: 0 }); // 5 min
+  player.addEffect("regeneration", 1200, { amplifier: 0 }); // 1 min
+
+  player.sendMessage("§d🌸✨ [モモ] ぽよん！ モモを優しくなでなでした！§r");
+  player.sendMessage("§a幸運のバフ【村の英雄 (5分) & 再生 (1分)】を授かりました！§r");
+}
+
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
   const itemStack = event.itemStack;
 
   if (!target) return;
+
+  // Syuilo Conversation & Misskey HQ Location Hint
+  if (target.typeId === "mi:syuilo") {
+    event.cancel = true;
+    system.run(() => {
+      handleSyuiloTalk(player, target);
+    });
+    return;
+  }
+
+  // Momo Petting & Lucky Buff
+  if (target.typeId === "mi:momo") {
+    event.cancel = true;
+    system.run(() => {
+      handleMomoPet(player, target);
+    });
+    return;
+  }
 
   // Villager trade achievement (買い物の偉業)
   if (target.typeId === "minecraft:villager" || target.typeId === "minecraft:wandering_trader") {
@@ -4968,18 +5083,17 @@ system.runInterval(() => {
     const chunkX = Math.floor(pLoc.x / 64) * 64;
     const chunkZ = Math.floor(pLoc.z / 64) * 64;
 
-    // Check if steelworks already generated near this 64x64 chunk
-    let alreadyExists = false;
+    // 1. Natural Generation: 官営八幡製鉄所 (Yahata Steelworks)
+    let alreadyExistsSteelworks = false;
     for (const loc of generatedSteelworksLocations) {
       const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
       if (distSq < 160000) { // 400m minimum spacing
-        alreadyExists = true;
+        alreadyExistsSteelworks = true;
         break;
       }
     }
 
-    if (!alreadyExists && Math.random() < 0.15) {
-      // Spawn safely within player's active ticking loaded chunks (24..40 blocks away)
+    if (!alreadyExistsSteelworks && Math.random() < 0.15) {
       const angle = Math.random() * Math.PI * 2;
       const dist = 24 + Math.random() * 16;
       const genX = Math.floor(pLoc.x + Math.cos(angle) * dist);
@@ -4998,7 +5112,7 @@ system.runInterval(() => {
               break;
             }
           } catch (e) {
-            break; // Stop immediately if chunk is unloaded
+            break;
           }
         }
 
@@ -5006,6 +5120,81 @@ system.runInterval(() => {
           generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
           generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
           console.warn(`[Mi_Addon] Safely Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+        }
+      } catch (e) { }
+    }
+
+    // 2. Natural Generation: Misskey開発所 本社ビル (Misskey HQ Skyscraper)
+    let shouldGenerateHQ = false;
+    let hqGenX = 0;
+    let hqGenZ = 0;
+
+    if (plannedHQLocation) {
+      const pDistSq = Math.pow(pLoc.x - plannedHQLocation.x, 2) + Math.pow(pLoc.z - plannedHQLocation.z, 2);
+      const isAlreadyBuilt = allMisskeyHQLocations.some(
+        h => Math.pow(h.x - plannedHQLocation!.x, 2) + Math.pow(h.z - plannedHQLocation!.z, 2) < 25600 // 160m
+      );
+      if (pDistSq <= 40000 && !isAlreadyBuilt) { // within 200m of planned stronghold location
+        shouldGenerateHQ = true;
+        hqGenX = plannedHQLocation.x;
+        hqGenZ = plannedHQLocation.z;
+      }
+    }
+
+    if (!shouldGenerateHQ) {
+      let alreadyExistsHQ = false;
+      for (const loc of generatedHQLocations) {
+        const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
+        if (distSq < 6250000) { // 2,500m minimum stronghold spacing
+          alreadyExistsHQ = true;
+          break;
+        }
+      }
+      for (const loc of allMisskeyHQLocations) {
+        const distSq = Math.pow(pLoc.x - loc.x, 2) + Math.pow(pLoc.z - loc.z, 2);
+        if (distSq < 6250000) {
+          alreadyExistsHQ = true;
+          break;
+        }
+      }
+
+      // Very rare random natural generation at high distance from origin
+      const distFromOrigin = Math.sqrt(pLoc.x * pLoc.x + pLoc.z * pLoc.z);
+      if (!alreadyExistsHQ && distFromOrigin >= 1500 && Math.random() < 0.05) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 32 + Math.random() * 24;
+        hqGenX = Math.floor(pLoc.x + Math.cos(angle) * dist);
+        hqGenZ = Math.floor(pLoc.z + Math.sin(angle) * dist);
+        shouldGenerateHQ = true;
+      }
+    }
+
+    if (shouldGenerateHQ) {
+      try {
+        let surfaceY = Math.floor(pLoc.y);
+        let foundGround = false;
+
+        for (let y = Math.min(120, Math.floor(pLoc.y) + 20); y >= Math.max(50, Math.floor(pLoc.y) - 20); y--) {
+          try {
+            const b = overworld.getBlock({ x: hqGenX, y, z: hqGenZ });
+            if (b && !b.isAir && !b.isLiquid) {
+              surfaceY = y + 1;
+              foundGround = true;
+              break;
+            }
+          } catch (e) {
+            break;
+          }
+        }
+
+        if (foundGround) {
+          generatedHQLocations.push({ x: chunkX, z: chunkZ });
+          generateMisskeyHQ(overworld, { x: hqGenX, y: surfaceY, z: hqGenZ });
+          console.warn(`[Mi_Addon] Safely Generated Misskey HQ Skyscraper at (${hqGenX}, ${surfaceY}, ${hqGenZ})`);
+          world.sendMessage(`§6🏢⚡【大発見！】プレイヤー「${p.name}」が遥か彼方の要塞ダンジョン「Misskey開発所（本社ビル）」を発見・到達しました！§r`);
+          if (plannedHQLocation && Math.abs(hqGenX - plannedHQLocation.x) < 48 && Math.abs(hqGenZ - plannedHQLocation.z) < 48) {
+            plannedHQLocation = null;
+          }
         }
       } catch (e) { }
     }
@@ -5281,6 +5470,38 @@ world.afterEvents.itemUse.subscribe((event) => {
         dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 8, z: targetLoc.z });
       } catch (e) { }
     }, 5);
+    return;
+  }
+
+  // 3.5. 生態サーバー (`mi:ecology_server`) によるエンダーアイ風レーダー探知
+  if (itemStack.typeId === "mi:ecology_server") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const targetHQ = getNearestOrPlannedHQ(player);
+    const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
+
+    const dx = targetHQ.x - pLoc.x;
+    const dz = targetHQ.z - pLoc.z;
+    const len = Math.sqrt(dx * dx + dz * dz) || 1;
+    const nx = dx / len;
+    const nz = dz / len;
+
+    // Beam particle trajectory upward towards HQ direction (Ender Eye style!)
+    for (let step = 1; step <= 8; step++) {
+      const px = pLoc.x + nx * step * 1.5;
+      const py = pLoc.y + 1.2 + step * 0.4;
+      const pz = pLoc.z + nz * step * 1.5;
+      try {
+        dim.spawnParticle("minecraft:witch_spell_particle", { x: px, y: py, z: pz });
+        dim.spawnParticle("minecraft:totem_particle", { x: px, y: py, z: pz });
+      } catch (e) { }
+    }
+
+    if (dist <= 200) {
+      player.sendMessage(`§d⚡ [生態サーバー探知] 電波が超強力です！ Misskey開発所は目と鼻の先（約 §e${dist}m 先§d）にあります！§r`);
+    } else {
+      player.sendMessage(`§b📡 [生態サーバー探知] 開発所の電波をキャッチ！ 方角: 【§a${dirName}§b 方向 / 約 §e${dist}m 先§b（X: §f${targetHQ.x}§b, Z: §f${targetHQ.z}§b 付近）】§r`);
+    }
     return;
   }
 

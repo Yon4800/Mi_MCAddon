@@ -2968,6 +2968,9 @@ function spawnRewardChest(dimension, loc, rewardType) {
   }
 }
 var allMisskeyHQLocations = [];
+var generatedHQLocations = [];
+var plannedHQLocation = null;
+var momoLastPetTimeMap = /* @__PURE__ */ new Map();
 var hqSpawnedFloors = /* @__PURE__ */ new Set();
 var spawnedChestLocationsSet = /* @__PURE__ */ new Set();
 function registerMisskeyHQ(loc) {
@@ -3302,11 +3305,104 @@ world.afterEvents.entitySpawn.subscribe((event) => {
     }
   }
 });
+function getNearestOrPlannedHQ(player) {
+  const pLoc = player.location;
+  if (allMisskeyHQLocations.length > 0) {
+    let minDist = Infinity;
+    let nearest = null;
+    for (const hq of allMisskeyHQLocations) {
+      const d = Math.sqrt(Math.pow(pLoc.x - hq.x, 2) + Math.pow(pLoc.z - hq.z, 2));
+      if (d < minDist) {
+        minDist = d;
+        nearest = { x: hq.x, z: hq.z };
+      }
+    }
+    if (nearest) return nearest;
+  }
+  if (!plannedHQLocation) {
+    const angle = Math.PI / 4 * (1 + Math.abs(Math.floor(pLoc.x + 123)) % 7);
+    const dist = 1800 + Math.abs(Math.floor(pLoc.z + 456)) % 600;
+    plannedHQLocation = {
+      x: Math.round(pLoc.x + Math.cos(angle) * dist),
+      z: Math.round(pLoc.z + Math.sin(angle) * dist)
+    };
+  }
+  return plannedHQLocation;
+}
+function getCompassDirectionName(fromLoc, targetLoc) {
+  const dx = targetLoc.x - fromLoc.x;
+  const dz = targetLoc.z - fromLoc.z;
+  const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+  let dirName = "\u5317 (North)";
+  const deg = (Math.atan2(dz, dx) * 180 / Math.PI + 360 + 90) % 360;
+  if (deg >= 337.5 || deg < 22.5) dirName = "\u5317 (North)";
+  else if (deg >= 22.5 && deg < 67.5) dirName = "\u5317\u6771 (North-East)";
+  else if (deg >= 67.5 && deg < 112.5) dirName = "\u6771 (East)";
+  else if (deg >= 112.5 && deg < 157.5) dirName = "\u5357\u6771 (South-East)";
+  else if (deg >= 157.5 && deg < 202.5) dirName = "\u5357 (South)";
+  else if (deg >= 202.5 && deg < 247.5) dirName = "\u5357\u897F (South-West)";
+  else if (deg >= 247.5 && deg < 292.5) dirName = "\u897F (West)";
+  else dirName = "\u5317\u897F (North-West)";
+  return { dirName, dist };
+}
+function handleSyuiloTalk(player, syuiloEntity) {
+  const pLoc = player.location;
+  const dim = player.dimension;
+  const sLoc = syuiloEntity.location;
+  dim.spawnParticle("minecraft:villager_happy", { x: sLoc.x, y: sLoc.y + 1.8, z: sLoc.z });
+  const targetHQ = getNearestOrPlannedHQ(player);
+  const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
+  const quotes = [
+    "\u300CMisskey\u3078\u3088\u3046\u3053\u305D\uFF01 \u30CE\u30FC\u30C8\u3092\u6295\u7A3F\u3057\u305F\u308A\u3001\u7D75\u6587\u5B57\u30EA\u30A2\u30AF\u30B7\u30E7\u30F3\u3067\u904A\u3093\u3067\u307F\u3066\u306D\u3002\u300D",
+    "\u300C\u958B\u767A\u6240\u306E\u6700\u4E0A\u968E\u306B\u306F\u30DC\u30B9\u306E\u6751\u4E0A\u3055\u3093\u304C\u3044\u308B\u3088\u3002\u6012\u3089\u305B\u308B\u3068\u300E\u767D\u9B3C\u591C\u884C\u300F\u3092\u4F7F\u3046\u304B\u3089\u6C17\u3092\u3064\u3051\u3066\uFF01\u300D",
+    "\u300C\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7\u3092\u98DF\u3079\u904E\u304E\u3066\u6C17\u6301\u3061\u60AA\u304F\u306A\u3063\u305F\u3089\u3001\u30A2\u30EB\u30DF\u30DB\u30A4\u30EB\u5E3D\u5B50\u304C\u52B9\u304F\u3088\u3002\u300D",
+    "\u300C\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u30B5\u30FC\u30D0\u30FC\u3092\u5EFA\u3066\u3066\u4ED6\u306E\u4EBA\u3068\u9023\u5408\u3092\u7D50\u3076\u3068\u3001\u63A1\u6398\u901F\u5EA6\u3084\u79FB\u52D5\u901F\u5EA6\u304C\u4E0A\u304C\u308B\u3088\uFF01\u300D",
+    "\u300C\u56F0\u3063\u305F\u3089\u91D1\u878D\u30DD\u30FC\u30BF\u30EB\u3092\u958B\u3044\u3066\u307F\u3066\u306D\u3002ATM\u3067\u304A\u91D1\u3092\u304A\u308D\u3057\u305F\u308A\u70BA\u66FF\u53D6\u5F15\u304C\u3067\u304D\u308B\u3088\u3002\u300D"
+  ];
+  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+  player.sendMessage(`\xA7e\u3057\u3085\u3044\u308D: ${quote}\xA7r`);
+  player.sendMessage(`\xA76\u{1F3E2}\u{1F4CD}\u3010Misskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u306E\u9060\u5F81\u5EA7\u6A19\u3011\xA7r`);
+  player.sendMessage(`\xA7f\u958B\u767A\u6240\u30D3\u30EB\u306F\u3053\u3053\u304B\u3089\u9065\u304B\u5F7C\u65B9\u306E\u3010\xA7a${dirName}\xA7f \u65B9\u5411 / \u7D04 \xA7e${dist}m \u5148\xA7f\uFF08X: \xA7b${targetHQ.x}\xA7f, Z: \xA7b${targetHQ.z}\xA7f \u4ED8\u8FD1\uFF09\u3011\u306B\u8073\u3048\u7ACB\u3063\u3066\u3044\u308B\u3088\uFF01\xA7r`);
+  player.sendMessage(`\xA77\u{1F4A1} \u30A8\u30F3\u30C9\u8981\u585E\u306E\u3088\u3046\u306A\u9577\u65C5\u306B\u306A\u308B\u304B\u3089\u8ECA\u3084\u98DF\u6599\u3092\u6E96\u5099\u3057\u3066\u306D\uFF01 \u9053\u306B\u8FF7\u3063\u305F\u3089\u300E\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u300F\u3092\u53F3\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\u96FB\u6CE2\u3067\u65B9\u89D2\u3092\u6559\u3048\u3066\u304F\u308C\u308B\u3088\uFF01\xA7r`);
+}
+function handleMomoPet(player, momoEntity) {
+  const now = Date.now();
+  const lastPet = momoLastPetTimeMap.get(player.id) || 0;
+  const dim = player.dimension;
+  const mLoc = momoEntity.location;
+  if (now - lastPet < 3e5) {
+    const remainSec = Math.ceil((3e5 - (now - lastPet)) / 1e3);
+    dim.spawnParticle("minecraft:heart_particle", { x: mLoc.x, y: mLoc.y + 1.2, z: mLoc.z });
+    player.sendMessage(`\xA7d\u30E2\u30E2: \u307D\u3088\u307D\u3088\u2026\uFF08\u306A\u3067\u306A\u3067\u3055\u308C\u3066\u5B09\u3057\u305D\u3046\u306B\u3057\u3066\u3044\u308B\uFF01 / \u30AF\u30FC\u30EB\u30C0\u30A6\u30F3: \u6B8B\u308A${remainSec}\u79D2\uFF09\xA7r`);
+    return;
+  }
+  momoLastPetTimeMap.set(player.id, now);
+  dim.spawnParticle("minecraft:heart_particle", { x: mLoc.x, y: mLoc.y + 1.5, z: mLoc.z });
+  dim.spawnParticle("minecraft:totem_particle", { x: mLoc.x, y: mLoc.y + 1.2, z: mLoc.z });
+  player.addEffect("hero_of_the_village", 6e3, { amplifier: 0 });
+  player.addEffect("regeneration", 1200, { amplifier: 0 });
+  player.sendMessage("\xA7d\u{1F338}\u2728 [\u30E2\u30E2] \u307D\u3088\u3093\uFF01 \u30E2\u30E2\u3092\u512A\u3057\u304F\u306A\u3067\u306A\u3067\u3057\u305F\uFF01\xA7r");
+  player.sendMessage("\xA7a\u5E78\u904B\u306E\u30D0\u30D5\u3010\u6751\u306E\u82F1\u96C4 (5\u5206) & \u518D\u751F (1\u5206)\u3011\u3092\u6388\u304B\u308A\u307E\u3057\u305F\uFF01\xA7r");
+}
 world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
   const player = event.player;
   const target = event.target;
   const itemStack = event.itemStack;
   if (!target) return;
+  if (target.typeId === "mi:syuilo") {
+    event.cancel = true;
+    system.run(() => {
+      handleSyuiloTalk(player, target);
+    });
+    return;
+  }
+  if (target.typeId === "mi:momo") {
+    event.cancel = true;
+    system.run(() => {
+      handleMomoPet(player, target);
+    });
+    return;
+  }
   if (target.typeId === "minecraft:villager" || target.typeId === "minecraft:wandering_trader") {
     grantAchievement(player, "kaimono");
   }
@@ -3936,15 +4032,15 @@ system.runInterval(() => {
     const pLoc = p.location;
     const chunkX = Math.floor(pLoc.x / 64) * 64;
     const chunkZ = Math.floor(pLoc.z / 64) * 64;
-    let alreadyExists = false;
+    let alreadyExistsSteelworks = false;
     for (const loc of generatedSteelworksLocations) {
       const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
       if (distSq < 16e4) {
-        alreadyExists = true;
+        alreadyExistsSteelworks = true;
         break;
       }
     }
-    if (!alreadyExists && Math.random() < 0.15) {
+    if (!alreadyExistsSteelworks && Math.random() < 0.15) {
       const angle = Math.random() * Math.PI * 2;
       const dist = 24 + Math.random() * 16;
       const genX = Math.floor(pLoc.x + Math.cos(angle) * dist);
@@ -3968,6 +4064,74 @@ system.runInterval(() => {
           generatedSteelworksLocations.push({ x: chunkX, z: chunkZ });
           generateYahataSteelworks(overworld, { x: genX, y: surfaceY, z: genZ });
           console.warn(`[Mi_Addon] Safely Generated Yahata Steelworks at (${genX}, ${surfaceY}, ${genZ})`);
+        }
+      } catch (e) {
+      }
+    }
+    let shouldGenerateHQ = false;
+    let hqGenX = 0;
+    let hqGenZ = 0;
+    if (plannedHQLocation) {
+      const pDistSq = Math.pow(pLoc.x - plannedHQLocation.x, 2) + Math.pow(pLoc.z - plannedHQLocation.z, 2);
+      const isAlreadyBuilt = allMisskeyHQLocations.some(
+        (h) => Math.pow(h.x - plannedHQLocation.x, 2) + Math.pow(h.z - plannedHQLocation.z, 2) < 25600
+        // 160m
+      );
+      if (pDistSq <= 4e4 && !isAlreadyBuilt) {
+        shouldGenerateHQ = true;
+        hqGenX = plannedHQLocation.x;
+        hqGenZ = plannedHQLocation.z;
+      }
+    }
+    if (!shouldGenerateHQ) {
+      let alreadyExistsHQ = false;
+      for (const loc of generatedHQLocations) {
+        const distSq = Math.pow(chunkX - loc.x, 2) + Math.pow(chunkZ - loc.z, 2);
+        if (distSq < 625e4) {
+          alreadyExistsHQ = true;
+          break;
+        }
+      }
+      for (const loc of allMisskeyHQLocations) {
+        const distSq = Math.pow(pLoc.x - loc.x, 2) + Math.pow(pLoc.z - loc.z, 2);
+        if (distSq < 625e4) {
+          alreadyExistsHQ = true;
+          break;
+        }
+      }
+      const distFromOrigin = Math.sqrt(pLoc.x * pLoc.x + pLoc.z * pLoc.z);
+      if (!alreadyExistsHQ && distFromOrigin >= 1500 && Math.random() < 0.05) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 32 + Math.random() * 24;
+        hqGenX = Math.floor(pLoc.x + Math.cos(angle) * dist);
+        hqGenZ = Math.floor(pLoc.z + Math.sin(angle) * dist);
+        shouldGenerateHQ = true;
+      }
+    }
+    if (shouldGenerateHQ) {
+      try {
+        let surfaceY = Math.floor(pLoc.y);
+        let foundGround = false;
+        for (let y = Math.min(120, Math.floor(pLoc.y) + 20); y >= Math.max(50, Math.floor(pLoc.y) - 20); y--) {
+          try {
+            const b = overworld.getBlock({ x: hqGenX, y, z: hqGenZ });
+            if (b && !b.isAir && !b.isLiquid) {
+              surfaceY = y + 1;
+              foundGround = true;
+              break;
+            }
+          } catch (e) {
+            break;
+          }
+        }
+        if (foundGround) {
+          generatedHQLocations.push({ x: chunkX, z: chunkZ });
+          generateMisskeyHQ(overworld, { x: hqGenX, y: surfaceY, z: hqGenZ });
+          console.warn(`[Mi_Addon] Safely Generated Misskey HQ Skyscraper at (${hqGenX}, ${surfaceY}, ${hqGenZ})`);
+          world.sendMessage(`\xA76\u{1F3E2}\u26A1\u3010\u5927\u767A\u898B\uFF01\u3011\u30D7\u30EC\u30A4\u30E4\u30FC\u300C${p.name}\u300D\u304C\u9065\u304B\u5F7C\u65B9\u306E\u8981\u585E\u30C0\u30F3\u30B8\u30E7\u30F3\u300CMisskey\u958B\u767A\u6240\uFF08\u672C\u793E\u30D3\u30EB\uFF09\u300D\u3092\u767A\u898B\u30FB\u5230\u9054\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          if (plannedHQLocation && Math.abs(hqGenX - plannedHQLocation.x) < 48 && Math.abs(hqGenZ - plannedHQLocation.z) < 48) {
+            plannedHQLocation = null;
+          }
         }
       } catch (e) {
       }
@@ -4183,6 +4347,33 @@ world.afterEvents.itemUse.subscribe((event) => {
       } catch (e) {
       }
     }, 5);
+    return;
+  }
+  if (itemStack.typeId === "mi:ecology_server") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    const targetHQ = getNearestOrPlannedHQ(player);
+    const { dirName, dist } = getCompassDirectionName(pLoc, targetHQ);
+    const dx = targetHQ.x - pLoc.x;
+    const dz = targetHQ.z - pLoc.z;
+    const len = Math.sqrt(dx * dx + dz * dz) || 1;
+    const nx = dx / len;
+    const nz = dz / len;
+    for (let step = 1; step <= 8; step++) {
+      const px = pLoc.x + nx * step * 1.5;
+      const py = pLoc.y + 1.2 + step * 0.4;
+      const pz = pLoc.z + nz * step * 1.5;
+      try {
+        dim.spawnParticle("minecraft:witch_spell_particle", { x: px, y: py, z: pz });
+        dim.spawnParticle("minecraft:totem_particle", { x: px, y: py, z: pz });
+      } catch (e) {
+      }
+    }
+    if (dist <= 200) {
+      player.sendMessage(`\xA7d\u26A1 [\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u63A2\u77E5] \u96FB\u6CE2\u304C\u8D85\u5F37\u529B\u3067\u3059\uFF01 Misskey\u958B\u767A\u6240\u306F\u76EE\u3068\u9F3B\u306E\u5148\uFF08\u7D04 \xA7e${dist}m \u5148\xA7d\uFF09\u306B\u3042\u308A\u307E\u3059\uFF01\xA7r`);
+    } else {
+      player.sendMessage(`\xA7b\u{1F4E1} [\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u63A2\u77E5] \u958B\u767A\u6240\u306E\u96FB\u6CE2\u3092\u30AD\u30E3\u30C3\u30C1\uFF01 \u65B9\u89D2: \u3010\xA7a${dirName}\xA7b \u65B9\u5411 / \u7D04 \xA7e${dist}m \u5148\xA7b\uFF08X: \xA7f${targetHQ.x}\xA7b, Z: \xA7f${targetHQ.z}\xA7b \u4ED8\u8FD1\uFF09\u3011\xA7r`);
+    }
     return;
   }
   if (itemStack.typeId.startsWith("mi:yen_")) {
