@@ -1484,25 +1484,82 @@ const stockMarket: StockInfo[] = [
 
 interface MarketNews {
   id: string;
+  category: "stock" | "fx";
   title: string;
   content: string;
-  affectedCode?: string;
+  targetCode: string;
   impactPercent: number;
   timestamp: number;
 }
 
 const marketNewsHistory: MarketNews[] = [];
 
-const NEWS_TEMPLATES: { title: string, content: string, code: string, minImpact: number, maxImpact: number }[] = [
+// === 1. Stock Market News Templates (25 types across 6 companies) ===
+const STOCK_NEWS_TEMPLATES: { title: string, content: string, code: string, minImpact: number, maxImpact: number }[] = [
+  // SYUIL (しゅいろソフトウェア)
   { title: "🚀【速報】しゅいろ氏、新機能を緊急デプロイ！", content: "Misskeyに革新的な新機能が実装され、ユーザー数が爆発的に増加しています！", code: "SYUIL", minImpact: 15, maxImpact: 35 },
   { title: "💥【障害】Misskey開発所の生体サーバーが一時ダウン", content: "アクセス集中により開発室のサーバーが過熱。エンジニアが緊急復旧対応中です。", code: "SYUIL", minImpact: -25, maxImpact: -10 },
-  { title: "🐍【特需】ツチノコ繁殖ブーム到来！あんこ需要急増", content: "各地でツチノコのペット化が進み、あんこおよび生体サーバーの取引価格が高騰しています。", code: "TUTI", minImpact: 10, maxImpact: 25 },
+  { title: "🌟【新版】Misskeyメジャーアップデート公開！", content: "世界トレンド1位を獲得し、新規サーバー設立ラッシュが発生しています。", code: "SYUIL", minImpact: 20, maxImpact: 40 },
+  { title: "🤖【AI】Misskey AI自動ノート生成のベータ版が解禁", content: "高度なAI機能の導入が発表され、IT業界からの注目が一気に集まっています。", code: "SYUIL", minImpact: 12, maxImpact: 26 },
+  { title: "⚠️【バグ】絵文字リアクション連打によるサーバー高負荷", content: "一部のインスタンスで連打スクリプトによる遅延が発生し、懸念が広がっています。", code: "SYUIL", minImpact: -18, maxImpact: -8 },
+
+  // TUTI (村上ツチノコ商事)
+  { title: "🐍【特需】ツチノコ繁殖ブーム到来！あんこ需要急増", content: "各地でツチノコのペット化が進み、あんこおよび生体サーバーの取引価格が高騰しています。", code: "TUTI", minImpact: 12, maxImpact: 28 },
+  { title: "🔬【特許】生態サーバー高効率バイオ技術の特許取得", content: "繁殖効率を2倍にする新技術の独占権を獲得し、業績予想を上方修正しました。", code: "TUTI", minImpact: 15, maxImpact: 32 },
+  { title: "🌧️【不作】原材料のアズキ不作によりあんこ出荷制限", content: "異常気象によるアズキの収穫量激減が報じられ、商社部門の売上減が懸念されています。", code: "TUTI", minImpact: -22, maxImpact: -10 },
+  { title: "🔍【摘発】市場に出回る偽ツチノコ業者を一斉摘発", content: "不正業者の一掃により村上ツチノコ商事の正規ブランドへの信頼が急上昇しました。", code: "TUTI", minImpact: 10, maxImpact: 22 },
+
+  // YHATA (官営八幡製鉄)
   { title: "🏭【増産】八幡製鉄所の高炉フル稼働、鉄鋼需要好調", content: "巨大建築ブームに伴い、高品質な製鉄鋼材の受注が過去最高を記録しました。", code: "YHATA", minImpact: 8, maxImpact: 18 },
+  { title: "🛡️【新素材】超高硬度ネザライト合金の量産化に成功", content: "従来の鉄鋼を遥かに凌駕する特殊装甲鋼の開発に成功し、防衛産業から大口受注を獲得！", code: "YHATA", minImpact: 18, maxImpact: 35 },
+  { title: "🚆【受注】大陸横断鉄道プロジェクトのレール独占供給", content: "長距離トロッコ鉄道の敷設特需により、数年先までの生産枠が埋まりました。", code: "YHATA", minImpact: 12, maxImpact: 25 },
+  { title: "⛏️【高騰】輸入鉄鉱石価格の高騰により採算悪化懸念", content: "原材料コストの急上昇が利益を圧迫するとの見方から売りが優勢となっています。", code: "YHATA", minImpact: -20, maxImpact: -8 },
+
+  // RCAR (レグカー自動車工業)
   { title: "🚗【新色】レグカーに新色カラーリングが登場！", content: "16色フル対応の新型レグカーが発表され、サバンナでの試乗希望者が殺到しています。", code: "RCAR", minImpact: 12, maxImpact: 30 },
   { title: "💥【事故】サバンナ街道でレグカーの多重激突事故が発生", content: "高速走行中のレグカーが壁に激突大破。安全対策への懸念から売りが先行しています。", code: "RCAR", minImpact: -28, maxImpact: -12 },
+  { title: "⚡【発表】新開発「ターボブースター搭載モデル」を発表", content: "最高速度1.5倍の超高速仕様が発表され、モータースポーツファンが熱狂しています。", code: "RCAR", minImpact: 16, maxImpact: 35 },
+  { title: "🏆【優勝】サバンナ横断キャノンボールラリーで総合優勝！", content: "過酷な悪路を走破し圧倒的な耐久性と速さを実証、注文が殺到しています。", code: "RCAR", minImpact: 14, maxImpact: 28 },
+  { title: "🔧【リコール】長すぎる車体の曲がり角制御で点検回収", content: "一部車両で急カーブ時のフレームきしみ音が発生し、無償点検を発表しました。", code: "RCAR", minImpact: -22, maxImpact: -10 },
+
+  // MOCHO (モチョチョ製菓)
   { title: "🍮【大流行】プリンのトランポリンジャンプがSNSで大バズり！", content: "ぽよんぽよん跳ねる動画がバズり、モチョチョ製菓のプリンが全国で品切れ続出！", code: "MOCHO", minImpact: 25, maxImpact: 60 },
   { title: "🤢【警告】ベイクドモチョチョ食べ過ぎによる吐き気注意報", content: "過剰摂取による体調不良者が報告され、食品安全委員会が注意を呼びかけています。", code: "MOCHO", minImpact: -30, maxImpact: -15 },
+  { title: "🐱【新商品】「猫耳プリン」が若者を中心に空前ブーム", content: "食べると猫耳が生えて足が速くなるスイーツとして話題沸騰、売り上げが倍増！", code: "MOCHO", minImpact: 20, maxImpact: 45 },
+  { title: "🎖️【ギネス】世界最大の巨大プリン作成に成功、世界記録認定", content: "高さ5mの超巨大プリンを完成させ、世界的お祭り騒ぎに発展しています！", code: "MOCHO", minImpact: 15, maxImpact: 35 },
+
+  // YSNO (与謝野ロジスティクス)
   { title: "🦋【物流】与謝野晶子氏、神奈川・町田間の超空間輸送ルートを開設", content: "エンダーパール転送網の拡充により、即日配送エリアが大幅に拡大しました。", code: "YSNO", minImpact: 12, maxImpact: 28 },
+  { title: "📦【実用化】エンダー自動空間デリバリーの商業運行開始", content: "チェストから指定場所へ瞬時に荷物を飛ばす次世代配送サービスが本格始動！", code: "YSNO", minImpact: 18, maxImpact: 34 },
+  { title: "🌀【遅延】空間転送ゲートの磁場乱れにより荷物遅延多発", content: "一時的な空間の歪みにより一部配送便に大幅な遅れが生じ、補償費用が発生。", code: "YSNO", minImpact: -22, maxImpact: -9 },
+  { title: "🌌【宇宙】ジ・エンド向け超長距離デリバリー実証実験に成功", content: "異次元空間を跨ぐ配送網の構築に成功し、物流界の革命児として株価が急上昇！", code: "YSNO", minImpact: 20, maxImpact: 40 }
+];
+
+// === 2. FX Market News Templates (16 types across 4 currency pairs) ===
+const FX_NEWS_TEMPLATES: { title: string, content: string, pairId: string, minImpact: number, maxImpact: number }[] = [
+  // USD/JPY (米ドル/円)
+  { title: "🇺🇸【利上げ】FRBがサプライズ利上げ発表！ドル買い加速", content: "米連邦準備制度がインフレ抑制のため利上げを実施。日米金利差拡大からドル高円安が急伸！", pairId: "USD_JPY", minImpact: 3, maxImpact: 7 },
+  { title: "🇯🇵【為替介入】日銀が円買い為替介入を実施、ドル円急落！", content: "急激な円安を是正するため通貨当局が市場介入を実施。ドルが一気に売り浴びせられました。", pairId: "USD_JPY", minImpact: -6, maxImpact: -3 },
+  { title: "📊【雇用統計】米雇用統計が市場予想を大幅に上回る", content: "米景気の力強さが確認され、投資家のドル買い意欲が急拡大しています。", pairId: "USD_JPY", minImpact: 2, maxImpact: 5 },
+  { title: "📉【リスクオフ】世界的警戒感の高まりから安全資産の円買い", content: "地政学的リスクの高まりを受け、リスク回避の円買いが優勢となっています。", pairId: "USD_JPY", minImpact: -4, maxImpact: -2 },
+
+  // EUR/JPY (ユーロ/円)
+  { title: "🇪🇺【利上げ】欧州中央銀行 (ECB) が追加利上げを決定", content: "欧州圏のインフレ高止まりを抑え込むためタカ派姿勢を維持。ユーロ買いが進んでいます。", pairId: "EUR_JPY", minImpact: 3, maxImpact: 6 },
+  { title: "🇪🇺【景気減速】欧州主要国の製造業指標が悪化、ユーロ急落", content: "エネルギー価格と需要減退により欧州景気の後退懸念が強まり、ユーロが急激に売られています。", pairId: "EUR_JPY", minImpact: -5, maxImpact: -2 },
+  { title: "🤝【協定締結】日欧包括的デジタル経済連携協定が成立", content: "欧州と日本間の貿易・投資活性化への期待感からユーロ円が買われています。", pairId: "EUR_JPY", minImpact: 2, maxImpact: 5 },
+  { title: "⚡【電力危機】欧州送電網の寒波トラブルでユーロ売り先行", content: "季節的なエネルギー不安が再燃し、ユーロの下落圧力となっています。", pairId: "EUR_JPY", minImpact: -4, maxImpact: -2 },
+
+  // FED/JPY (Fediverseコイン/円)
+  { title: "🌐【連合拡大】Fediverse接続サーバー数が10万台を突破！", content: "分散型SNSの爆発的拡大に伴い、連合ネットワーク基軸トークンFEDコインが猛烈な買いを集めています！", pairId: "FED_JPY", minImpact: 25, maxImpact: 55 },
+  { title: "⚠️【障害】大手インスタンス群の連鎖ダウンで一時売り浴びせ", content: "一時的なネットワーク分断によりFEDコインの流動性懸念が生じ、価格が急落しました。", pairId: "FED_JPY", minImpact: -30, maxImpact: -15 },
+  { title: "💳【公式決済】主要MisskeyサーバーがFED決済を標準採用", content: "サーバー維持費や投げ銭でのFED利用が義務付けられ、実需買いが殺到しています！", pairId: "FED_JPY", minImpact: 18, maxImpact: 38 },
+  { title: "🔒【規制懸念】分散型プロトコルへの国際規制報道で急落", content: "各国規制当局による監視強化の噂が流れ、一時的なパニック売りが発生しました。", pairId: "FED_JPY", minImpact: -25, maxImpact: -10 },
+
+  // MCC/JPY (モチョコイン/円 - 超ハイリスク草コイン)
+  { title: "🌕【TO THE MOON!】有名インフルエンサーのツイートで狂乱急騰！", content: "「モチョコインしか勝たん」という一言で世界中の投機資金が流入、価格が数倍に爆騰中！", pairId: "MCC_JPY", minImpact: 70, maxImpact: 160 },
+  { title: "💥【大暴落】CEOが「ただのネタコイン」と発言し大暴落！", content: "開発陣の梯子外し発言に投資家が激怒。投げ売りが止まらず大暴落しています！", pairId: "MCC_JPY", minImpact: -65, maxImpact: -35 },
+  { title: "🍮【還元祭】プリン購入でモチョコイン全額キャッシュバック！", content: "モチョチョ製菓との大型タイアップキャンペーンが始まり、買いが買いを呼ぶ展開に！", pairId: "MCC_JPY", minImpact: 40, maxImpact: 90 },
+  { title: "🐋【クジラ利確】大口投資家（クジラ）が保有コインを一斉放出", content: "初期からの大口ホルダーが莫大な利益確定売りを行い、価格が急落しています。", pairId: "MCC_JPY", minImpact: -50, maxImpact: -25 }
 ];
 
 function updateStockPrices() {
@@ -1516,33 +1573,6 @@ function updateStockPrices() {
     stock.currentPrice = newPrice;
     stock.history.push(newPrice);
     if (stock.history.length > 8) stock.history.shift();
-  }
-
-  // Random Breaking News (25% chance per cycle)
-  if (Math.random() < 0.25) {
-    const tmpl = NEWS_TEMPLATES[Math.floor(Math.random() * NEWS_TEMPLATES.length)];
-    const impact = Math.floor(tmpl.minImpact + Math.random() * (tmpl.maxImpact - tmpl.minImpact));
-    const targetStock = stockMarket.find(s => s.code === tmpl.code);
-    if (targetStock) {
-      targetStock.prevPrice = targetStock.currentPrice;
-      targetStock.currentPrice = Math.max(10, Math.floor(targetStock.currentPrice * (1 + impact / 100)));
-      targetStock.history.push(targetStock.currentPrice);
-      if (targetStock.history.length > 8) targetStock.history.shift();
-
-      const news: MarketNews = {
-        id: `news_${Date.now()}`,
-        title: tmpl.title,
-        content: `${tmpl.content} (影響: ${targetStock.name}株が ${impact >= 0 ? "+" : ""}${impact}%)`,
-        affectedCode: tmpl.code,
-        impactPercent: impact,
-        timestamp: Date.now()
-      };
-      marketNewsHistory.unshift(news);
-      if (marketNewsHistory.length > 20) marketNewsHistory.pop();
-
-      // Announce breaking news in world
-      world.sendMessage(`§6📰 [Misskey経済速報] §e${tmpl.title}§r\n§7${news.content}§r`);
-    }
   }
 
   // Pay Stock Dividends to all online players
@@ -1565,10 +1595,70 @@ function updateStockPrices() {
   }
 }
 
+function processMarketBreakingNews() {
+  // 35% chance to trigger Stock News or FX News
+  if (Math.random() < 0.35) {
+    const isFxNews = Math.random() < 0.45; // 45% FX, 55% Stock
+
+    if (isFxNews) {
+      // Trigger FX News
+      const tmpl = FX_NEWS_TEMPLATES[Math.floor(Math.random() * FX_NEWS_TEMPLATES.length)];
+      const pair = fxPairs.find(p => p.id === tmpl.pairId);
+      if (pair) {
+        const impact = parseFloat((tmpl.minImpact + Math.random() * (tmpl.maxImpact - tmpl.minImpact)).toFixed(2));
+        pair.prevRate = pair.currentRate;
+        pair.currentRate = parseFloat(Math.max(0.01, pair.currentRate * (1 + impact / 100)).toFixed(2));
+        pair.history.push(pair.currentRate);
+        if (pair.history.length > 8) pair.history.shift();
+
+        const news: MarketNews = {
+          id: `fx_news_${Date.now()}`,
+          category: "fx",
+          title: tmpl.title,
+          content: `${tmpl.content} (影響: ${pair.name} レートが ${impact >= 0 ? "+" : ""}${impact}%)`,
+          targetCode: tmpl.pairId,
+          impactPercent: impact,
+          timestamp: Date.now()
+        };
+        marketNewsHistory.unshift(news);
+        if (marketNewsHistory.length > 25) marketNewsHistory.pop();
+
+        world.sendMessage(`§b🌐 [世界為替速報 (FX)] §e${tmpl.title}§r\n§7${news.content}§r`);
+      }
+    } else {
+      // Trigger Stock News
+      const tmpl = STOCK_NEWS_TEMPLATES[Math.floor(Math.random() * STOCK_NEWS_TEMPLATES.length)];
+      const targetStock = stockMarket.find(s => s.code === tmpl.code);
+      if (targetStock) {
+        const impact = Math.floor(tmpl.minImpact + Math.random() * (tmpl.maxImpact - tmpl.minImpact));
+        targetStock.prevPrice = targetStock.currentPrice;
+        targetStock.currentPrice = Math.max(10, Math.floor(targetStock.currentPrice * (1 + impact / 100)));
+        targetStock.history.push(targetStock.currentPrice);
+        if (targetStock.history.length > 8) targetStock.history.shift();
+
+        const news: MarketNews = {
+          id: `stock_news_${Date.now()}`,
+          category: "stock",
+          title: tmpl.title,
+          content: `${tmpl.content} (影響: ${targetStock.name}株が ${impact >= 0 ? "+" : ""}${impact}%)`,
+          targetCode: tmpl.code,
+          impactPercent: impact,
+          timestamp: Date.now()
+        };
+        marketNewsHistory.unshift(news);
+        if (marketNewsHistory.length > 25) marketNewsHistory.pop();
+
+        world.sendMessage(`§6📰 [Misskey株価速報] §e${tmpl.title}§r\n§7${news.content}§r`);
+      }
+    }
+  }
+}
+
 // Background Financial Market Ticker (Every 30 seconds = 600 ticks)
 system.runInterval(() => {
   updateFxRates();
   updateStockPrices();
+  processMarketBreakingNews();
 
   // Check FX Auto-Stoploss (Margin Call) for all online players
   for (const player of world.getAllPlayers()) {
@@ -2659,14 +2749,20 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
   });
 }
 
-// 6. Market News UI
+// 6. Market News UI (Stock & FX)
 function openMarketNewsUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
   const form = new ActionFormData()
-    .title("📰 Misskey 経済ニュース速報")
-    .body(marketNewsHistory.length === 0 ? "現在配信中の重大ニュースはありません。市場は平常運転です。" : "最新の市場ニュース一覧:");
+    .title("📰 Misskey 経済ニュース速報 (株式 & FX)")
+    .body(
+      marketNewsHistory.length === 0
+        ? "現在配信中の重大ニュースはありません。市場は平常運転です。"
+        : `最新の市場ニュース一覧 (全${marketNewsHistory.length}件):\n気になるニュースをタップして詳細を確認できます:`
+    );
 
   for (const news of marketNewsHistory) {
-    form.button(`${news.title}\n${news.content.substring(0, 24)}...`);
+    const icon = news.category === "fx" ? "🌐[為替]" : "🏢[株式]";
+    const impactText = news.impactPercent >= 0 ? `+${news.impactPercent}%` : `${news.impactPercent}%`;
+    form.button(`${icon} ${news.title}\n[影響: ${impactText}] ${news.content.substring(0, 20)}...`);
   }
 
   form.button("🔙 戻る");
@@ -2675,10 +2771,20 @@ function openMarketNewsUI(player: Player, blockLoc?: { x: number, y: number, z: 
     if (res.canceled || res.selection === undefined) return;
     if (res.selection < marketNewsHistory.length) {
       const chosen = marketNewsHistory[res.selection];
+      const categoryName = chosen.category === "fx" ? "🌐 外国為替 (FX) 市場ニュース" : "🏢 Misskey 株式市場ニュース";
+      const impactSign = chosen.impactPercent >= 0 ? "+" : "";
+
       const detailForm = new ActionFormData()
-        .title("📰 ニュース詳細")
-        .body(`【${chosen.title}】\n\n${chosen.content}`)
+        .title("📰 ニュース詳細速報")
+        .body(
+          `【カテゴリー】: §e${categoryName}§r\n` +
+          `【見出し】: §l${chosen.title}§r\n` +
+          `【市場への影響】: §a${chosen.targetCode} が ${impactSign}${chosen.impactPercent}% 変動§r\n` +
+          `━━━━━━━━━━━━━━━━━━\n` +
+          `${chosen.content}`
+        )
         .button("🔙 ニュース一覧に戻る");
+
       showFormSafe(player, detailForm, () => {
         openMarketNewsUI(player, blockLoc);
       });
