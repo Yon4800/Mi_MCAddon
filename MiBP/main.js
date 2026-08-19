@@ -1160,6 +1160,74 @@ var stockMarket = [
     description: "\u753A\u7530\u30FB\u795E\u5948\u5DDD\u9593\u306E\u30A8\u30F3\u30C0\u30FC\u30D1\u30FC\u30EB\u7A7A\u9593\u8EE2\u9001\u3092\u624B\u639B\u3051\u308B\u6B21\u4E16\u4EE3\u7269\u6D41\u4F01\u696D\u3002"
   }
 ];
+function saveMarketWorldData() {
+  try {
+    const fxData = {};
+    for (const pair of fxPairs) {
+      fxData[pair.id] = {
+        currentRate: pair.currentRate,
+        prevRate: pair.prevRate,
+        history: pair.history
+      };
+    }
+    world.setDynamicProperty("mi_fx_market_rates", JSON.stringify(fxData));
+    const stockData = {};
+    for (const stock of stockMarket) {
+      stockData[stock.code] = {
+        currentPrice: stock.currentPrice,
+        prevPrice: stock.prevPrice,
+        history: stock.history
+      };
+    }
+    world.setDynamicProperty("mi_stock_market_prices", JSON.stringify(stockData));
+    world.setDynamicProperty("mi_news_history_data", JSON.stringify(marketNewsHistory.slice(0, 20)));
+  } catch (e) {
+    console.warn("[Mi_Addon] Failed to save market data to world: " + e);
+  }
+}
+function loadMarketWorldData() {
+  try {
+    const fxJson = world.getDynamicProperty("mi_fx_market_rates");
+    if (typeof fxJson === "string") {
+      const fxData = JSON.parse(fxJson);
+      for (const pair of fxPairs) {
+        if (fxData[pair.id]) {
+          pair.currentRate = fxData[pair.id].currentRate ?? pair.currentRate;
+          pair.prevRate = fxData[pair.id].prevRate ?? pair.prevRate;
+          if (Array.isArray(fxData[pair.id].history)) {
+            pair.history = fxData[pair.id].history;
+          }
+        }
+      }
+    }
+    const stockJson = world.getDynamicProperty("mi_stock_market_prices");
+    if (typeof stockJson === "string") {
+      const stockData = JSON.parse(stockJson);
+      for (const stock of stockMarket) {
+        if (stockData[stock.code]) {
+          stock.currentPrice = stockData[stock.code].currentPrice ?? stock.currentPrice;
+          stock.prevPrice = stockData[stock.code].prevPrice ?? stock.prevPrice;
+          if (Array.isArray(stockData[stock.code].history)) {
+            stock.history = stockData[stock.code].history;
+          }
+        }
+      }
+    }
+    const newsJson = world.getDynamicProperty("mi_news_history_data");
+    if (typeof newsJson === "string") {
+      const newsData = JSON.parse(newsJson);
+      if (Array.isArray(newsData)) {
+        marketNewsHistory.length = 0;
+        for (const n of newsData) {
+          marketNewsHistory.push(n);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[Mi_Addon] Failed to load market data from world: " + e);
+  }
+}
+loadMarketWorldData();
 var marketNewsHistory = [];
 var STOCK_NEWS_TEMPLATES = [
   // SYUIL (しゅいろソフトウェア)
@@ -1325,6 +1393,7 @@ system.runInterval(() => {
       setPlayerFxPositions(player, remainingPositions);
     }
   }
+  saveMarketWorldData();
 }, 600);
 var playerCarTurboSet = /* @__PURE__ */ new Set();
 var playerCarInsuranceSet = /* @__PURE__ */ new Set();

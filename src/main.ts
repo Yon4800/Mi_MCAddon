@@ -1482,6 +1482,89 @@ const stockMarket: StockInfo[] = [
   }
 ];
 
+// --- World Persistence System for FX & Stock Market ---
+function saveMarketWorldData() {
+  try {
+    // 1. Save FX Rates
+    const fxData: Record<string, { currentRate: number, prevRate: number, history: number[] }> = {};
+    for (const pair of fxPairs) {
+      fxData[pair.id] = {
+        currentRate: pair.currentRate,
+        prevRate: pair.prevRate,
+        history: pair.history
+      };
+    }
+    world.setDynamicProperty("mi_fx_market_rates", JSON.stringify(fxData));
+
+    // 2. Save Stock Prices
+    const stockData: Record<string, { currentPrice: number, prevPrice: number, history: number[] }> = {};
+    for (const stock of stockMarket) {
+      stockData[stock.code] = {
+        currentPrice: stock.currentPrice,
+        prevPrice: stock.prevPrice,
+        history: stock.history
+      };
+    }
+    world.setDynamicProperty("mi_stock_market_prices", JSON.stringify(stockData));
+
+    // 3. Save News History
+    world.setDynamicProperty("mi_news_history_data", JSON.stringify(marketNewsHistory.slice(0, 20)));
+  } catch (e) {
+    console.warn("[Mi_Addon] Failed to save market data to world: " + e);
+  }
+}
+
+function loadMarketWorldData() {
+  try {
+    // 1. Load FX Rates
+    const fxJson = world.getDynamicProperty("mi_fx_market_rates");
+    if (typeof fxJson === "string") {
+      const fxData = JSON.parse(fxJson);
+      for (const pair of fxPairs) {
+        if (fxData[pair.id]) {
+          pair.currentRate = fxData[pair.id].currentRate ?? pair.currentRate;
+          pair.prevRate = fxData[pair.id].prevRate ?? pair.prevRate;
+          if (Array.isArray(fxData[pair.id].history)) {
+            pair.history = fxData[pair.id].history;
+          }
+        }
+      }
+    }
+
+    // 2. Load Stock Prices
+    const stockJson = world.getDynamicProperty("mi_stock_market_prices");
+    if (typeof stockJson === "string") {
+      const stockData = JSON.parse(stockJson);
+      for (const stock of stockMarket) {
+        if (stockData[stock.code]) {
+          stock.currentPrice = stockData[stock.code].currentPrice ?? stock.currentPrice;
+          stock.prevPrice = stockData[stock.code].prevPrice ?? stock.prevPrice;
+          if (Array.isArray(stockData[stock.code].history)) {
+            stock.history = stockData[stock.code].history;
+          }
+        }
+      }
+    }
+
+    // 3. Load News History
+    const newsJson = world.getDynamicProperty("mi_news_history_data");
+    if (typeof newsJson === "string") {
+      const newsData = JSON.parse(newsJson);
+      if (Array.isArray(newsData)) {
+        marketNewsHistory.length = 0;
+        for (const n of newsData) {
+          marketNewsHistory.push(n);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[Mi_Addon] Failed to load market data from world: " + e);
+  }
+}
+
+// Initial Load on Script Start
+loadMarketWorldData();
+
 interface MarketNews {
   id: string;
   category: "stock" | "fx";
@@ -1689,6 +1772,9 @@ system.runInterval(() => {
       setPlayerFxPositions(player, remainingPositions);
     }
   }
+
+  // Save latest FX rates, Stock prices and News to World DynamicProperties
+  saveMarketWorldData();
 }, 600);
 
 // --- Financial UI System ---
