@@ -1,0 +1,18 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mi:yen_1",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "yen_1",
+      "minecraft:display_name": {
+        "value": "1円玉"
+      },
+      "minecraft:max_stack_size": 64
+    }
+  }
+}

@@ -87,3 +87,18 @@ item.spawn_egg.entity.mi:m_tutinoko_hostile.name=村上ツチノコのスポー�
 entity.mi:murakami_boss.name=村上さん
 item.spawn_egg.entity.mi:murakami_boss.name=村上さんのスポーンエッグ
 
+## 通貨 (JPY / 日本円)
+item.mi:yen_1.name=1円玉
+item.mi:yen_5.name=5円玉
+item.mi:yen_10.name=10円玉
+item.mi:yen_50.name=50円玉
+item.mi:yen_100.name=100円玉
+item.mi:yen_500.name=500円玉
+item.mi:yen_1000.name=千円札 (1,000円)
+item.mi:yen_2000.name=二千円札 (2,000円)
+item.mi:yen_5000.name=五千円札 (5,000円)
+item.mi:yen_10000.name=一万円札 (10,000円)
+
+## 偉業
+item.mi:ensei_ha_igyo.name=遠征の偉業
+

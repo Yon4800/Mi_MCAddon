@@ -109,6 +109,39 @@
     },
     "hq_blueprint": {
       "textures": "textures/items/hq_blueprint"
+    },
+    "yen_1": {
+      "textures": "textures/items/tuuka/1yen"
+    },
+    "yen_5": {
+      "textures": "textures/items/tuuka/5yen"
+    },
+    "yen_10": {
+      "textures": "textures/items/tuuka/10yen"
+    },
+    "yen_50": {
+      "textures": "textures/items/tuuka/50yen"
+    },
+    "yen_100": {
+      "textures": "textures/items/tuuka/100yen"
+    },
+    "yen_500": {
+      "textures": "textures/items/tuuka/500yen"
+    },
+    "yen_1000": {
+      "textures": "textures/items/tuuka/1000yen"
+    },
+    "yen_2000": {
+      "textures": "textures/items/tuuka/2000yen"
+    },
+    "yen_5000": {
+      "textures": "textures/items/tuuka/5000yen"
+    },
+    "yen_10000": {
+      "textures": "textures/items/tuuka/10000yen"
+    },
+    "ensei_ha_igyo": {
+      "textures": "textures/items/igyo/ensei_ha_igyo"
     }
   }
 }

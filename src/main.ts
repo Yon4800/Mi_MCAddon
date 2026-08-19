@@ -78,7 +78,8 @@ const ALL_IGYO_ITEMS = [
   "mi:kaimono_ha_igyo",
   "mi:seichi_ha_igyo",
   "mi:upgrade_ha_igyo",
-  "mi:shokuji_ha_igyo"
+  "mi:shokuji_ha_igyo",
+  "mi:ensei_ha_igyo"
 ];
 
 const IGYO_NAMES: Record<string, string> = {
@@ -92,7 +93,8 @@ const IGYO_NAMES: Record<string, string> = {
   "kaimono": "買い物の偉業",
   "seichi": "整地の偉業",
   "upgrade": "アップグレードの偉業",
-  "shokuji": "食事の偉業"
+  "shokuji": "食事の偉業",
+  "ensei": "遠征の偉業"
 };
 
 const IGYO_DESCRIPTIONS: Record<string, string> = {
@@ -106,7 +108,8 @@ const IGYO_DESCRIPTIONS: Record<string, string> = {
   "kaimono": "村人と取引する",
   "seichi": "土や草を1000個掘る",
   "upgrade": "鍛冶台でネザライトに強化",
-  "shokuji": "食べ物を500個食べる"
+  "shokuji": "食べ物を500個食べる",
+  "ensei": "ジ・エンド到達またはエンドラ討伐"
 };
 
 const playerAsakatsuPlaySecondsMap = new Map<string, number>(); // playerId -> total seconds in morning
@@ -180,6 +183,14 @@ function grantAchievement(player: Player, igyoKey: string) {
       }
 
       player.sendMessage(`§6🏆 [偉業達成] 「${name}」を獲得しました！§r`);
+
+      // 偉業達成報奨金 5,000円を口座に振込！
+      try {
+        const curBal = getPlayerBankAccount(player);
+        setPlayerBankAccount(player, curBal + 5000);
+        player.sendMessage(`§a💵 [偉業達成祝儀] 口座に達成報奨金 §e5,000 円§a が振り込まれました！（現在残高: ${(curBal + 5000).toLocaleString()}円）§r`);
+      } catch (e) { }
+
       const loc = player.location;
       player.dimension.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.5, z: loc.z });
       player.dimension.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.8, z: loc.z });
@@ -683,12 +694,13 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
   const deckCount = getPlayerEmojiDeck(player).length;
 
   const form = new ActionFormData()
-    .title("📋 Misskey ノートタイムライン")
-    .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMを送受信しましょう！")
+    .title("📋 Misskey ノートタイムライン & ポータル")
+    .body("Misskeyのタイムライン掲示板です。ノートを投稿したり、DMや金融取引（株・FX・ATM）を利用できます！")
     .button("📝 ノートを投稿する")
     .button(`⚙️ 絵文字デッキをカスタマイズ (${deckCount}スロット)`)
     .button("📜 タイムラインを見る / リアクション")
     .button(`✉️ ダイレクトメッセージ (DM)${dmBadge}`)
+    .button("💹 Misskey証券 & FX取引所 / 🏦 ATM")
     .button("閉じる");
 
   showFormSafe(player, form, (response) => {
@@ -702,6 +714,8 @@ function openNoteBoardUI(player: Player, blockLoc: { x: number, y: number, z: nu
       openTimelineListUI(player, blockLoc);
     } else if (response.selection === 3) {
       openDMHubUI(player, blockLoc);
+    } else if (response.selection === 4) {
+      openFinancialPortalUI(player, blockLoc);
     }
   });
 }
@@ -1096,8 +1110,1617 @@ function openDMDetailUI(player: Player, dm: DirectMessage, blockLoc?: { x: numbe
 }
 
 // ----------------------------------------------------
+// 0.68. Misskey Financial, Currency (JPY), FX & Stock Exchange System
+// ----------------------------------------------------
+
+const YEN_ITEMS: { typeId: string, value: number, name: string }[] = [
+  { typeId: "mi:yen_10000", value: 10000, name: "一万円札" },
+  { typeId: "mi:yen_5000", value: 5000, name: "五千円札" },
+  { typeId: "mi:yen_2000", value: 2000, name: "二千円札" },
+  { typeId: "mi:yen_1000", value: 1000, name: "千円札" },
+  { typeId: "mi:yen_500", value: 500, name: "500円玉" },
+  { typeId: "mi:yen_100", value: 100, name: "100円玉" },
+  { typeId: "mi:yen_50", value: 50, name: "50円玉" },
+  { typeId: "mi:yen_10", value: 10, name: "10円玉" },
+  { typeId: "mi:yen_5", value: 5, name: "5円玉" },
+  { typeId: "mi:yen_1", value: 1, name: "1円玉" },
+];
+
+const SELLABLE_ITEMS: { typeId: string, name: string, price: number }[] = [
+  { typeId: "minecraft:iron_ingot", name: "鉄インゴット", price: 100 },
+  { typeId: "minecraft:gold_ingot", name: "金インゴット", price: 500 },
+  { typeId: "minecraft:emerald", name: "エメラルド", price: 1000 },
+  { typeId: "minecraft:diamond", name: "ダイヤモンド", price: 3000 },
+  { typeId: "minecraft:netherite_ingot", name: "ネザライトインゴット", price: 15000 },
+  { typeId: "mi:machida", name: "町田", price: 500 },
+  { typeId: "mi:sanjuu", name: "三重", price: 500 },
+  { typeId: "mi:silenthill", name: "静岡", price: 500 },
+  { typeId: "mi:gif", name: "岐阜", price: 500 },
+  { typeId: "mi:blob_aichi", name: "顔のついた愛知", price: 500 },
+  { typeId: "mi:bunchou", name: "文鳥", price: 800 },
+  { typeId: "mi:anko", name: "あんこ", price: 300 },
+  { typeId: "mi:ecology_server", name: "生態サーバー", price: 4000 },
+  { typeId: "mi:baked_mochocho", name: "ベイクドモチョチョ", price: 400 },
+];
+
+// --- Bank Account & Storage ---
+const playerBankBalanceMap = new Map<string, number>(); // playerId -> balance (JPY)
+const playerStockHoldingsMap = new Map<string, Record<string, number>>(); // playerId -> { code: count }
+const playerFxPositionsMap = new Map<string, FxPosition[]>(); // playerId -> positions
+
+function getPlayerBankAccount(player: Player): number {
+  let bal = playerBankBalanceMap.get(player.id);
+  if (bal === undefined) {
+    try {
+      const prop = player.getDynamicProperty("mi_bank_balance");
+      if (typeof prop === "number") {
+        bal = prop;
+      }
+    } catch (e) { }
+    if (bal === undefined) {
+      // First time opening account: 30,000 JPY bonus!
+      bal = 30000;
+      setPlayerBankAccount(player, bal);
+      player.sendMessage("§6🏦✨ [Misskey銀行] 口座開設おめでとうございます！ 口座開設祝い金 §e30,000 円§6 を口座に付与しました！§r");
+    } else {
+      playerBankBalanceMap.set(player.id, bal);
+    }
+  }
+  return bal;
+}
+
+function setPlayerBankAccount(player: Player, balance: number) {
+  balance = Math.max(0, Math.floor(balance));
+  playerBankBalanceMap.set(player.id, balance);
+  try {
+    player.setDynamicProperty("mi_bank_balance", balance);
+  } catch (e) { }
+}
+
+function countPlayerCash(player: Player): number {
+  try {
+    const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+    if (!inv) return 0;
+    let total = 0;
+    for (let i = 0; i < inv.size; i++) {
+      const item = inv.getItem(i);
+      if (!item) continue;
+      const found = YEN_ITEMS.find(y => y.typeId === item.typeId);
+      if (found) {
+        total += found.value * item.amount;
+      }
+    }
+    return total;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function depositAllCash(player: Player): number {
+  try {
+    const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+    if (!inv) return 0;
+    let totalDeposited = 0;
+    for (let i = 0; i < inv.size; i++) {
+      const item = inv.getItem(i);
+      if (!item) continue;
+      const found = YEN_ITEMS.find(y => y.typeId === item.typeId);
+      if (found) {
+        totalDeposited += found.value * item.amount;
+        inv.setItem(i, undefined);
+      }
+    }
+    if (totalDeposited > 0) {
+      const current = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, current + totalDeposited);
+    }
+    return totalDeposited;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function withdrawCash(player: Player, amount: number): boolean {
+  const current = getPlayerBankAccount(player);
+  if (current < amount || amount <= 0) return false;
+
+  try {
+    const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+    if (!inv) return false;
+
+    let remaining = amount;
+    const itemsToAdd: { typeId: string, count: number }[] = [];
+
+    for (const yen of YEN_ITEMS) {
+      if (remaining >= yen.value) {
+        const count = Math.floor(remaining / yen.value);
+        itemsToAdd.push({ typeId: yen.typeId, count });
+        remaining %= yen.value;
+      }
+    }
+
+    setPlayerBankAccount(player, current - amount);
+
+    for (const add of itemsToAdd) {
+      let countRemaining = add.count;
+      while (countRemaining > 0) {
+        const stack = Math.min(countRemaining, 64);
+        inv.addItem(new ItemStack(add.typeId, stack));
+        countRemaining -= stack;
+      }
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getPlayerStockHoldings(player: Player): Record<string, number> {
+  let holdings = playerStockHoldingsMap.get(player.id);
+  if (!holdings) {
+    holdings = {};
+    try {
+      const saved = player.getDynamicProperty("mi_stock_holdings");
+      if (typeof saved === "string") {
+        holdings = JSON.parse(saved);
+      }
+    } catch (e) { }
+    playerStockHoldingsMap.set(player.id, holdings);
+  }
+  return holdings;
+}
+
+function setPlayerStockHoldings(player: Player, holdings: Record<string, number>) {
+  playerStockHoldingsMap.set(player.id, holdings);
+  try {
+    player.setDynamicProperty("mi_stock_holdings", JSON.stringify(holdings));
+  } catch (e) { }
+}
+
+function getPlayerFxPositions(player: Player): FxPosition[] {
+  let positions = playerFxPositionsMap.get(player.id);
+  if (!positions) {
+    positions = [];
+    try {
+      const saved = player.getDynamicProperty("mi_fx_positions");
+      if (typeof saved === "string") {
+        positions = JSON.parse(saved);
+      }
+    } catch (e) { }
+    playerFxPositionsMap.set(player.id, positions);
+  }
+  return positions;
+}
+
+function setPlayerFxPositions(player: Player, positions: FxPosition[]) {
+  playerFxPositionsMap.set(player.id, positions);
+  try {
+    player.setDynamicProperty("mi_fx_positions", JSON.stringify(positions));
+  } catch (e) { }
+}
+
+// --- FX Engine ---
+interface FxPair {
+  id: string;
+  name: string;
+  symbol: string;
+  baseRate: number;
+  currentRate: number;
+  prevRate: number;
+  volatility: number;
+  history: number[];
+  description: string;
+}
+
+interface FxPosition {
+  id: string;
+  pairId: string;
+  type: "BUY" | "SELL";
+  leverage: number;
+  entryRate: number;
+  margin: number; // 証拠金 (yen)
+  volume: number; // 外貨数量
+  timestamp: number;
+}
+
+const fxPairs: FxPair[] = [
+  {
+    id: "USD_JPY",
+    name: "米ドル / 円 (USD/JPY)",
+    symbol: "$",
+    baseRate: 155.00,
+    currentRate: 155.00,
+    prevRate: 155.00,
+    volatility: 0.35,
+    history: [154.8, 155.0, 155.2, 155.0],
+    description: "安定した標準通貨ペア。ボラティリティ低。"
+  },
+  {
+    id: "EUR_JPY",
+    name: "ユーロ / 円 (EUR/JPY)",
+    symbol: "€",
+    baseRate: 168.00,
+    currentRate: 168.00,
+    prevRate: 168.00,
+    volatility: 0.55,
+    history: [167.5, 168.0, 168.2, 168.0],
+    description: "ヨーロッパ主要通貨ペア。ボラティリティ中。"
+  },
+  {
+    id: "FED_JPY",
+    name: "Fediverseコイン / 円 (FED/JPY)",
+    symbol: "FED",
+    baseRate: 850.00,
+    currentRate: 850.00,
+    prevRate: 850.00,
+    volatility: 12.0,
+    history: [840, 855, 848, 850],
+    description: "Misskey連合ネットワークの仮想通貨。ボラティリティ高。"
+  },
+  {
+    id: "MCC_JPY",
+    name: "モチョコイン / 円 (MCC/JPY)",
+    symbol: "MCC",
+    baseRate: 12.50,
+    currentRate: 12.50,
+    prevRate: 12.50,
+    volatility: 2.2,
+    history: [10.2, 14.8, 11.5, 12.5],
+    description: "モチョチョ発祥の超ハイリスク草コイン。爆上げ・大暴落あり！"
+  }
+];
+
+function updateFxRates() {
+  for (const pair of fxPairs) {
+    pair.prevRate = pair.currentRate;
+    // Random walk with mean reversion
+    const delta = (Math.random() - 0.495) * pair.volatility * (1 + (Math.random() - 0.5));
+    const meanReversion = (pair.baseRate - pair.currentRate) * 0.05;
+    let newRate = pair.currentRate + delta + meanReversion;
+    // Clamp to minimum 0.01
+    newRate = Math.max(0.01, parseFloat(newRate.toFixed(2)));
+    pair.currentRate = newRate;
+    pair.history.push(newRate);
+    if (pair.history.length > 8) pair.history.shift();
+  }
+}
+
+function calculatePositionProfit(pos: FxPosition, currentRate: number): number {
+  if (pos.type === "BUY") {
+    return Math.floor((currentRate - pos.entryRate) * pos.volume);
+  } else {
+    return Math.floor((pos.entryRate - currentRate) * pos.volume);
+  }
+}
+
+// --- Stock Market Engine ---
+interface StockInfo {
+  code: string;
+  name: string;
+  basePrice: number;
+  currentPrice: number;
+  prevPrice: number;
+  volatility: number;
+  dividendRate: number; // 每周期配当率
+  history: number[];
+  sector: string;
+  description: string;
+}
+
+const stockMarket: StockInfo[] = [
+  {
+    code: "SYUIL",
+    name: "しゅいろソフトウェア",
+    basePrice: 5000,
+    currentPrice: 5000,
+    prevPrice: 5000,
+    volatility: 0.08,
+    dividendRate: 0.01,
+    history: [4900, 5100, 4950, 5000],
+    sector: "情報・通信",
+    description: "Misskeyの開発・運営。大型アップデートで急騰、障害で急落。"
+  },
+  {
+    code: "TUTI",
+    name: "村上ツチノコ商事",
+    basePrice: 1200,
+    currentPrice: 1200,
+    prevPrice: 1200,
+    volatility: 0.04,
+    dividendRate: 0.025,
+    history: [1180, 1220, 1195, 1200],
+    sector: "卸売・バイオ",
+    description: "生体サーバーとあんこを扱う総合商社。安定成長・高配当銘柄。"
+  },
+  {
+    code: "YHATA",
+    name: "官営八幡製鉄",
+    basePrice: 3500,
+    currentPrice: 3500,
+    prevPrice: 3500,
+    volatility: 0.03,
+    dividendRate: 0.02,
+    history: [3450, 3520, 3480, 3500],
+    sector: "鉄鋼・重工業",
+    description: "大煙突と高炉を擁する伝統の製鉄企業。不況に強いディフェンシブ株。"
+  },
+  {
+    code: "RCAR",
+    name: "レグカー自動車工業",
+    basePrice: 850,
+    currentPrice: 850,
+    prevPrice: 850,
+    volatility: 0.09,
+    dividendRate: 0.008,
+    history: [820, 890, 840, 850],
+    sector: "自動車・輸送機器",
+    description: "長い変な車の製造元。新色発表で上昇、事故多発で下落。"
+  },
+  {
+    code: "MOCHO",
+    name: "モチョチョ製菓",
+    basePrice: 300,
+    currentPrice: 300,
+    prevPrice: 300,
+    volatility: 0.15,
+    dividendRate: 0.005,
+    history: [280, 360, 290, 300],
+    sector: "食品",
+    description: "ベイクドモチョチョとプリンの製造。プリンブームで10倍高にもなる仕手株気質。"
+  },
+  {
+    code: "YSNO",
+    name: "与謝野ロジスティクス",
+    basePrice: 2400,
+    currentPrice: 2400,
+    prevPrice: 2400,
+    volatility: 0.06,
+    dividendRate: 0.018,
+    history: [2350, 2450, 2380, 2400],
+    sector: "物流・転送",
+    description: "町田・神奈川間のエンダーパール空間転送を手掛ける次世代物流企業。"
+  }
+];
+
+interface MarketNews {
+  id: string;
+  title: string;
+  content: string;
+  affectedCode?: string;
+  impactPercent: number;
+  timestamp: number;
+}
+
+const marketNewsHistory: MarketNews[] = [];
+
+const NEWS_TEMPLATES: { title: string, content: string, code: string, minImpact: number, maxImpact: number }[] = [
+  { title: "🚀【速報】しゅいろ氏、新機能を緊急デプロイ！", content: "Misskeyに革新的な新機能が実装され、ユーザー数が爆発的に増加しています！", code: "SYUIL", minImpact: 15, maxImpact: 35 },
+  { title: "💥【障害】Misskey開発所の生体サーバーが一時ダウン", content: "アクセス集中により開発室のサーバーが過熱。エンジニアが緊急復旧対応中です。", code: "SYUIL", minImpact: -25, maxImpact: -10 },
+  { title: "🐍【特需】ツチノコ繁殖ブーム到来！あんこ需要急増", content: "各地でツチノコのペット化が進み、あんこおよび生体サーバーの取引価格が高騰しています。", code: "TUTI", minImpact: 10, maxImpact: 25 },
+  { title: "🏭【増産】八幡製鉄所の高炉フル稼働、鉄鋼需要好調", content: "巨大建築ブームに伴い、高品質な製鉄鋼材の受注が過去最高を記録しました。", code: "YHATA", minImpact: 8, maxImpact: 18 },
+  { title: "🚗【新色】レグカーに新色カラーリングが登場！", content: "16色フル対応の新型レグカーが発表され、サバンナでの試乗希望者が殺到しています。", code: "RCAR", minImpact: 12, maxImpact: 30 },
+  { title: "💥【事故】サバンナ街道でレグカーの多重激突事故が発生", content: "高速走行中のレグカーが壁に激突大破。安全対策への懸念から売りが先行しています。", code: "RCAR", minImpact: -28, maxImpact: -12 },
+  { title: "🍮【大流行】プリンのトランポリンジャンプがSNSで大バズり！", content: "ぽよんぽよん跳ねる動画がバズり、モチョチョ製菓のプリンが全国で品切れ続出！", code: "MOCHO", minImpact: 25, maxImpact: 60 },
+  { title: "🤢【警告】ベイクドモチョチョ食べ過ぎによる吐き気注意報", content: "過剰摂取による体調不良者が報告され、食品安全委員会が注意を呼びかけています。", code: "MOCHO", minImpact: -30, maxImpact: -15 },
+  { title: "🦋【物流】与謝野晶子氏、神奈川・町田間の超空間輸送ルートを開設", content: "エンダーパール転送網の拡充により、即日配送エリアが大幅に拡大しました。", code: "YSNO", minImpact: 12, maxImpact: 28 },
+];
+
+function updateStockPrices() {
+  for (const stock of stockMarket) {
+    stock.prevPrice = stock.currentPrice;
+    // Normal fluctuation with mean reversion
+    const percentChange = (Math.random() - 0.49) * stock.volatility;
+    const meanReversion = ((stock.basePrice - stock.currentPrice) / stock.basePrice) * 0.04;
+    let newPrice = stock.currentPrice * (1 + percentChange + meanReversion);
+    newPrice = Math.max(10, Math.floor(newPrice));
+    stock.currentPrice = newPrice;
+    stock.history.push(newPrice);
+    if (stock.history.length > 8) stock.history.shift();
+  }
+
+  // Random Breaking News (25% chance per cycle)
+  if (Math.random() < 0.25) {
+    const tmpl = NEWS_TEMPLATES[Math.floor(Math.random() * NEWS_TEMPLATES.length)];
+    const impact = Math.floor(tmpl.minImpact + Math.random() * (tmpl.maxImpact - tmpl.minImpact));
+    const targetStock = stockMarket.find(s => s.code === tmpl.code);
+    if (targetStock) {
+      targetStock.prevPrice = targetStock.currentPrice;
+      targetStock.currentPrice = Math.max(10, Math.floor(targetStock.currentPrice * (1 + impact / 100)));
+      targetStock.history.push(targetStock.currentPrice);
+      if (targetStock.history.length > 8) targetStock.history.shift();
+
+      const news: MarketNews = {
+        id: `news_${Date.now()}`,
+        title: tmpl.title,
+        content: `${tmpl.content} (影響: ${targetStock.name}株が ${impact >= 0 ? "+" : ""}${impact}%)`,
+        affectedCode: tmpl.code,
+        impactPercent: impact,
+        timestamp: Date.now()
+      };
+      marketNewsHistory.unshift(news);
+      if (marketNewsHistory.length > 20) marketNewsHistory.pop();
+
+      // Announce breaking news in world
+      world.sendMessage(`§6📰 [Misskey経済速報] §e${tmpl.title}§r\n§7${news.content}§r`);
+    }
+  }
+
+  // Pay Stock Dividends to all online players
+  for (const player of world.getAllPlayers()) {
+    const holdings = getPlayerStockHoldings(player);
+    let totalDividends = 0;
+    for (const [code, count] of Object.entries(holdings)) {
+      if (count <= 0) continue;
+      const stock = stockMarket.find(s => s.code === code);
+      if (stock && stock.dividendRate > 0) {
+        const div = Math.floor(stock.currentPrice * stock.dividendRate * count);
+        totalDividends += div;
+      }
+    }
+    if (totalDividends > 0) {
+      const current = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, current + totalDividends);
+      player.sendMessage(`§a💵 [配当金受取] 保有株式の配当金 §e${totalDividends.toLocaleString()} 円§a が口座に振り込まれました！§r`);
+    }
+  }
+}
+
+// Background Financial Market Ticker (Every 30 seconds = 600 ticks)
+system.runInterval(() => {
+  updateFxRates();
+  updateStockPrices();
+
+  // Check FX Auto-Stoploss (Margin Call) for all online players
+  for (const player of world.getAllPlayers()) {
+    const positions = getPlayerFxPositions(player);
+    if (positions.length === 0) continue;
+
+    let modified = false;
+    const remainingPositions: FxPosition[] = [];
+
+    for (const pos of positions) {
+      const pair = fxPairs.find(p => p.id === pos.pairId);
+      if (!pair) continue;
+
+      const profit = calculatePositionProfit(pos, pair.currentRate);
+      // If loss exceeds 85% of margin, trigger auto stop-loss
+      if (profit < -pos.margin * 0.85) {
+        const refund = Math.max(0, pos.margin + profit);
+        const curBal = getPlayerBankAccount(player);
+        setPlayerBankAccount(player, curBal + refund);
+        player.sendMessage(`§c🚨 [ロスカット執行] ${pair.name} のポジションが強制決済されました（損失: ${Math.abs(profit).toLocaleString()}円, 返還: ${refund.toLocaleString()}円）。§r`);
+        modified = true;
+      } else {
+        remainingPositions.push(pos);
+      }
+    }
+
+    if (modified) {
+      setPlayerFxPositions(player, remainingPositions);
+    }
+  }
+}, 600);
+
+// --- Financial UI System ---
+
+// --- Vehicle Upgrades & Perks Store ---
+const playerCarTurboSet = new Set<string>(); // playerId
+const playerCarInsuranceSet = new Set<string>(); // playerId
+const playerGoldLicenseSet = new Set<string>(); // playerId
+
+function hasCarPerk(player: Player, perkKey: string): boolean {
+  if (perkKey === "turbo" && playerCarTurboSet.has(player.id)) return true;
+  if (perkKey === "insurance" && playerCarInsuranceSet.has(player.id)) return true;
+  if (perkKey === "gold_license" && playerGoldLicenseSet.has(player.id)) return true;
+
+  try {
+    const prop = player.getDynamicProperty(`car_perk_${perkKey}`);
+    if (prop === true) {
+      if (perkKey === "turbo") playerCarTurboSet.add(player.id);
+      if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
+      if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
+      return true;
+    }
+  } catch (e) { }
+  return false;
+}
+
+function setCarPerk(player: Player, perkKey: string) {
+  if (perkKey === "turbo") playerCarTurboSet.add(player.id);
+  if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
+  if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
+  try {
+    player.setDynamicProperty(`car_perk_${perkKey}`, true);
+  } catch (e) { }
+}
+
+// Wealth Rank Information
+interface WealthRank {
+  rankName: string;
+  minUsd: number;
+  badge: string;
+  particle: string;
+  description: string;
+}
+
+const WEALTH_RANKS: WealthRank[] = [
+  { rankName: "Misskeyの大株主", minUsd: 100000, badge: "§d👑[大株主]§r", particle: "minecraft:mob_portal", description: "総資産10万ドル突破。虹色のポータルオーラと加速バフ。" },
+  { rankName: "石油王", minUsd: 20000, badge: "§6💎[石油王]§r", particle: "minecraft:totem_particle", description: "総資産2万ドル突破。黄金とエメラルドのオーラ。" },
+  { rankName: "大富豪", minUsd: 5000, badge: "§e🎩[大富豪]§r", particle: "minecraft:villager_happy", description: "総資産5千ドル突破。黄金のきらめきオーラ。" },
+  { rankName: "資産家", minUsd: 1000, badge: "§a💼[資産家]§r", particle: "minecraft:villager_happy", description: "総資産千ドル突破。銅色のきらめき。" },
+  { rankName: "一般市民", minUsd: 0, badge: "§7[一般]§r", particle: "", description: "まずは投資や採掘で資産を築きましょう！" }
+];
+
+function getPlayerWealthRank(totalUsd: number): WealthRank {
+  for (const r of WEALTH_RANKS) {
+    if (totalUsd >= r.minUsd) return r;
+  }
+  return WEALTH_RANKS[WEALTH_RANKS.length - 1];
+}
+
+// 1. Main Portal UI
+function openFinancialPortalUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const cash = countPlayerCash(player);
+  const bank = getPlayerBankAccount(player);
+
+  // Calculate stock evaluation
+  const holdings = getPlayerStockHoldings(player);
+  let stockValue = 0;
+  for (const [code, count] of Object.entries(holdings)) {
+    const stock = stockMarket.find(s => s.code === code);
+    if (stock && count > 0) {
+      stockValue += stock.currentPrice * count;
+    }
+  }
+
+  // Calculate FX position evaluation
+  const positions = getPlayerFxPositions(player);
+  let fxMargin = 0;
+  let fxUnrealizedProfit = 0;
+  for (const pos of positions) {
+    fxMargin += pos.margin;
+    const pair = fxPairs.find(p => p.id === pos.pairId);
+    if (pair) {
+      fxUnrealizedProfit += calculatePositionProfit(pos, pair.currentRate);
+    }
+  }
+
+  const totalAssets = cash + bank + stockValue + fxMargin + fxUnrealizedProfit;
+  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+  const totalUsd = parseFloat((totalAssets / usdRate).toFixed(2));
+  const wealthRank = getPlayerWealthRank(totalUsd);
+
+  const profitSign = fxUnrealizedProfit >= 0 ? "+" : "";
+  const fxProfitText = fxUnrealizedProfit !== 0 ? ` (含み損益: ${profitSign}${fxUnrealizedProfit.toLocaleString()}円)` : "";
+
+  const form = new ActionFormData()
+    .title("💹 Misskey証券 & 金融ポータル")
+    .body(
+      `👤 §l${player.name}§r 様の資産サマリー [${wealthRank.badge}]\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `💰 §6総資産評価額: §e${totalAssets.toLocaleString()} 円§r (§b$${totalUsd.toLocaleString()} USD§r)\n` +
+      `💵 所持金 (現金): §f${cash.toLocaleString()} 円§r\n` +
+      `🏦 口座残高 (預金): §a${bank.toLocaleString()} 円§r\n` +
+      `🏢 株式保有額: §b${stockValue.toLocaleString()} 円§r\n` +
+      `📈 FX証拠金: §d${fxMargin.toLocaleString()} 円§r${fxProfitText}\n` +
+      `💹 USD為替レート: §e1 USD = ${usdRate.toFixed(2)} 円§r\n` +
+      `━━━━━━━━━━━━━━━━━━`
+    )
+    .button("🛒 Misskeyオンラインストア (USD決済)")
+    .button("🚗 車両アップグレード & 保険所")
+    .button("🎰 Misskey スクラッチくじ (ガチャ)")
+    .button("🏦 ATM・口座管理 (入金・出金・両替)")
+    .button("🛍️ 買取・換金所 (鉱石・特産品を売却)")
+    .button(`📈 FX 為替取引所 (${positions.length}件保有中)`)
+    .button("🏢 Misskey株式市場 (株の売買・配当)")
+    .button(`📰 経済ニュース速報 (${marketNewsHistory.length}件)`)
+    .button("👑 富豪ランキング & 称号")
+    .button("🔙 閉じる");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      openOnlineStoreUI(player, blockLoc);
+    } else if (res.selection === 1) {
+      openVehicleServiceUI(player, blockLoc);
+    } else if (res.selection === 2) {
+      openScratchLotteryUI(player, blockLoc);
+    } else if (res.selection === 3) {
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 4) {
+      openItemSellUI(player, blockLoc);
+    } else if (res.selection === 5) {
+      openFxExchangeUI(player, blockLoc);
+    } else if (res.selection === 6) {
+      openStockMarketUI(player, blockLoc);
+    } else if (res.selection === 7) {
+      openMarketNewsUI(player, blockLoc);
+    } else if (res.selection === 8) {
+      openWealthRankUI(player, blockLoc);
+    }
+  });
+}
+
+// Store Items Definition (All in USD)
+interface StoreItem {
+  id: string;
+  name: string;
+  usdPrice: number;
+  typeId?: string;
+  amount?: number;
+  isPack?: boolean;
+  requiredIgyo?: string; // e.g. "ensei" for elytra
+  description: string;
+}
+
+const STORE_ITEMS: StoreItem[] = [
+  {
+    id: "elytra",
+    name: "エリトラ (滑空翼)",
+    usdPrice: 5000,
+    typeId: "minecraft:elytra",
+    amount: 1,
+    requiredIgyo: "ensei",
+    description: "大空を飛翔できる至高の翼。遠征の偉業（エンドラ討伐）達成者限定！"
+  },
+  {
+    id: "shulker_box",
+    name: "シュルカーボックス",
+    usdPrice: 100,
+    typeId: "minecraft:shulker_box",
+    amount: 1,
+    description: "大量のアイテムを持ち運べるポータブル倉庫。"
+  },
+  {
+    id: "diamond_pack",
+    name: "ダイヤモンド × 8",
+    usdPrice: 150,
+    typeId: "minecraft:diamond",
+    amount: 8,
+    description: "高品質なダイヤモンド8個セット。"
+  },
+  {
+    id: "netherite",
+    name: "ネザライトインゴット × 1",
+    usdPrice: 180,
+    typeId: "minecraft:netherite_ingot",
+    amount: 1,
+    description: "最上位装備の強化素材。"
+  },
+  {
+    id: "notch_apple",
+    name: "エンチャント金リンゴ × 1",
+    usdPrice: 200,
+    typeId: "minecraft:enchanted_golden_apple",
+    amount: 1,
+    description: "再生V・耐性を授ける究極の神リンゴ。"
+  },
+  {
+    id: "special_pack",
+    name: "Misskey特産品パック",
+    usdPrice: 25,
+    isPack: true,
+    description: "町田・三重・静岡・愛知・岐阜・文鳥が各1個入った素材セット。"
+  },
+  {
+    id: "ecology_server",
+    name: "生態サーバー × 1",
+    usdPrice: 30,
+    typeId: "mi:ecology_server",
+    amount: 1,
+    description: "ツチノコ繁殖やクラフトに必須の生体パーツ。"
+  },
+  {
+    id: "mochocho_pack",
+    name: "ベイクドモチョチョ × 16",
+    usdPrice: 5,
+    typeId: "mi:baked_mochocho",
+    amount: 16,
+    description: "美味しいモチョチョ。食べ過ぎには注意！"
+  },
+  {
+    id: "pudding_pack",
+    name: "プリン × 4",
+    usdPrice: 6,
+    typeId: "mi:pudding",
+    amount: 4,
+    description: "ぽよんぽよん跳ねるスイーツ。"
+  },
+  {
+    id: "nekomimi_pack",
+    name: "猫耳プリン × 2",
+    usdPrice: 15,
+    typeId: "mi:nekomimi_pudding",
+    amount: 2,
+    description: "食べると猫耳が生えて足が速くなる！"
+  },
+  {
+    id: "blueprint_yahata",
+    name: "八幡製鉄所の設計図",
+    usdPrice: 250,
+    typeId: "mi:yahata_blueprint",
+    amount: 1,
+    description: "産業遺構ダンジョンを目の前に即時建設。"
+  },
+  {
+    id: "blueprint_hq",
+    name: "Misskey開発所の設計図",
+    usdPrice: 350,
+    typeId: "mi:hq_blueprint",
+    amount: 1,
+    description: "4階建て＋ヘリポートの巨大ダンジョンを即時建設。"
+  },
+  {
+    id: "egg_blobcat",
+    name: "にゃんぷっぷーの卵",
+    usdPrice: 35,
+    typeId: "mi:blobcat_spawn_egg",
+    amount: 1,
+    description: "愛されマスコットを直接召喚。"
+  },
+  {
+    id: "egg_woneko",
+    name: "をねこの卵",
+    usdPrice: 35,
+    typeId: "mi:woneko_spawn_egg",
+    amount: 1,
+    description: "表情豊かなのんびり猫を召喚。"
+  },
+  {
+    id: "egg_car",
+    name: "長い変な車の卵",
+    usdPrice: 80,
+    typeId: "mi:regretcar_spawn_egg",
+    amount: 1,
+    description: "2人乗り超高速車両を召喚。"
+  }
+];
+
+// Online Store UI (USD Shopping)
+function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+
+  const form = new ActionFormData()
+    .title("🛒 Misskey オンラインストア ($ USD)")
+    .body(
+      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n` +
+      `現在の為替レート: §e1 USD = ${usdRate.toFixed(2)} 円§r\n` +
+      `（※円高の時に買うと日本円の支払額がお得になります！）\n\n` +
+      `購入したい商品を選択してください:`
+    );
+
+  for (const item of STORE_ITEMS) {
+    const jpyCost = Math.floor(item.usdPrice * usdRate);
+    const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
+
+    if (isLocked) {
+      form.button(`🔒 ${item.name} ($${item.usdPrice.toLocaleString()} USD)\n[未解放: 遠征の偉業 (エンドラ討伐) が必要]`);
+    } else {
+      form.button(`${item.name} ($${item.usdPrice.toLocaleString()} USD)\n[支払額: 約 ${jpyCost.toLocaleString()} 円]`);
+    }
+  }
+
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection < STORE_ITEMS.length) {
+      const item = STORE_ITEMS[res.selection];
+      const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
+
+      if (isLocked) {
+        player.sendMessage(`§c🔒 [購入不可] 「${item.name}」は遠征の偉業（ジ・エンド到達またはエンドラ討伐）を達成するまでロックされています！§r`);
+        openOnlineStoreUI(player, blockLoc);
+        return;
+      }
+
+      const jpyCost = Math.floor(item.usdPrice * usdRate);
+      if (bank < jpyCost) {
+        player.sendMessage(`§c⚠️ 口座残高が不足しています。（必要額: ${jpyCost.toLocaleString()}円 / 残高: ${bank.toLocaleString()}円）§r`);
+        openOnlineStoreUI(player, blockLoc);
+        return;
+      }
+
+      // Process purchase
+      const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+      if (!inv) return;
+
+      setPlayerBankAccount(player, bank - jpyCost);
+
+      if (item.isPack) {
+        // Special material pack
+        inv.addItem(new ItemStack("mi:machida", 1));
+        inv.addItem(new ItemStack("mi:sanjuu", 1));
+        inv.addItem(new ItemStack("mi:silenthill", 1));
+        inv.addItem(new ItemStack("mi:blob_aichi", 1));
+        inv.addItem(new ItemStack("mi:gif", 1));
+        inv.addItem(new ItemStack("mi:bunchou", 1));
+      } else if (item.typeId) {
+        inv.addItem(new ItemStack(item.typeId, item.amount || 1));
+      }
+
+      player.sendMessage(`§a🛒✨ [購入完了] 「${item.name}」を $${item.usdPrice.toLocaleString()} USD (${jpyCost.toLocaleString()}円) で購入しました！§r`);
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.8, z: player.location.z });
+      openOnlineStoreUI(player, blockLoc);
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Vehicle Services & Insurance UI
+function openVehicleServiceUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+
+  const hasTurbo = hasCarPerk(player, "turbo");
+  const hasInsurance = hasCarPerk(player, "insurance");
+  const hasGold = hasCarPerk(player, "gold_license");
+
+  const form = new ActionFormData()
+    .title("🚗 車両アップグレード & 自動車保険所")
+    .body(
+      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n\n` +
+      `長い変な車（レグカー）の性能強化や保険・特別免許を取得できます:`
+    )
+    .button(hasTurbo ? "✅ ⚡ ターボブースター [適用中]" : `⚡ ターボブースター改造 ($150 USD / 約${Math.floor(150 * usdRate).toLocaleString()}円)\n[最高速度が1.5倍に超加速]`)
+    .button(hasInsurance ? "✅ 🛡️ 車両保険・即時復旧 [加入済]" : `🛡️ 車両保険 ($80 USD / 約${Math.floor(80 * usdRate).toLocaleString()}円)\n[壁激突時の1分停止を即時復旧]`)
+    .button(hasGold ? "✅ 🔰 ゴールド免許証 [取得済]" : `🔰 ゴールド免許証 ($200 USD / 約${Math.floor(200 * usdRate).toLocaleString()}円)\n[車を誤って殴っても怒られない]`)
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      if (hasTurbo) {
+        player.sendMessage("§e⚡ ターボブースターはすでに適用されています！§r");
+      } else {
+        const cost = Math.floor(150 * usdRate);
+        if (bank < cost) {
+          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+        } else {
+          setPlayerBankAccount(player, bank - cost);
+          setCarPerk(player, "turbo");
+          player.sendMessage("§a⚡ [改造完了] レグカーにターボブースターを搭載しました！最高速度が1.5倍になります！§r");
+          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+        }
+      }
+      openVehicleServiceUI(player, blockLoc);
+    } else if (res.selection === 1) {
+      if (hasInsurance) {
+        player.sendMessage("§e🛡️ 車両保険にはすでに加入しています！§r");
+      } else {
+        const cost = Math.floor(80 * usdRate);
+        if (bank < cost) {
+          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+        } else {
+          setPlayerBankAccount(player, bank - cost);
+          setCarPerk(player, "insurance");
+          player.sendMessage("§a🛡️ [保険加入完了] 車両保険に加入しました！壁に衝突しても即座に修理されます！§r");
+          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+        }
+      }
+      openVehicleServiceUI(player, blockLoc);
+    } else if (res.selection === 2) {
+      if (hasGold) {
+        player.sendMessage("§e🔰 ゴールド免許証はすでに取得しています！§r");
+      } else {
+        const cost = Math.floor(200 * usdRate);
+        if (bank < cost) {
+          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+        } else {
+          setPlayerBankAccount(player, bank - cost);
+          setCarPerk(player, "gold_license");
+          player.sendMessage("§a🔰 [ゴールド免許取得] 優良運転者としてゴールド免許証が授与されました！車が怒らなくなります！§r");
+          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+        }
+      }
+      openVehicleServiceUI(player, blockLoc);
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Scratch Lottery UI
+function openScratchLotteryUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+
+  const normalCost = Math.floor(5 * usdRate);
+  const premiumCost = Math.floor(25 * usdRate);
+
+  const form = new ActionFormData()
+    .title("🎰 Misskey スクラッチくじ & ガチャ")
+    .body(
+      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n\n` +
+      `一攫千金を狙えるスクラッチくじです！\n` +
+      `🌟 特等 (JACKPOT): §e$10,000 USD (約150万円) ＋ ネザライトフル装備§r\n` +
+      `🥇 1等: §6$1,000 USD§r / 🥈 2等: §b偉業のツール (予備)§r / 🥉 3等: §aスイーツ詰め合わせ§r`
+    )
+    .button(`🎲 通常スクラッチ ($5 USD / 約${normalCost.toLocaleString()}円)`)
+    .button(`💎 プレミアムスクラッチ ($25 USD / 約${premiumCost.toLocaleString()}円)`)
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0 || res.selection === 1) {
+      const isPremium = res.selection === 1;
+      const cost = isPremium ? premiumCost : normalCost;
+
+      if (bank < cost) {
+        player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+        openScratchLotteryUI(player, blockLoc);
+        return;
+      }
+
+      setPlayerBankAccount(player, bank - cost);
+
+      // Roll lottery
+      const roll = Math.random() * 100;
+      const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+      const jackpotRate = isPremium ? 1.0 : 0.2; // 1% or 0.2%
+      const firstRate = isPremium ? 5.0 : 1.5;   // 5% or 1.5%
+      const secondRate = isPremium ? 15.0 : 6.0;
+      const thirdRate = isPremium ? 40.0 : 25.0;
+
+      let resultMsg = "";
+      let rewardYen = 0;
+
+      if (roll < jackpotRate) {
+        // JACKPOT!
+        rewardYen = Math.floor(10000 * usdRate);
+        if (inv) {
+          inv.addItem(new ItemStack("minecraft:netherite_helmet", 1));
+          inv.addItem(new ItemStack("minecraft:netherite_chestplate", 1));
+          inv.addItem(new ItemStack("minecraft:netherite_leggings", 1));
+          inv.addItem(new ItemStack("minecraft:netherite_boots", 1));
+        }
+        resultMsg = `§6🌟🎉【特等 JACKPOT 当選！！！】§r\n§e賞金 $10,000 USD (${rewardYen.toLocaleString()}円) ＋ ネザライトフル装備一式§6 を獲得しました！！！§r`;
+        world.sendMessage(`§6📢 [Misskeyくじ速報] プレイヤー「${player.name}」がスクラッチくじで特等 JACKPOT ($10,000 USD) に当選しました！！！§r`);
+        player.dimension.spawnParticle("minecraft:large_explosion", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      } else if (roll < jackpotRate + firstRate) {
+        // 1st Prize
+        rewardYen = Math.floor(1000 * usdRate);
+        resultMsg = `§e🥇【1等 当選！！】§r\n§a賞金 $1,000 USD (${rewardYen.toLocaleString()}円)§e を獲得しました！§r`;
+      } else if (roll < jackpotRate + firstRate + secondRate) {
+        // 2nd Prize
+        if (inv) inv.addItem(new ItemStack("mi:igyo_tool", 1));
+        resultMsg = `§b🥈【2等 当選！】§r\n§e万能採掘ツール「偉業のツール」§b を獲得しました！§r`;
+      } else if (roll < jackpotRate + firstRate + secondRate + thirdRate) {
+        // 3rd Prize
+        if (inv) {
+          inv.addItem(new ItemStack("mi:pudding", 2));
+          inv.addItem(new ItemStack("mi:nekomimi_pudding", 1));
+          inv.addItem(new ItemStack("mi:baked_mochocho", 4));
+        }
+        resultMsg = `§a🥉【3等 当選！】§r\n§dプリン＆ベイクドモチョチョ詰め合わせ§a を獲得しました！§r`;
+      } else {
+        // 4th / Participation
+        if (inv) inv.addItem(new ItemStack("mi:baked_mochocho", 1));
+        resultMsg = `§7【参加賞】ベイクドモチョチョ × 1 を獲得しました。次回に期待！§r`;
+      }
+
+      if (rewardYen > 0) {
+        const curBal = getPlayerBankAccount(player);
+        setPlayerBankAccount(player, curBal + rewardYen);
+      }
+
+      player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+
+      const resForm = new ActionFormData()
+        .title("🎰 スクラッチ結果発表！")
+        .body(`削った結果...\n\n${resultMsg}`)
+        .button("🎲 もう一度引く")
+        .button("🔙 戻る");
+
+      showFormSafe(player, resForm, (fRes) => {
+        if (fRes.selection === 0) {
+          openScratchLotteryUI(player, blockLoc);
+        } else {
+          openFinancialPortalUI(player, blockLoc);
+        }
+      });
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Wealth Rank UI
+function openWealthRankUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const cash = countPlayerCash(player);
+  const bank = getPlayerBankAccount(player);
+
+  const holdings = getPlayerStockHoldings(player);
+  let stockValue = 0;
+  for (const [code, count] of Object.entries(holdings)) {
+    const stock = stockMarket.find(s => s.code === code);
+    if (stock && count > 0) stockValue += stock.currentPrice * count;
+  }
+
+  const positions = getPlayerFxPositions(player);
+  let fxTotal = 0;
+  for (const pos of positions) {
+    fxTotal += pos.margin;
+    const pair = fxPairs.find(p => p.id === pos.pairId);
+    if (pair) fxTotal += calculatePositionProfit(pos, pair.currentRate);
+  }
+
+  const totalJpy = cash + bank + stockValue + fxTotal;
+  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+  const totalUsd = totalJpy / usdRate;
+  const myRank = getPlayerWealthRank(totalUsd);
+
+  let rankList = "";
+  for (const r of WEALTH_RANKS) {
+    const isCurrent = myRank.rankName === r.rankName ? " §e◀ あなたのランク§r" : "";
+    rankList += `${r.badge} §f${r.rankName}§r (基準: $${r.minUsd.toLocaleString()} USD)${isCurrent}\n§7${r.description}§r\n\n`;
+  }
+
+  const form = new ActionFormData()
+    .title("👑 富豪ランキング & 称号システム")
+    .body(
+      `👤 現在の総資産: §6${totalJpy.toLocaleString()} 円§r (§b$${totalUsd.toFixed(2)} USD§r)\n` +
+      `現在の称号: ${myRank.badge} §l${myRank.rankName}§r\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `【称号・ランク一覧】\n\n` +
+      rankList
+    )
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, () => {
+    openFinancialPortalUI(player, blockLoc);
+  });
+}
+
+
+// 2. ATM UI
+function openAtmUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const cash = countPlayerCash(player);
+  const bank = getPlayerBankAccount(player);
+
+  const form = new ActionFormData()
+    .title("🏦 Misskey銀行 ATM")
+    .body(`所持現金: §e${cash.toLocaleString()} 円§r\n口座残高: §a${bank.toLocaleString()} 円§r\n\n操作を選択してください:`)
+    .button(`💰 手持ちの現金を全額入金 (+${cash.toLocaleString()}円)`)
+    .button("💵 10,000円 出金 (一万円札×1)")
+    .button("💵 5,000円 出金 (五千円札×1)")
+    .button("💵 1,000円 出金 (千円札×1)")
+    .button("🪙 500円 出金 (500円玉×1)")
+    .button("🔢 金額を指定して出金")
+    .button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      // Deposit all
+      const dep = depositAllCash(player);
+      if (dep > 0) {
+        player.sendMessage(`§a🏦 [入金完了] 手持ちの現金 §e${dep.toLocaleString()} 円§a を口座に入金しました！§r`);
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      } else {
+        player.sendMessage("§c⚠️ インベントリに円アイテムがありません。§r");
+      }
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 1) {
+      if (withdrawCash(player, 10000)) {
+        player.sendMessage("§a🏧 [出金完了] 口座から §e10,000 円§a を引き出しました。§r");
+      } else {
+        player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+      }
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 2) {
+      if (withdrawCash(player, 5000)) {
+        player.sendMessage("§a🏧 [出金完了] 口座から §e5,000 円§a を引き出しました。§r");
+      } else {
+        player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+      }
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 3) {
+      if (withdrawCash(player, 1000)) {
+        player.sendMessage("§a🏧 [出金完了] 口座から §e1,000 円§a を引き出しました。§r");
+      } else {
+        player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+      }
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 4) {
+      if (withdrawCash(player, 500)) {
+        player.sendMessage("§a🏧 [出金完了] 口座から §e500 円§a を引き出しました。§r");
+      } else {
+        player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+      }
+      openAtmUI(player, blockLoc);
+    } else if (res.selection === 5) {
+      // Custom amount withdraw
+      const modal = new ModalFormData()
+        .title("🔢 出金金額の指定")
+        .textField(`出金したい金額を入力してください (口座残高: ${bank.toLocaleString()}円):`, "例: 30000");
+
+      showFormSafe(player, modal, (mRes) => {
+        if (mRes.canceled || !mRes.formValues) {
+          openAtmUI(player, blockLoc);
+          return;
+        }
+        const val = parseInt(String(mRes.formValues[0]).trim());
+        if (isNaN(val) || val <= 0) {
+          player.sendMessage("§c⚠️ 正しい金額を入力してください。§r");
+        } else if (withdrawCash(player, val)) {
+          player.sendMessage(`§a🏧 [出金完了] 口座から §e${val.toLocaleString()} 円§a を引き出しました！§r`);
+        } else {
+          player.sendMessage("§c⚠️ 口座残高が不足しているか、インベントリに空きがありません。§r");
+        }
+        openAtmUI(player, blockLoc);
+      });
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// 3. Item Sell / Exchange Shop UI
+function openItemSellUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+  if (!inv) return;
+
+  // Calculate sellable items in inventory
+  const inventoryCounts: { [typeId: string]: number } = {};
+  for (let i = 0; i < inv.size; i++) {
+    const item = inv.getItem(i);
+    if (!item) continue;
+    if (SELLABLE_ITEMS.some(s => s.typeId === item.typeId)) {
+      inventoryCounts[item.typeId] = (inventoryCounts[item.typeId] || 0) + item.amount;
+    }
+  }
+
+  let totalSellValue = 0;
+  for (const s of SELLABLE_ITEMS) {
+    const count = inventoryCounts[s.typeId] || 0;
+    totalSellValue += s.price * count;
+  }
+
+  const form = new ActionFormData()
+    .title("🛒 買取・換金所")
+    .body(
+      `鉱石や特産品を売却して口座に yen をチャージできます！\n` +
+      `インベントリ内の換金可能アイテム総額: §e${totalSellValue.toLocaleString()} 円§r\n\n` +
+      `売却方法を選択してください:`
+    )
+    .button(`✨ 換金可能アイテムをすべて一括売却 (+${totalSellValue.toLocaleString()}円)`);
+
+  for (const s of SELLABLE_ITEMS) {
+    const count = inventoryCounts[s.typeId] || 0;
+    form.button(`${s.name} (単価: ${s.price.toLocaleString()}円)\n[所持: ${count}個 / 価値: ${(s.price * count).toLocaleString()}円]`);
+  }
+
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      // Sell all
+      if (totalSellValue <= 0) {
+        player.sendMessage("§c⚠️ インベントリに売却可能なアイテムがありません。§r");
+        openItemSellUI(player, blockLoc);
+        return;
+      }
+
+      for (let i = 0; i < inv.size; i++) {
+        const item = inv.getItem(i);
+        if (item && SELLABLE_ITEMS.some(s => s.typeId === item.typeId)) {
+          inv.setItem(i, undefined);
+        }
+      }
+
+      const curBal = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, curBal + totalSellValue);
+      player.sendMessage(`§a🛒 [売却完了] アイテムを一括売却し、§e${totalSellValue.toLocaleString()} 円§a を口座にチャージしました！§r`);
+      player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      openItemSellUI(player, blockLoc);
+    } else if (res.selection <= SELLABLE_ITEMS.length) {
+      // Individual item sell
+      const chosen = SELLABLE_ITEMS[res.selection - 1];
+      const count = inventoryCounts[chosen.typeId] || 0;
+      if (count <= 0) {
+        player.sendMessage(`§c⚠️ 「${chosen.name}」を所持していません。§r`);
+        openItemSellUI(player, blockLoc);
+        return;
+      }
+
+      // Remove items
+      let remainingToRemove = count;
+      for (let i = 0; i < inv.size; i++) {
+        const item = inv.getItem(i);
+        if (item && item.typeId === chosen.typeId) {
+          if (item.amount <= remainingToRemove) {
+            remainingToRemove -= item.amount;
+            inv.setItem(i, undefined);
+          } else {
+            item.amount -= remainingToRemove;
+            inv.setItem(i, item);
+            remainingToRemove = 0;
+          }
+          if (remainingToRemove <= 0) break;
+        }
+      }
+
+      const earned = chosen.price * count;
+      const curBal = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, curBal + earned);
+      player.sendMessage(`§a🛒 [売却完了] ${chosen.name} × ${count} 個を売却し、§e${earned.toLocaleString()} 円§a を獲得しました！§r`);
+      openItemSellUI(player, blockLoc);
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// 4. FX Exchange UI
+function openFxExchangeUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const positions = getPlayerFxPositions(player);
+
+  const form = new ActionFormData()
+    .title("📈 Misskey FX (外国為替取引所)")
+    .body(
+      `口座残高: §a${bank.toLocaleString()} 円§r\n` +
+      `為替レートはリアルタイムにランダム変動します。レバレッジをかけて買い(Long)や売り(Short)で為替差益を狙いましょう！\n\n` +
+      `取引したい通貨ペアまたはポジションを選択してください:`
+    );
+
+  for (const pair of fxPairs) {
+    const diff = pair.currentRate - pair.prevRate;
+    const arrow = diff > 0 ? "§c▲" : (diff < 0 ? "§9▼" : "§7-");
+    const diffText = `${arrow} ${pair.currentRate.toFixed(2)}円 (${diff >= 0 ? "+" : ""}${diff.toFixed(2)})§r`;
+    const chart = pair.history.map(h => h.toFixed(1)).join("→");
+    form.button(`${pair.name}\n現在: ${diffText} [推移: ${chart}]`);
+  }
+
+  form.button(`💼 保有ポジション一覧・決済 (${positions.length}件)`);
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection < fxPairs.length) {
+      const pair = fxPairs[res.selection];
+      openFxOrderModal(player, pair, blockLoc);
+    } else if (res.selection === fxPairs.length) {
+      openFxPositionsUI(player, blockLoc);
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// FX Order Modal
+function openFxOrderModal(player: Player, pair: FxPair, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const diff = pair.currentRate - pair.prevRate;
+  const arrow = diff >= 0 ? "▲" : "▼";
+
+  const modal = new ModalFormData()
+    .title(`📈 FX注文: ${pair.name}`)
+    .dropdown("注文タイプ:", ["🟢 買い (Long - 上昇で利益)", "🔴 売り (Short - 下落で利益)"], 0)
+    .dropdown("レバレッジ倍率:", ["1倍 (現物相当)", "5倍 (標準)", "10倍 (ハイレバ)", "25倍 (超ハイリスク)"], 1)
+    .textField(`証拠金 (口座から投入するyen / 口座残高: ${bank.toLocaleString()}円):`, "例: 10000", "5000");
+
+  showFormSafe(player, modal, (res) => {
+    if (res.canceled || !res.formValues) {
+      openFxExchangeUI(player, blockLoc);
+      return;
+    }
+
+    const type = res.formValues[0] === 0 ? "BUY" : "SELL";
+    const levOptions = [1, 5, 10, 25];
+    const leverage = levOptions[Number(res.formValues[1])] || 1;
+    const margin = parseInt(String(res.formValues[2]).trim());
+
+    if (isNaN(margin) || margin <= 0) {
+      player.sendMessage("§c⚠️ 正しい証拠金額を入力してください。§r");
+      openFxExchangeUI(player, blockLoc);
+      return;
+    }
+
+    if (margin > bank) {
+      player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+      openFxExchangeUI(player, blockLoc);
+      return;
+    }
+
+    // Deduct margin from bank
+    setPlayerBankAccount(player, bank - margin);
+
+    const volume = (margin * leverage) / pair.currentRate;
+    const newPos: FxPosition = {
+      id: `pos_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      pairId: pair.id,
+      type,
+      leverage,
+      entryRate: pair.currentRate,
+      margin,
+      volume,
+      timestamp: Date.now()
+    };
+
+    const positions = getPlayerFxPositions(player);
+    positions.push(newPos);
+    setPlayerFxPositions(player, positions);
+
+    player.sendMessage(
+      `§a📈 [FX注文約定] ${pair.name} を ${type === "BUY" ? "買い(Long)" : "売り(Short)"} でエントリーしました！\n` +
+      `§7レート: ${pair.currentRate.toFixed(2)}円 | レバレッジ: ${leverage}倍 | 証拠金: ${margin.toLocaleString()}円 | 取引数量: ${volume.toFixed(2)}§r`
+    );
+    openFxPositionsUI(player, blockLoc);
+  });
+}
+
+// FX Positions List UI
+function openFxPositionsUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const positions = getPlayerFxPositions(player);
+
+  const form = new ActionFormData()
+    .title("💼 保有FXポジション一覧")
+    .body(positions.length === 0 ? "現在保有しているFXポジションはありません。「通貨ペア」を選んでエントリーしましょう！" : "決済したいポジションを選択してください:");
+
+  for (const pos of positions) {
+    const pair = fxPairs.find(p => p.id === pos.pairId);
+    const curRate = pair ? pair.currentRate : pos.entryRate;
+    const profit = calculatePositionProfit(pos, curRate);
+    const sign = profit >= 0 ? "+" : "";
+    const color = profit >= 0 ? "§a" : "§c";
+
+    form.button(
+      `${pair ? pair.name : pos.pairId} [${pos.type} / ${pos.leverage}倍]\n` +
+      `約定: ${pos.entryRate.toFixed(2)} → 現在: ${curRate.toFixed(2)} | 損益: ${color}${sign}${profit.toLocaleString()}円§r`
+    );
+  }
+
+  if (positions.length > 0) {
+    form.button("💥 すべてのポジションを一括決済する");
+  }
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection < positions.length) {
+      // Close single position
+      const pos = positions[res.selection];
+      const pair = fxPairs.find(p => p.id === pos.pairId);
+      const curRate = pair ? pair.currentRate : pos.entryRate;
+      const profit = calculatePositionProfit(pos, curRate);
+      const returnAmount = Math.max(0, pos.margin + profit);
+
+      positions.splice(res.selection, 1);
+      setPlayerFxPositions(player, positions);
+
+      const curBal = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, curBal + returnAmount);
+
+      const color = profit >= 0 ? "§a" : "§c";
+      const sign = profit >= 0 ? "+" : "";
+      player.sendMessage(`§a💼 [FX決済完了] ポジションを決済しました。損益: ${color}${sign}${profit.toLocaleString()} 円§a (受取額: ${returnAmount.toLocaleString()}円)§r`);
+      openFxPositionsUI(player, blockLoc);
+    } else if (positions.length > 0 && res.selection === positions.length) {
+      // Close all positions
+      let totalReturn = 0;
+      let totalProfit = 0;
+
+      for (const pos of positions) {
+        const pair = fxPairs.find(p => p.id === pos.pairId);
+        const curRate = pair ? pair.currentRate : pos.entryRate;
+        const profit = calculatePositionProfit(pos, curRate);
+        totalProfit += profit;
+        totalReturn += Math.max(0, pos.margin + profit);
+      }
+
+      setPlayerFxPositions(player, []);
+      const curBal = getPlayerBankAccount(player);
+      setPlayerBankAccount(player, curBal + totalReturn);
+
+      const color = totalProfit >= 0 ? "§a" : "§c";
+      const sign = totalProfit >= 0 ? "+" : "";
+      player.sendMessage(`§a💼 [FX全決済完了] すべてのポジションを決済しました。合計損益: ${color}${sign}${totalProfit.toLocaleString()} 円§a (受取額: ${totalReturn.toLocaleString()}円)§r`);
+      openFxPositionsUI(player, blockLoc);
+    } else {
+      openFxExchangeUI(player, blockLoc);
+    }
+  });
+}
+
+// 5. Stock Market UI
+function openStockMarketUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const holdings = getPlayerStockHoldings(player);
+
+  const form = new ActionFormData()
+    .title("🏢 Misskey 株式市場")
+    .body(
+      `口座残高: §a${bank.toLocaleString()} 円§r\n` +
+      `Misskey世界の有力企業の株式を売買できます。保有していると定期的に「配当金」も得られます！\n\n` +
+      `銘柄を選択して詳細確認・購入・売却を行えます:`
+    );
+
+  for (const stock of stockMarket) {
+    const diff = stock.currentPrice - stock.prevPrice;
+    const arrow = diff > 0 ? "§c▲" : (diff < 0 ? "§9▼" : "§7-");
+    const diffText = `${arrow} ${stock.currentPrice.toLocaleString()}円 (${diff >= 0 ? "+" : ""}${diff.toLocaleString()})§r`;
+    const myCount = holdings[stock.code] || 0;
+    const holdText = myCount > 0 ? ` [保有: ${myCount}株]` : "";
+
+    form.button(`${stock.name} (${stock.code})\n${diffText}${holdText}`);
+  }
+
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection < stockMarket.length) {
+      const stock = stockMarket[res.selection];
+      openStockDetailUI(player, stock, blockLoc);
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Stock Detail & Trade UI
+function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const holdings = getPlayerStockHoldings(player);
+  const myCount = holdings[stock.code] || 0;
+  const myValue = stock.currentPrice * myCount;
+  const chart = stock.history.map(h => h.toLocaleString()).join(" → ");
+
+  const form = new ActionFormData()
+    .title(`🏢 銘柄詳細: ${stock.name}`)
+    .body(
+      `【銘柄コード】: §e${stock.code}§r (${stock.sector})\n` +
+      `【現在株価】: §6${stock.currentPrice.toLocaleString()} 円§r (基準: ${stock.basePrice.toLocaleString()}円)\n` +
+      `【配当利回り】: §a${(stock.dividendRate * 100).toFixed(1)}% / 周期§r\n` +
+      `【企業概要】: ${stock.description}\n` +
+      `【直近推移】: ${chart}\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `👤 あなたの保有数: §b${myCount} 株§r (評価額: ${myValue.toLocaleString()}円)\n` +
+      `口座残高: §a${bank.toLocaleString()} 円§r`
+    )
+    .button("🛒 この株を購入する")
+    .button(myCount > 0 ? `💰 この株を売却する (保有: ${myCount}株)` : "🔒 売却不可 (未保有)")
+    .button("🔙 銘柄一覧に戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      // Buy stock modal
+      const maxBuy = Math.floor(bank / stock.currentPrice);
+      const modal = new ModalFormData()
+        .title(`🛒 株の購入: ${stock.name}`)
+        .textField(`購入株数を入力してください (単価: ${stock.currentPrice.toLocaleString()}円 / 最大: ${maxBuy}株):`, "例: 10", "1");
+
+      showFormSafe(player, modal, (mRes) => {
+        if (mRes.canceled || !mRes.formValues) {
+          openStockDetailUI(player, stock, blockLoc);
+          return;
+        }
+        const count = parseInt(String(mRes.formValues[0]).trim());
+        if (isNaN(count) || count <= 0) {
+          player.sendMessage("§c⚠️ 正しい株数を入力してください。§r");
+        } else {
+          const totalCost = stock.currentPrice * count;
+          if (totalCost > bank) {
+            player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
+          } else {
+            setPlayerBankAccount(player, bank - totalCost);
+            holdings[stock.code] = (holdings[stock.code] || 0) + count;
+            setPlayerStockHoldings(player, holdings);
+            player.sendMessage(`§a🛒 [購入完了] ${stock.name} を ${count} 株購入しました！（総額: ${totalCost.toLocaleString()}円）§r`);
+            player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+          }
+        }
+        openStockDetailUI(player, stock, blockLoc);
+      });
+    } else if (res.selection === 1 && myCount > 0) {
+      // Sell stock modal
+      const modal = new ModalFormData()
+        .title(`💰 株の売却: ${stock.name}`)
+        .textField(`売却株数を入力してください (単価: ${stock.currentPrice.toLocaleString()}円 / 保有: ${myCount}株):`, `最大: ${myCount}`, String(myCount));
+
+      showFormSafe(player, modal, (mRes) => {
+        if (mRes.canceled || !mRes.formValues) {
+          openStockDetailUI(player, stock, blockLoc);
+          return;
+        }
+        const count = parseInt(String(mRes.formValues[0]).trim());
+        if (isNaN(count) || count <= 0 || count > myCount) {
+          player.sendMessage("§c⚠️ 保有株数以下の正しい株数を入力してください。§r");
+        } else {
+          const totalEarned = stock.currentPrice * count;
+          setPlayerBankAccount(player, bank + totalEarned);
+          holdings[stock.code] = myCount - count;
+          if (holdings[stock.code] <= 0) delete holdings[stock.code];
+          setPlayerStockHoldings(player, holdings);
+          player.sendMessage(`§a💰 [売却完了] ${stock.name} を ${count} 株売却し、§e${totalEarned.toLocaleString()} 円§a を口座に受け取りました！§r`);
+        }
+        openStockDetailUI(player, stock, blockLoc);
+      });
+    } else {
+      openStockMarketUI(player, blockLoc);
+    }
+  });
+}
+
+// 6. Market News UI
+function openMarketNewsUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
+  const form = new ActionFormData()
+    .title("📰 Misskey 経済ニュース速報")
+    .body(marketNewsHistory.length === 0 ? "現在配信中の重大ニュースはありません。市場は平常運転です。" : "最新の市場ニュース一覧:");
+
+  for (const news of marketNewsHistory) {
+    form.button(`${news.title}\n${news.content.substring(0, 24)}...`);
+  }
+
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+    if (res.selection < marketNewsHistory.length) {
+      const chosen = marketNewsHistory[res.selection];
+      const detailForm = new ActionFormData()
+        .title("📰 ニュース詳細")
+        .body(`【${chosen.title}】\n\n${chosen.content}`)
+        .button("🔙 ニュース一覧に戻る");
+      showFormSafe(player, detailForm, () => {
+        openMarketNewsUI(player, blockLoc);
+      });
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Quick Wallet Menu on Yen Item Sneak + Right Click
+function openQuickWalletUI(player: Player) {
+  const cash = countPlayerCash(player);
+  const bank = getPlayerBankAccount(player);
+
+  const form = new ActionFormData()
+    .title("👛 お財布 & 口座クイックメニュー")
+    .body(`所持現金: §e${cash.toLocaleString()} 円§r\n口座残高: §a${bank.toLocaleString()} 円§r`)
+    .button(`💰 手持ちの現金を全額口座に入金 (+${cash.toLocaleString()}円)`)
+    .button("💹 Misskey証券 & FX取引所を開く")
+    .button("🔙 閉じる");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection === 0) {
+      const dep = depositAllCash(player);
+      if (dep > 0) {
+        player.sendMessage(`§a👛 [クイック入金] 手持ちの現金 §e${dep.toLocaleString()} 円§a を口座に入金しました！§r`);
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      } else {
+        player.sendMessage("§c⚠️ インベントリに円アイテムがありません。§r");
+      }
+    } else if (res.selection === 1) {
+      openFinancialPortalUI(player);
+    }
+  });
+}
+
+// ----------------------------------------------------
 // 0.9. Pudding & Nekomimi Pudding Gimmicks (Silent & Smooth)
 // ----------------------------------------------------
+
 const puddingBounceMap = new Map<string, number>(); // posKey -> bounceCount
 const playerLastBounceTimeMap = new Map<string, number>(); // playerId -> timestamp
 const playerPuddingEatLock = new Map<string, number>(); // playerId -> last eat time (ms)
@@ -2466,7 +4089,7 @@ world.afterEvents.entityHurt.subscribe((event) => {
   if (hurtEntity.typeId === "mi:regretcar" && attacker instanceof Player) {
     const playerId = attacker.id;
 
-    if (!licensedPlayers.has(playerId)) {
+    if (!licensedPlayers.has(playerId) && !hasCarPerk(attacker, "gold_license")) {
       hurtEntity.triggerEvent("mi:become_angry");
       const cLoc = hurtEntity.location;
       const pLoc = attacker.location;
@@ -2482,6 +4105,56 @@ world.afterEvents.entityHurt.subscribe((event) => {
       attacker.applyDamage(4);
     }
   }
+});
+
+// ----------------------------------------------------
+// 3.5. Entity Die Event (Currency / Yen Drops & Expedition Achievement)
+// ----------------------------------------------------
+world.afterEvents.entityDie.subscribe((event) => {
+  const deadEntity = event.deadEntity;
+  if (!deadEntity) return;
+
+  const loc = deadEntity.location;
+  const dim = deadEntity.dimension;
+  const typeId = deadEntity.typeId;
+
+  system.run(() => {
+    try {
+      if (typeId === "minecraft:ender_dragon") {
+        // Grant Expedition Achievement to all nearby players
+        const players = dim.getPlayers({ location: loc, maxDistance: 128 });
+        for (const p of players) {
+          grantAchievement(p, "ensei");
+        }
+      } else if (typeId === "mi:murakami_boss") {
+        // Boss drop: 20,000 - 50,000 yen!
+        const billCount = 2 + Math.floor(Math.random() * 4);
+        dim.spawnItem(new ItemStack("mi:yen_10000", billCount), loc);
+      } else if (typeId === "mi:researcher") {
+        if (Math.random() < 0.25) {
+          dim.spawnItem(new ItemStack("mi:yen_1000", 1), loc);
+        } else if (Math.random() < 0.5) {
+          dim.spawnItem(new ItemStack("mi:yen_500", 1), loc);
+        }
+      } else if (typeId === "mi:blebcat") {
+        if (Math.random() < 0.2) {
+          dim.spawnItem(new ItemStack("mi:yen_100", 1), loc);
+        } else if (Math.random() < 0.35) {
+          dim.spawnItem(new ItemStack("mi:yen_50", 1), loc);
+        }
+      } else if (typeId === "mi:m_tutinoko_hostile") {
+        if (Math.random() < 0.3) {
+          dim.spawnItem(new ItemStack("mi:yen_100", 1), loc);
+        }
+      } else if (typeId.includes("zombie") || typeId.includes("skeleton") || typeId.includes("creeper")) {
+        // Small pocket money
+        if (Math.random() < 0.15) {
+          const coin = Math.random() < 0.5 ? "mi:yen_10" : "mi:yen_5";
+          dim.spawnItem(new ItemStack(coin, 1), loc);
+        }
+      }
+    } catch (e) { }
+  });
 });
 
 // ----------------------------------------------------
@@ -2615,6 +4288,38 @@ system.runInterval(() => {
       if (nearbyMonsters.length > 0) {
         overworld.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.8, z: pLoc.z });
       }
+    }
+  }
+
+  // A.5. All Dimensions: The End Detection & Wealth Aura Particles
+  for (const allP of world.getAllPlayers()) {
+    // 1. 遠征の偉業判定: ジ・エンドに到達
+    if (allP.dimension.id.includes("the_end")) {
+      grantAchievement(allP, "ensei");
+    }
+
+    // 2. 富豪オーラ & 称号エフェクト
+    const cash = countPlayerCash(allP);
+    const bank = getPlayerBankAccount(allP);
+    const holdings = getPlayerStockHoldings(allP);
+    let stockVal = 0;
+    for (const [code, count] of Object.entries(holdings)) {
+      const stock = stockMarket.find(s => s.code === code);
+      if (stock && count > 0) stockVal += stock.currentPrice * count;
+    }
+    const totalAssets = cash + bank + stockVal;
+    const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+    const totalUsd = totalAssets / usdRate;
+    const rank = getPlayerWealthRank(totalUsd);
+
+    if (rank.particle) {
+      const loc = allP.location;
+      try {
+        allP.dimension.spawnParticle(rank.particle, { x: loc.x, y: loc.y + 0.2, z: loc.z });
+        if (rank.rankName === "Misskeyの大株主") {
+          allP.addEffect("speed", 30, { amplifier: 0, showParticles: false });
+        }
+      } catch (e) { }
     }
   }
 
@@ -2758,6 +4463,13 @@ system.runInterval(() => {
     } catch (e) { }
 
     if (isRidden) {
+      // Check if rider has Turbo upgrade
+      for (const rider of riders) {
+        if (rider instanceof Player && hasCarPerk(rider, "turbo")) {
+          car.addEffect("speed", 20, { amplifier: 1, showParticles: false });
+        }
+      }
+
       const viewDir = car.getViewDirection();
       let hasWallHit = false;
 
@@ -2782,19 +4494,32 @@ system.runInterval(() => {
       }
 
       if (hasWallHit) {
-        accidentCarsMap.set(carId, now + 60000);
-        activeAccidentLocations.push(cLoc);
-
-        try {
-          car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
-          overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-          overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
-          const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
-          for (const p of nearbyPlayers) {
-            p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
+        // Check if any rider has Car Insurance
+        let hasInsuranceRider = false;
+        for (const rider of riders) {
+          if (rider instanceof Player && hasCarPerk(rider, "insurance")) {
+            hasInsuranceRider = true;
+            rider.sendMessage("§b🛡️🚗 [車両保険発動] 車が大破したが、車両保険により即座に現場修復されました！§r");
+            overworld.spawnParticle("minecraft:totem_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+            break;
           }
-        } catch (e) { }
-        continue;
+        }
+
+        if (!hasInsuranceRider) {
+          accidentCarsMap.set(carId, now + 60000);
+          activeAccidentLocations.push(cLoc);
+
+          try {
+            car.applyKnockback(-viewDir.x, -viewDir.z, 0.6, 0.2);
+            overworld.spawnParticle("minecraft:large_explosion", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+            overworld.spawnParticle("minecraft:huge_explosion_emitter", { x: cLoc.x, y: cLoc.y + 0.8, z: cLoc.z });
+            const nearbyPlayers = overworld.getPlayers({ location: cLoc, maxDistance: 32 });
+            for (const p of nearbyPlayers) {
+              p.sendMessage("§c💥🚗【交通事故発生！】車が壁に激突して大破しました！ 1分間 移動不能になります！§r");
+            }
+          } catch (e) { }
+          continue;
+        }
       }
     }
 
@@ -3156,6 +4881,12 @@ world.afterEvents.itemUse.subscribe((event) => {
         dim.spawnParticle("minecraft:totem_particle", { x: targetLoc.x, y: targetLoc.y + 8, z: targetLoc.z });
       } catch (e) { }
     }, 5);
+    return;
+  }
+
+  // 4. 通貨アイテム (`mi:yen_*`) の使用 -> お財布 & 口座クイックメニュー
+  if (itemStack.typeId.startsWith("mi:yen_")) {
+    openQuickWalletUI(player);
     return;
   }
 });

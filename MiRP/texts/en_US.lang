@@ -84,3 +84,18 @@ item.spawn_egg.entity.mi:m_tutinoko_hostile.name=Murakami Tutinoko Spawn Egg
 entity.mi:murakami_boss.name=Murakami-san
 item.spawn_egg.entity.mi:murakami_boss.name=Murakami-san Spawn Egg
 
+## Currency (JPY / Yen)
+item.mi:yen_1.name=1 Yen Coin
+item.mi:yen_5.name=5 Yen Coin
+item.mi:yen_10.name=10 Yen Coin
+item.mi:yen_50.name=50 Yen Coin
+item.mi:yen_100.name=100 Yen Coin
+item.mi:yen_500.name=500 Yen Coin
+item.mi:yen_1000.name=1,000 Yen Bill
+item.mi:yen_2000.name=2,000 Yen Bill
+item.mi:yen_5000.name=5,000 Yen Bill
+item.mi:yen_10000.name=10,000 Yen Bill
+
+## Achievements
+item.mi:ensei_ha_igyo.name=Expedition Achievement
+
