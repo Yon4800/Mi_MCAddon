@@ -55,6 +55,7 @@ function decrementPlayerHeldItem(player: Player): boolean {
 }
 
 const zabutonPlaceCooldownMap = new Map<string, number>(); // playerId -> timestamp
+const blueprintCooldownMap = new Map<string, number>(); // playerId -> timestamp
 const yosanoLoveMap = new Map<string, number>();
 const mochochoEatMap = new Map<string, { count: number, lastEatTime: number }>();
 const licensedPlayers = new Set<string>();
@@ -1110,20 +1111,20 @@ function openDMDetailUI(player: Player, dm: DirectMessage, blockLoc?: { x: numbe
 }
 
 // ----------------------------------------------------
-// 0.68. Misskey Financial, Currency (JPY), FX & Stock Exchange System
+// 0.68. Misskey Financial, Currency (M Coin), FX & Stock Exchange System
 // ----------------------------------------------------
 
 const YEN_ITEMS: { typeId: string, value: number, name: string }[] = [
-  { typeId: "mi:yen_10000", value: 10000, name: "一万円札" },
-  { typeId: "mi:yen_5000", value: 5000, name: "五千円札" },
-  { typeId: "mi:yen_2000", value: 2000, name: "二千円札" },
-  { typeId: "mi:yen_1000", value: 1000, name: "千円札" },
-  { typeId: "mi:yen_500", value: 500, name: "500円玉" },
-  { typeId: "mi:yen_100", value: 100, name: "100円玉" },
-  { typeId: "mi:yen_50", value: 50, name: "50円玉" },
-  { typeId: "mi:yen_10", value: 10, name: "10円玉" },
-  { typeId: "mi:yen_5", value: 5, name: "5円玉" },
-  { typeId: "mi:yen_1", value: 1, name: "1円玉" },
+  { typeId: "mi:yen_10000", value: 10000, name: "10,000 M紙幣" },
+  { typeId: "mi:yen_5000", value: 5000, name: "5,000 M紙幣" },
+  { typeId: "mi:yen_2000", value: 2000, name: "2,000 M紙幣" },
+  { typeId: "mi:yen_1000", value: 1000, name: "1,000 M紙幣" },
+  { typeId: "mi:yen_500", value: 500, name: "500 M硬貨" },
+  { typeId: "mi:yen_100", value: 100, name: "100 M硬貨" },
+  { typeId: "mi:yen_50", value: 50, name: "50 M硬貨" },
+  { typeId: "mi:yen_10", value: 10, name: "10 M硬貨" },
+  { typeId: "mi:yen_5", value: 5, name: "5 M硬貨" },
+  { typeId: "mi:yen_1", value: 1, name: "1 M硬貨" },
 ];
 
 const SELLABLE_ITEMS: { typeId: string, name: string, price: number }[] = [
@@ -1158,10 +1159,10 @@ function getPlayerBankAccount(player: Player): number {
       }
     } catch (e) { }
     if (bal === undefined) {
-      // First time opening account: 30,000 JPY bonus!
-      bal = 30000;
+      // First time opening account: 5,000 M bonus!
+      bal = 5000;
       setPlayerBankAccount(player, bal);
-      player.sendMessage("§6🏦✨ [Misskey銀行] 口座開設おめでとうございます！ 口座開設祝い金 §e30,000 円§6 を口座に付与しました！§r");
+      player.sendMessage("§6🏦✨ [Misskey銀行] 口座開設おめでとうございます！ 口座開設祝い金 §e5,000 M§6 を口座に付与しました！§r");
     } else {
       playerBankBalanceMap.set(player.id, bal);
     }
@@ -1318,48 +1319,48 @@ interface FxPosition {
   type: "BUY" | "SELL";
   leverage: number;
   entryRate: number;
-  margin: number; // 証拠金 (yen)
+  margin: number; // 証拠金 (M)
   volume: number; // 外貨数量
   timestamp: number;
 }
 
 const fxPairs: FxPair[] = [
   {
-    id: "USD_JPY",
-    name: "米ドル / 円 (USD/JPY)",
-    symbol: "$",
+    id: "FED_M",
+    name: "Fediverseクレジット / Mコイン (FED/M)",
+    symbol: "FED",
     baseRate: 155.00,
     currentRate: 155.00,
     prevRate: 155.00,
     volatility: 0.35,
     history: [154.8, 155.0, 155.2, 155.0],
-    description: "安定した標準通貨ペア。ボラティリティ低。"
+    description: "Fediverse連合の基軸クレジット。オンラインストア決済に対応。"
   },
   {
-    id: "EUR_JPY",
-    name: "ユーロ / 円 (EUR/JPY)",
-    symbol: "€",
+    id: "BLOB_M",
+    name: "ブロッブコイン / Mコイン (BLOB/M)",
+    symbol: "BLOB",
     baseRate: 168.00,
     currentRate: 168.00,
     prevRate: 168.00,
     volatility: 0.55,
     history: [167.5, 168.0, 168.2, 168.0],
-    description: "ヨーロッパ主要通貨ペア。ボラティリティ中。"
+    description: "にゃんぷっぷー経済圏の主要トークン。ボラティリティ中。"
   },
   {
-    id: "FED_JPY",
-    name: "Fediverseコイン / 円 (FED/JPY)",
-    symbol: "FED",
+    id: "NEKO_M",
+    name: "をねこトークン / Mコイン (NEKO/M)",
+    symbol: "NEKO",
     baseRate: 850.00,
     currentRate: 850.00,
     prevRate: 850.00,
     volatility: 12.0,
     history: [840, 855, 848, 850],
-    description: "Misskey連合ネットワークの仮想通貨。ボラティリティ高。"
+    description: "をねこコミュニティの希少トークン。ボラティリティ高。"
   },
   {
-    id: "MCC_JPY",
-    name: "モチョコイン / 円 (MCC/JPY)",
+    id: "MCC_M",
+    name: "モチョコイン / Mコイン (MCC/M)",
     symbol: "MCC",
     baseRate: 12.50,
     currentRate: 12.50,
@@ -1482,6 +1483,19 @@ const stockMarket: StockInfo[] = [
   }
 ];
 
+// --- Market News Types & State ---
+interface MarketNews {
+  id: string;
+  category: "stock" | "fx";
+  title: string;
+  content: string;
+  targetCode: string;
+  impactPercent: number;
+  timestamp: number;
+}
+
+const marketNewsHistory: MarketNews[] = [];
+
 // --- World Persistence System for FX & Stock Market ---
 function saveMarketWorldData() {
   try {
@@ -1565,18 +1579,6 @@ function loadMarketWorldData() {
 // Initial Load on Script Start
 loadMarketWorldData();
 
-interface MarketNews {
-  id: string;
-  category: "stock" | "fx";
-  title: string;
-  content: string;
-  targetCode: string;
-  impactPercent: number;
-  timestamp: number;
-}
-
-const marketNewsHistory: MarketNews[] = [];
-
 // === 1. Stock Market News Templates (25 types across 6 companies) ===
 const STOCK_NEWS_TEMPLATES: { title: string, content: string, code: string, minImpact: number, maxImpact: number }[] = [
   // SYUIL (しゅいろソフトウェア)
@@ -1620,29 +1622,29 @@ const STOCK_NEWS_TEMPLATES: { title: string, content: string, code: string, minI
 
 // === 2. FX Market News Templates (16 types across 4 currency pairs) ===
 const FX_NEWS_TEMPLATES: { title: string, content: string, pairId: string, minImpact: number, maxImpact: number }[] = [
-  // USD/JPY (米ドル/円)
-  { title: "🇺🇸【利上げ】FRBがサプライズ利上げ発表！ドル買い加速", content: "米連邦準備制度がインフレ抑制のため利上げを実施。日米金利差拡大からドル高円安が急伸！", pairId: "USD_JPY", minImpact: 3, maxImpact: 7 },
-  { title: "🇯🇵【為替介入】日銀が円買い為替介入を実施、ドル円急落！", content: "急激な円安を是正するため通貨当局が市場介入を実施。ドルが一気に売り浴びせられました。", pairId: "USD_JPY", minImpact: -6, maxImpact: -3 },
-  { title: "📊【雇用統計】米雇用統計が市場予想を大幅に上回る", content: "米景気の力強さが確認され、投資家のドル買い意欲が急拡大しています。", pairId: "USD_JPY", minImpact: 2, maxImpact: 5 },
-  { title: "📉【リスクオフ】世界的警戒感の高まりから安全資産の円買い", content: "地政学的リスクの高まりを受け、リスク回避の円買いが優勢となっています。", pairId: "USD_JPY", minImpact: -4, maxImpact: -2 },
+  // FED/M (Fediverseクレジット/Mコイン)
+  { title: "🌐【連合拡大】Fediverse接続サーバー数が10万台を突破！", content: "分散型SNSの爆発的拡大に伴い、連合ネットワーク基軸クレジットFEDが猛烈な買いを集めています！", pairId: "FED_M", minImpact: 4, maxImpact: 8 },
+  { title: "⚠️【障害】大手インスタンス群の連鎖ダウンで一時売り浴びせ", content: "一時的なネットワーク分断によりFEDクレジットの流動性懸念が生じ、価格が急落しました。", pairId: "FED_M", minImpact: -6, maxImpact: -3 },
+  { title: "💳【公式決済】主要MisskeyサーバーがFED決済を標準採用", content: "サーバー維持費やオンラインストアでのFED利用が拡大し、実需買いが殺到しています！", pairId: "FED_M", minImpact: 3, maxImpact: 7 },
+  { title: "🔒【暗号化】次世代連合プロトコルの暗号化強化が発表", content: "セキュリティ向上への高評価から、FEDクレジットの信頼性が急上昇しています。", pairId: "FED_M", minImpact: 2, maxImpact: 5 },
 
-  // EUR/JPY (ユーロ/円)
-  { title: "🇪🇺【利上げ】欧州中央銀行 (ECB) が追加利上げを決定", content: "欧州圏のインフレ高止まりを抑え込むためタカ派姿勢を維持。ユーロ買いが進んでいます。", pairId: "EUR_JPY", minImpact: 3, maxImpact: 6 },
-  { title: "🇪🇺【景気減速】欧州主要国の製造業指標が悪化、ユーロ急落", content: "エネルギー価格と需要減退により欧州景気の後退懸念が強まり、ユーロが急激に売られています。", pairId: "EUR_JPY", minImpact: -5, maxImpact: -2 },
-  { title: "🤝【協定締結】日欧包括的デジタル経済連携協定が成立", content: "欧州と日本間の貿易・投資活性化への期待感からユーロ円が買われています。", pairId: "EUR_JPY", minImpact: 2, maxImpact: 5 },
-  { title: "⚡【電力危機】欧州送電網の寒波トラブルでユーロ売り先行", content: "季節的なエネルギー不安が再燃し、ユーロの下落圧力となっています。", pairId: "EUR_JPY", minImpact: -4, maxImpact: -2 },
+  // BLOB/M (ブロッブコイン/Mコイン)
+  { title: "🐱【爆買い】にゃんぷっぷーのぬいぐるみ発売でBLOB買い殺到", content: "公式グッズの決済通貨に指定され、にゃんぷっぷー経済圏トークンBLOBが高騰！", pairId: "BLOB_M", minImpact: 4, maxImpact: 9 },
+  { title: "🌧️【品薄】愛知アイテムの収穫量減少でBLOB売り先行", content: "進化アイテムの供給不足が懸念され、一時的な調整売りが発生しています。", pairId: "BLOB_M", minImpact: -5, maxImpact: -2 },
+  { title: "🤝【提携】モチョチョ製菓とBLOBポイントの相互交換が決定", content: "スイーツとのタイアップによりBLOBトークンの利用者が急増しています。", pairId: "BLOB_M", minImpact: 3, maxImpact: 6 },
+  { title: "🎉【生誕祭】にゃんぷっぷー誕生祭イベントで取引高最高記録", content: "お祭りムードに包まれ、世界中からBLOB買いが流入しています！", pairId: "BLOB_M", minImpact: 5, maxImpact: 10 },
 
-  // FED/JPY (Fediverseコイン/円)
-  { title: "🌐【連合拡大】Fediverse接続サーバー数が10万台を突破！", content: "分散型SNSの爆発的拡大に伴い、連合ネットワーク基軸トークンFEDコインが猛烈な買いを集めています！", pairId: "FED_JPY", minImpact: 25, maxImpact: 55 },
-  { title: "⚠️【障害】大手インスタンス群の連鎖ダウンで一時売り浴びせ", content: "一時的なネットワーク分断によりFEDコインの流動性懸念が生じ、価格が急落しました。", pairId: "FED_JPY", minImpact: -30, maxImpact: -15 },
-  { title: "💳【公式決済】主要MisskeyサーバーがFED決済を標準採用", content: "サーバー維持費や投げ銭でのFED利用が義務付けられ、実需買いが殺到しています！", pairId: "FED_JPY", minImpact: 18, maxImpact: 38 },
-  { title: "🔒【規制懸念】分散型プロトコルへの国際規制報道で急落", content: "各国規制当局による監視強化の噂が流れ、一時的なパニック売りが発生しました。", pairId: "FED_JPY", minImpact: -25, maxImpact: -10 },
+  // NEKO/M (をねこトークン/Mコイン)
+  { title: "😴【のんびり】をねこリラックス効果でNEKOトークン急騰！", content: "癒やしを求めるトレーダーによる買いが集まり、高水準を維持しています。", pairId: "NEKO_M", minImpact: 15, maxImpact: 35 },
+  { title: "😿【涙目】をねこ泣き顔スタンプ連打でサーバー過熱", content: "一部負荷による遅延が嫌気され、一時的に売りが優勢となりました。", pairId: "NEKO_M", minImpact: -20, maxImpact: -8 },
+  { title: "🍵【静岡特需】静岡アイテムの需要急増でNEKO買い加速", content: "をねこ進化素材の取引活発化によりトークン価値が急上昇しています！", pairId: "NEKO_M", minImpact: 12, maxImpact: 25 },
+  { title: "⚡【ライバル】にゃんぷっぷーとのエンカウントで攻撃力＆レートUP", content: "ライバル関係による注目度急上昇でNEKOトークンが大幅高！", pairId: "NEKO_M", minImpact: 18, maxImpact: 30 },
 
-  // MCC/JPY (モチョコイン/円 - 超ハイリスク草コイン)
-  { title: "🌕【TO THE MOON!】有名インフルエンサーのツイートで狂乱急騰！", content: "「モチョコインしか勝たん」という一言で世界中の投機資金が流入、価格が数倍に爆騰中！", pairId: "MCC_JPY", minImpact: 70, maxImpact: 160 },
-  { title: "💥【大暴落】CEOが「ただのネタコイン」と発言し大暴落！", content: "開発陣の梯子外し発言に投資家が激怒。投げ売りが止まらず大暴落しています！", pairId: "MCC_JPY", minImpact: -65, maxImpact: -35 },
-  { title: "🍮【還元祭】プリン購入でモチョコイン全額キャッシュバック！", content: "モチョチョ製菓との大型タイアップキャンペーンが始まり、買いが買いを呼ぶ展開に！", pairId: "MCC_JPY", minImpact: 40, maxImpact: 90 },
-  { title: "🐋【クジラ利確】大口投資家（クジラ）が保有コインを一斉放出", content: "初期からの大口ホルダーが莫大な利益確定売りを行い、価格が急落しています。", pairId: "MCC_JPY", minImpact: -50, maxImpact: -25 }
+  // MCC/M (モチョコイン/Mコイン - 超ハイリスク草コイン)
+  { title: "🌕【TO THE MOON!】有名インフルエンサーの投稿で狂乱急騰！", content: "「モチョコインしか勝たん」という一言で投機資金が流入、価格が爆騰中！", pairId: "MCC_M", minImpact: 70, maxImpact: 160 },
+  { title: "💥【大暴落】CEOが「ただのネタコイン」と発言し大暴落！", content: "開発陣の梯子外し発言に投資家が激怒。投げ売りが止まらず大暴落しています！", pairId: "MCC_M", minImpact: -65, maxImpact: -35 },
+  { title: "🍮【還元祭】プリン購入でモチョコイン全額キャッシュバック！", content: "モチョチョ製菓との大型タイアップキャンペーンが始まり、買いが買いを呼ぶ展開に！", pairId: "MCC_M", minImpact: 40, maxImpact: 90 },
+  { title: "🐋【クジラ利確】大口投資家（クジラ）が保有コインを一斉放出", content: "初期からの大口ホルダーが莫大な利益確定売りを行い、価格が急落しています。", pairId: "MCC_M", minImpact: -50, maxImpact: -25 }
 ];
 
 function updateStockPrices() {
@@ -1673,7 +1675,7 @@ function updateStockPrices() {
     if (totalDividends > 0) {
       const current = getPlayerBankAccount(player);
       setPlayerBankAccount(player, current + totalDividends);
-      player.sendMessage(`§a💵 [配当金受取] 保有株式の配当金 §e${totalDividends.toLocaleString()} 円§a が口座に振り込まれました！§r`);
+      player.sendMessage(`§a💵 [配当金受取] 保有株式の配当金 §e${totalDividends.toLocaleString()} M§a が口座に振り込まれました！§r`);
     }
   }
 }
@@ -1761,7 +1763,7 @@ system.runInterval(() => {
         const refund = Math.max(0, pos.margin + profit);
         const curBal = getPlayerBankAccount(player);
         setPlayerBankAccount(player, curBal + refund);
-        player.sendMessage(`§c🚨 [ロスカット執行] ${pair.name} のポジションが強制決済されました（損失: ${Math.abs(profit).toLocaleString()}円, 返還: ${refund.toLocaleString()}円）。§r`);
+        player.sendMessage(`§c🚨 [ロスカット執行] ${pair.name} のポジションが強制決済されました（損失: ${Math.abs(profit).toLocaleString()} M, 返還: ${refund.toLocaleString()} M）。§r`);
         modified = true;
       } else {
         remainingPositions.push(pos);
@@ -1779,57 +1781,129 @@ system.runInterval(() => {
 
 // --- Financial UI System ---
 
-// --- Vehicle Upgrades & Perks Store ---
-const playerCarTurboSet = new Set<string>(); // playerId
-const playerCarInsuranceSet = new Set<string>(); // playerId
-const playerGoldLicenseSet = new Set<string>(); // playerId
+// --- Vehicle Upgrades & Perks Subscription Store ---
+const CAR_PERK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-function hasCarPerk(player: Player, perkKey: string): boolean {
-  if (perkKey === "turbo" && playerCarTurboSet.has(player.id)) return true;
-  if (perkKey === "insurance" && playerCarInsuranceSet.has(player.id)) return true;
-  if (perkKey === "gold_license" && playerGoldLicenseSet.has(player.id)) return true;
-
-  try {
-    const prop = player.getDynamicProperty(`car_perk_${perkKey}`);
-    if (prop === true) {
-      if (perkKey === "turbo") playerCarTurboSet.add(player.id);
-      if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
-      if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
-      return true;
-    }
-  } catch (e) { }
-  return false;
+interface CarPerkDef {
+  key: "turbo" | "insurance" | "gold_license";
+  name: string;
+  badge: string;
+  fedPrice: number;
+  description: string;
+  effectSummary: string;
 }
 
-function setCarPerk(player: Player, perkKey: string) {
-  if (perkKey === "turbo") playerCarTurboSet.add(player.id);
-  if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
-  if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
+const CAR_PERK_DEFS: Record<string, CarPerkDef> = {
+  turbo: {
+    key: "turbo",
+    name: "⚡ ターボブースター",
+    badge: "ターボ",
+    fedPrice: 30,
+    description: "長い変な車のエンジンを超強化し、最高速度を1.5倍に爆速加速！",
+    effectSummary: "最高速度が1.5倍に超加速"
+  },
+  insurance: {
+    key: "insurance",
+    name: "🛡️ 車両保険",
+    badge: "保険",
+    fedPrice: 20,
+    description: "壁激突による大破事故時に、1分停止せず即座に現場修復！",
+    effectSummary: "事故大破時の1分停止を即時復旧"
+  },
+  gold_license: {
+    key: "gold_license",
+    name: "🔰 ゴールド免許証",
+    badge: "金免",
+    fedPrice: 15,
+    description: "優良ドライバー認定証。車を誤って殴っても車が怒らなくなる！",
+    effectSummary: "車を殴っても怒られなくなる"
+  }
+};
+
+interface CarPerkStatus {
+  active: boolean;
+  expiresAt: number;
+  remainingMinutes: number;
+  autoRenew: boolean;
+}
+
+function getCarPerkStatus(player: Player, perkKey: string): CarPerkStatus {
   try {
-    player.setDynamicProperty(`car_perk_${perkKey}`, true);
+    const expiresAt = Number(player.getDynamicProperty(`mi_perk_${perkKey}_expires`) || 0);
+    const rawAutoRenew = player.getDynamicProperty(`mi_perk_${perkKey}_auto_renew`);
+    const autoRenew = rawAutoRenew === undefined ? true : Boolean(rawAutoRenew);
+    const now = Date.now();
+    const active = now < expiresAt;
+    const remainingMinutes = active ? Math.max(1, Math.ceil((expiresAt - now) / 60000)) : 0;
+    return { active, expiresAt, remainingMinutes, autoRenew };
+  } catch (e) {
+    return { active: false, expiresAt: 0, remainingMinutes: 0, autoRenew: false };
+  }
+}
+
+function subscribeCarPerk(player: Player, perkKey: string, durationMs: number = CAR_PERK_DURATION_MS): CarPerkStatus {
+  const current = getCarPerkStatus(player, perkKey);
+  const now = Date.now();
+  const baseTime = current.active ? current.expiresAt : now;
+  const newExpires = baseTime + durationMs;
+
+  try {
+    player.setDynamicProperty(`mi_perk_${perkKey}_expires`, newExpires);
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, true);
   } catch (e) { }
+
+  return getCarPerkStatus(player, perkKey);
+}
+
+function setCarPerkAutoRenew(player: Player, perkKey: string, autoRenew: boolean) {
+  try {
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, autoRenew);
+  } catch (e) { }
+}
+
+function cancelCarPerkSubscription(player: Player, perkKey: string) {
+  try {
+    player.setDynamicProperty(`mi_perk_${perkKey}_expires`, 0);
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, false);
+  } catch (e) { }
+}
+
+function hasCarPerk(player: Player, perkKey: string): boolean {
+  return getCarPerkStatus(player, perkKey).active;
+}
+
+function getInsuranceStatus(player: Player): InsuranceStatus {
+  const s = getCarPerkStatus(player, "insurance");
+  return { active: s.active, expiresAt: s.expiresAt, remainingMinutes: s.remainingMinutes, autoRenew: s.autoRenew };
+}
+
+interface InsuranceStatus {
+  active: boolean;
+  expiresAt: number;
+  remainingMinutes: number;
+  autoRenew: boolean;
 }
 
 // Wealth Rank Information
 interface WealthRank {
   rankName: string;
-  minUsd: number;
+  minFed: number;
   badge: string;
   particle: string;
   description: string;
 }
 
 const WEALTH_RANKS: WealthRank[] = [
-  { rankName: "Misskeyの大株主", minUsd: 100000, badge: "§d👑[大株主]§r", particle: "minecraft:mob_portal", description: "総資産10万ドル突破。虹色のポータルオーラと加速バフ。" },
-  { rankName: "石油王", minUsd: 20000, badge: "§6💎[石油王]§r", particle: "minecraft:totem_particle", description: "総資産2万ドル突破。黄金とエメラルドのオーラ。" },
-  { rankName: "大富豪", minUsd: 5000, badge: "§e🎩[大富豪]§r", particle: "minecraft:villager_happy", description: "総資産5千ドル突破。黄金のきらめきオーラ。" },
-  { rankName: "資産家", minUsd: 1000, badge: "§a💼[資産家]§r", particle: "minecraft:villager_happy", description: "総資産千ドル突破。銅色のきらめき。" },
-  { rankName: "一般市民", minUsd: 0, badge: "§7[一般]§r", particle: "", description: "まずは投資や採掘で資産を築きましょう！" }
+  { rankName: "Misskeyの大株主", minFed: 100000, badge: "§d👑[大株主]§r", particle: "minecraft:mob_portal", description: "総資産10万FED突破。虹色のポータルオーラと加速バフ。" },
+  { rankName: "石油王", minFed: 20000, badge: "§6💎[石油王]§r", particle: "minecraft:totem_particle", description: "総資産2万FED突破。黄金とエメラルドのオーラ。" },
+  { rankName: "大富豪", minFed: 5000, badge: "§e🎩[大富豪]§r", particle: "minecraft:villager_happy", description: "総資産5千FED突破。黄金のきらめきオーラ。" },
+  { rankName: "資産家", minFed: 1000, badge: "§a💼[資産家]§r", particle: "minecraft:villager_happy", description: "総資産千FED突破。銅色のきらめき。" },
+  { rankName: "一般市民", minFed: 0, badge: "§7[一般]§r", particle: "", description: "まずは投資や採掘で資産を築きましょう！" }
 ];
 
-function getPlayerWealthRank(totalUsd: number): WealthRank {
+function getPlayerWealthRank(totalFed: number): WealthRank {
   for (const r of WEALTH_RANKS) {
-    if (totalUsd >= r.minUsd) return r;
+    if (totalFed >= r.minFed) return r;
   }
   return WEALTH_RANKS[WEALTH_RANKS.length - 1];
 }
@@ -1862,27 +1936,27 @@ function openFinancialPortalUI(player: Player, blockLoc?: { x: number, y: number
   }
 
   const totalAssets = cash + bank + stockValue + fxMargin + fxUnrealizedProfit;
-  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
-  const totalUsd = parseFloat((totalAssets / usdRate).toFixed(2));
-  const wealthRank = getPlayerWealthRank(totalUsd);
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
+  const totalFed = parseFloat((totalAssets / fedRate).toFixed(2));
+  const wealthRank = getPlayerWealthRank(totalFed);
 
   const profitSign = fxUnrealizedProfit >= 0 ? "+" : "";
-  const fxProfitText = fxUnrealizedProfit !== 0 ? ` (含み損益: ${profitSign}${fxUnrealizedProfit.toLocaleString()}円)` : "";
+  const fxProfitText = fxUnrealizedProfit !== 0 ? ` (含み損益: ${profitSign}${fxUnrealizedProfit.toLocaleString()} M)` : "";
 
   const form = new ActionFormData()
     .title("💹 Misskey証券 & 金融ポータル")
     .body(
       `👤 §l${player.name}§r 様の資産サマリー [${wealthRank.badge}]\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
-      `💰 §6総資産評価額: §e${totalAssets.toLocaleString()} 円§r (§b$${totalUsd.toLocaleString()} USD§r)\n` +
-      `💵 所持金 (現金): §f${cash.toLocaleString()} 円§r\n` +
-      `🏦 口座残高 (預金): §a${bank.toLocaleString()} 円§r\n` +
-      `🏢 株式保有額: §b${stockValue.toLocaleString()} 円§r\n` +
-      `📈 FX証拠金: §d${fxMargin.toLocaleString()} 円§r${fxProfitText}\n` +
-      `💹 USD為替レート: §e1 USD = ${usdRate.toFixed(2)} 円§r\n` +
+      `💰 §6総資産評価額: §e${totalAssets.toLocaleString()} M§r (§b${totalFed.toLocaleString()} FED§r)\n` +
+      `💵 所持金 (現金): §f${cash.toLocaleString()} M§r\n` +
+      `🏦 口座残高 (預金): §a${bank.toLocaleString()} M§r\n` +
+      `🏢 株式保有額: §b${stockValue.toLocaleString()} M§r\n` +
+      `📈 FX証拠金: §d${fxMargin.toLocaleString()} M§r${fxProfitText}\n` +
+      `💹 FED為替レート: §e1 FED = ${fedRate.toFixed(2)} M§r\n` +
       `━━━━━━━━━━━━━━━━━━`
     )
-    .button("🛒 Misskeyオンラインストア (USD決済)")
+    .button("🛒 Misskeyオンラインストア (FED決済)")
     .button("🚗 車両アップグレード & 保険所")
     .button("🎰 Misskey スクラッチくじ (ガチャ)")
     .button("🏦 ATM・口座管理 (入金・出金・両替)")
@@ -1918,15 +1992,17 @@ function openFinancialPortalUI(player: Player, blockLoc?: { x: number, y: number
   });
 }
 
-// Store Items Definition (All in USD)
+// Store Items Definition (All in FED Credit)
 interface StoreItem {
   id: string;
   name: string;
-  usdPrice: number;
+  fedPrice: number;
   typeId?: string;
   amount?: number;
   isPack?: boolean;
-  requiredIgyo?: string; // e.g. "ensei" for elytra
+  requiredIgyo?: string; // e.g. "ensei" for elytra / shulker
+  requiredUnlockTag?: string; // e.g. "unlocked_diamond", "unlocked_netherite"
+  lockReason?: string;
   description: string;
 }
 
@@ -1934,55 +2010,64 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "elytra",
     name: "エリトラ (滑空翼)",
-    usdPrice: 5000,
+    fedPrice: 5000,
     typeId: "minecraft:elytra",
     amount: 1,
     requiredIgyo: "ensei",
-    description: "大空を飛翔できる至高の翼。遠征の偉業（エンドラ討伐）達成者限定！"
+    lockReason: "遠征の偉業 (エンド到達/討伐) が必要",
+    description: "大空を飛翔できる至高の翼。遠征の偉業達成者限定！"
   },
   {
     id: "shulker_box",
     name: "シュルカーボックス",
-    usdPrice: 100,
+    fedPrice: 800,
     typeId: "minecraft:shulker_box",
     amount: 1,
-    description: "大量のアイテムを持ち運べるポータブル倉庫。"
-  },
-  {
-    id: "diamond_pack",
-    name: "ダイヤモンド × 8",
-    usdPrice: 150,
-    typeId: "minecraft:diamond",
-    amount: 8,
-    description: "高品質なダイヤモンド8個セット。"
+    requiredIgyo: "ensei",
+    lockReason: "遠征の偉業 (エンド到達/討伐) が必要",
+    description: "大量のアイテムを持ち運べるポータブル倉庫。エンド到達者限定！"
   },
   {
     id: "netherite",
     name: "ネザライトインゴット × 1",
-    usdPrice: 180,
+    fedPrice: 1500,
     typeId: "minecraft:netherite_ingot",
     amount: 1,
-    description: "最上位装備の強化素材。"
+    requiredUnlockTag: "unlocked_netherite",
+    lockReason: "一度自力でネザライトを入手/強化する必要あり",
+    description: "最上位装備の強化素材。一度入手したプレイヤーのみ購入可能。"
+  },
+  {
+    id: "diamond_pack",
+    name: "ダイヤモンド × 8",
+    fedPrice: 500,
+    typeId: "minecraft:diamond",
+    amount: 8,
+    requiredUnlockTag: "unlocked_diamond",
+    lockReason: "一度自力でダイヤモンドを入手する必要あり",
+    description: "高品質なダイヤモンド8個セット。一度入手したプレイヤーのみ購入可能。"
   },
   {
     id: "notch_apple",
     name: "エンチャント金リンゴ × 1",
-    usdPrice: 200,
+    fedPrice: 600,
     typeId: "minecraft:enchanted_golden_apple",
     amount: 1,
+    requiredIgyo: "chokin",
+    lockReason: "貯金の偉業 (金所持) が必要",
     description: "再生V・耐性を授ける究極の神リンゴ。"
   },
   {
     id: "special_pack",
     name: "Misskey特産品パック",
-    usdPrice: 25,
+    fedPrice: 80,
     isPack: true,
     description: "町田・三重・静岡・愛知・岐阜・文鳥が各1個入った素材セット。"
   },
   {
     id: "ecology_server",
     name: "生態サーバー × 1",
-    usdPrice: 30,
+    fedPrice: 50,
     typeId: "mi:ecology_server",
     amount: 1,
     description: "ツチノコ繁殖やクラフトに必須の生体パーツ。"
@@ -1990,7 +2075,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "mochocho_pack",
     name: "ベイクドモチョチョ × 16",
-    usdPrice: 5,
+    fedPrice: 15,
     typeId: "mi:baked_mochocho",
     amount: 16,
     description: "美味しいモチョチョ。食べ過ぎには注意！"
@@ -1998,7 +2083,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "pudding_pack",
     name: "プリン × 4",
-    usdPrice: 6,
+    fedPrice: 20,
     typeId: "mi:pudding",
     amount: 4,
     description: "ぽよんぽよん跳ねるスイーツ。"
@@ -2006,7 +2091,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "nekomimi_pack",
     name: "猫耳プリン × 2",
-    usdPrice: 15,
+    fedPrice: 40,
     typeId: "mi:nekomimi_pudding",
     amount: 2,
     description: "食べると猫耳が生えて足が速くなる！"
@@ -2014,7 +2099,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "blueprint_yahata",
     name: "八幡製鉄所の設計図",
-    usdPrice: 250,
+    fedPrice: 2000,
     typeId: "mi:yahata_blueprint",
     amount: 1,
     description: "産業遺構ダンジョンを目の前に即時建設。"
@@ -2022,7 +2107,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "blueprint_hq",
     name: "Misskey開発所の設計図",
-    usdPrice: 350,
+    fedPrice: 3000,
     typeId: "mi:hq_blueprint",
     amount: 1,
     description: "4階建て＋ヘリポートの巨大ダンジョンを即時建設。"
@@ -2030,7 +2115,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "egg_blobcat",
     name: "にゃんぷっぷーの卵",
-    usdPrice: 35,
+    fedPrice: 100,
     typeId: "mi:blobcat_spawn_egg",
     amount: 1,
     description: "愛されマスコットを直接召喚。"
@@ -2038,7 +2123,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "egg_woneko",
     name: "をねこの卵",
-    usdPrice: 35,
+    fedPrice: 100,
     typeId: "mi:woneko_spawn_egg",
     amount: 1,
     description: "表情豊かなのんびり猫を召喚。"
@@ -2046,35 +2131,45 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "egg_car",
     name: "長い変な車の卵",
-    usdPrice: 80,
+    fedPrice: 250,
     typeId: "mi:regretcar_spawn_egg",
     amount: 1,
     description: "2人乗り超高速車両を召喚。"
   }
 ];
 
-// Online Store UI (USD Shopping)
+function isStoreItemLocked(player: Player, item: StoreItem): boolean {
+  if (item.requiredIgyo && !hasPlayerAchieved(player, item.requiredIgyo)) {
+    return true;
+  }
+  if (item.requiredUnlockTag && !player.hasTag(item.requiredUnlockTag)) {
+    return true;
+  }
+  return false;
+}
+
+// Online Store UI (FED Shopping)
 function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
 
   const form = new ActionFormData()
-    .title("🛒 Misskey オンラインストア ($ USD)")
+    .title("🛒 Misskey オンラインストア (FED決済)")
     .body(
-      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n` +
-      `現在の為替レート: §e1 USD = ${usdRate.toFixed(2)} 円§r\n` +
-      `（※円高の時に買うと日本円の支払額がお得になります！）\n\n` +
+      `口座残高: §a${bank.toLocaleString()} M§r (§b${(bank / fedRate).toFixed(2)} FED§r)\n` +
+      `現在の為替レート: §e1 FED = ${fedRate.toFixed(2)} M§r\n` +
+      `（※Mコイン高・FED安の時に買うと支払額がお得になります！）\n\n` +
       `購入したい商品を選択してください:`
     );
 
   for (const item of STORE_ITEMS) {
-    const jpyCost = Math.floor(item.usdPrice * usdRate);
-    const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
+    const mCost = Math.floor(item.fedPrice * fedRate);
+    const locked = isStoreItemLocked(player, item);
 
-    if (isLocked) {
-      form.button(`🔒 ${item.name} ($${item.usdPrice.toLocaleString()} USD)\n[未解放: 遠征の偉業 (エンドラ討伐) が必要]`);
+    if (locked) {
+      form.button(`🔒 ${item.name} (${item.fedPrice.toLocaleString()} FED)\n[未解放: ${item.lockReason || "条件未達成"}]`);
     } else {
-      form.button(`${item.name} ($${item.usdPrice.toLocaleString()} USD)\n[支払額: 約 ${jpyCost.toLocaleString()} 円]`);
+      form.button(`${item.name} (${item.fedPrice.toLocaleString()} FED)\n[支払額: 約 ${mCost.toLocaleString()} M]`);
     }
   }
 
@@ -2085,17 +2180,17 @@ function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z:
 
     if (res.selection < STORE_ITEMS.length) {
       const item = STORE_ITEMS[res.selection];
-      const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
+      const locked = isStoreItemLocked(player, item);
 
-      if (isLocked) {
-        player.sendMessage(`§c🔒 [購入不可] 「${item.name}」は遠征の偉業（ジ・エンド到達またはエンドラ討伐）を達成するまでロックされています！§r`);
+      if (locked) {
+        player.sendMessage(`§c🔒 [購入不可] 「${item.name}」はロックされています！（解除条件: ${item.lockReason || "未達成"}）§r`);
         openOnlineStoreUI(player, blockLoc);
         return;
       }
 
-      const jpyCost = Math.floor(item.usdPrice * usdRate);
-      if (bank < jpyCost) {
-        player.sendMessage(`§c⚠️ 口座残高が不足しています。（必要額: ${jpyCost.toLocaleString()}円 / 残高: ${bank.toLocaleString()}円）§r`);
+      const mCost = Math.floor(item.fedPrice * fedRate);
+      if (bank < mCost) {
+        player.sendMessage(`§c⚠️ 口座残高が不足しています。（必要額: ${mCost.toLocaleString()} M / 残高: ${bank.toLocaleString()} M）§r`);
         openOnlineStoreUI(player, blockLoc);
         return;
       }
@@ -2104,7 +2199,7 @@ function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z:
       const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
       if (!inv) return;
 
-      setPlayerBankAccount(player, bank - jpyCost);
+      setPlayerBankAccount(player, bank - mCost);
 
       if (item.isPack) {
         // Special material pack
@@ -2118,7 +2213,7 @@ function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z:
         inv.addItem(new ItemStack(item.typeId, item.amount || 1));
       }
 
-      player.sendMessage(`§a🛒✨ [購入完了] 「${item.name}」を $${item.usdPrice.toLocaleString()} USD (${jpyCost.toLocaleString()}円) で購入しました！§r`);
+      player.sendMessage(`§a🛒✨ [購入完了] 「${item.name}」を ${item.fedPrice.toLocaleString()} FED (${mCost.toLocaleString()} M) で購入しました！§r`);
       player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.8, z: player.location.z });
       openOnlineStoreUI(player, blockLoc);
@@ -2128,76 +2223,122 @@ function openOnlineStoreUI(player: Player, blockLoc?: { x: number, y: number, z:
   });
 }
 
-// Vehicle Services & Insurance UI
+// Vehicle Services & Subscription UI
 function openVehicleServiceUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
 
-  const hasTurbo = hasCarPerk(player, "turbo");
-  const hasInsurance = hasCarPerk(player, "insurance");
-  const hasGold = hasCarPerk(player, "gold_license");
+  const perkKeys: ("turbo" | "insurance" | "gold_license")[] = ["turbo", "insurance", "gold_license"];
+  const statuses = perkKeys.map(k => ({ def: CAR_PERK_DEFS[k], status: getCarPerkStatus(player, k) }));
 
   const form = new ActionFormData()
     .title("🚗 車両アップグレード & 自動車保険所")
     .body(
-      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n\n` +
-      `長い変な車（レグカー）の性能強化や保険・特別免許を取得できます:`
+      `口座残高: §a${bank.toLocaleString()} M§r (§b${(bank / fedRate).toFixed(2)} FED§r)\n\n` +
+      `長い変な車（レグカー）の性能強化・保険・特別免許をサブスク契約できます:\n` +
+      `（※30分定期契約。自動更新をONにすると口座残高から自動引き落とし継続されます）`
+    );
+
+  for (const { def, status } of statuses) {
+    const costM = Math.floor(def.fedPrice * fedRate);
+    if (status.active) {
+      form.button(`✅ ${def.name} [契約中: 残り${status.remainingMinutes}分 / 更新:${status.autoRenew ? "ON" : "OFF"}]\n[タップして契約管理・延長・解約]`);
+    } else {
+      form.button(`${def.name} (${def.fedPrice} FED/30分 / 約${costM.toLocaleString()} M)\n[${def.effectSummary}]`);
+    }
+  }
+
+  form.button("🔙 戻る");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    if (res.selection < perkKeys.length) {
+      const chosenKey = perkKeys[res.selection];
+      const { def, status } = statuses[res.selection];
+      const costM = Math.floor(def.fedPrice * fedRate);
+
+      if (status.active) {
+        // Open management modal for this perk
+        openCarPerkManageUI(player, chosenKey, blockLoc);
+      } else {
+        // Subscribe to this perk
+        if (bank < costM) {
+          player.sendMessage(`§c⚠️ 口座残高が不足しています。（必要額: ${costM.toLocaleString()} M / 残高: ${bank.toLocaleString()} M）§r`);
+          openVehicleServiceUI(player, blockLoc);
+        } else {
+          setPlayerBankAccount(player, bank - costM);
+          const newStatus = subscribeCarPerk(player, chosenKey);
+          player.sendMessage(`§a🚗✨ [サブスク加入完了] 「${def.name}」に加入しました！（30分間有効 / 自動更新: ON）§r`);
+          player.sendMessage(`§7効果: ${def.description}§r`);
+          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+          openVehicleServiceUI(player, blockLoc);
+        }
+      }
+    } else {
+      openFinancialPortalUI(player, blockLoc);
+    }
+  });
+}
+
+// Vehicle Perk Subscription Management UI
+function openCarPerkManageUI(player: Player, perkKey: "turbo" | "insurance" | "gold_license", blockLoc?: { x: number, y: number, z: number }) {
+  const bank = getPlayerBankAccount(player);
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
+  const def = CAR_PERK_DEFS[perkKey];
+  const status = getCarPerkStatus(player, perkKey);
+  const costM = Math.floor(def.fedPrice * fedRate);
+
+  const form = new ActionFormData()
+    .title(`${def.name} サブスクリプション管理`)
+    .body(
+      `👤 §l${player.name}§r 様の契約状況 [${def.name}]\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `📋 契約状態: §a✅ 有効（効果発動中）§r\n` +
+      `🎯 効果概要: ${def.description}\n` +
+      `⏱️ 残り時間: §e約 ${status.remainingMinutes} 分§r\n` +
+      `🔄 自動更新: ${status.autoRenew ? "§aON (期間満了時に自動引き落とし)§r" : "§cOFF (期間満了で失効)§r"}\n` +
+      `💰 保険料・月額: §b${def.fedPrice} FED§r (約 §e${costM.toLocaleString()} M§r / 30分)\n` +
+      `🏦 口座残高: §a${bank.toLocaleString()} M§r\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `ご希望の操作を選択してください:`
     )
-    .button(hasTurbo ? "✅ ⚡ ターボブースター [適用中]" : `⚡ ターボブースター改造 ($150 USD / 約${Math.floor(150 * usdRate).toLocaleString()}円)\n[最高速度が1.5倍に超加速]`)
-    .button(hasInsurance ? "✅ 🛡️ 車両保険・即時復旧 [加入済]" : `🛡️ 車両保険 ($80 USD / 約${Math.floor(80 * usdRate).toLocaleString()}円)\n[壁激突時の1分停止を即時復旧]`)
-    .button(hasGold ? "✅ 🔰 ゴールド免許証 [取得済]" : `🔰 ゴールド免許証 ($200 USD / 約${Math.floor(200 * usdRate).toLocaleString()}円)\n[車を誤って殴っても怒られない]`)
+    .button(`⏱️ 契約期間を延長 (+30分 / 約${costM.toLocaleString()} M)`)
+    .button(`🔄 自動更新を切り替え (現在: ${status.autoRenew ? "ON ➔ OFF" : "OFF ➔ ON"})`)
+    .button("❌ サブスクリプションを即時解約")
     .button("🔙 戻る");
 
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === undefined) return;
 
     if (res.selection === 0) {
-      if (hasTurbo) {
-        player.sendMessage("§e⚡ ターボブースターはすでに適用されています！§r");
+      // Extend
+      if (bank < costM) {
+        player.sendMessage(`§c⚠️ 口座残高が不足しています。（必要額: ${costM.toLocaleString()} M）§r`);
       } else {
-        const cost = Math.floor(150 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
-        } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "turbo");
-          player.sendMessage("§a⚡ [改造完了] レグカーにターボブースターを搭載しました！最高速度が1.5倍になります！§r");
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        }
+        setPlayerBankAccount(player, bank - costM);
+        const newStatus = subscribeCarPerk(player, perkKey);
+        player.sendMessage(`§a⏱️✨ [期間延長完了] 「${def.name}」の期間を30分延長しました！（残り: 約 ${newStatus.remainingMinutes} 分）§r`);
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       }
-      openVehicleServiceUI(player, blockLoc);
+      openCarPerkManageUI(player, perkKey, blockLoc);
     } else if (res.selection === 1) {
-      if (hasInsurance) {
-        player.sendMessage("§e🛡️ 車両保険にはすでに加入しています！§r");
+      // Toggle auto-renew
+      const nextAutoRenew = !status.autoRenew;
+      setCarPerkAutoRenew(player, perkKey, nextAutoRenew);
+      if (nextAutoRenew) {
+        player.sendMessage(`§a🔄 [設定変更] 「${def.name}」の自動更新を §l有効 (ON)§r§a に設定しました。期間満了時に自動引き落としされます。§r`);
       } else {
-        const cost = Math.floor(80 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
-        } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "insurance");
-          player.sendMessage("§a🛡️ [保険加入完了] 車両保険に加入しました！壁に衝突しても即座に修理されます！§r");
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        }
+        player.sendMessage(`§e🔄 [設定変更] 「${def.name}」の自動更新を §l無効 (OFF)§r§e に設定しました。残り時間がゼロになると失効します。§r`);
       }
-      openVehicleServiceUI(player, blockLoc);
+      openCarPerkManageUI(player, perkKey, blockLoc);
     } else if (res.selection === 2) {
-      if (hasGold) {
-        player.sendMessage("§e🔰 ゴールド免許証はすでに取得しています！§r");
-      } else {
-        const cost = Math.floor(200 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
-        } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "gold_license");
-          player.sendMessage("§a🔰 [ゴールド免許取得] 優良運転者としてゴールド免許証が授与されました！車が怒らなくなります！§r");
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        }
-      }
+      // Cancel
+      cancelCarPerkSubscription(player, perkKey);
+      player.sendMessage(`§c❌ [解約完了] 「${def.name}」のサブスクリプションを解約しました。§r`);
       openVehicleServiceUI(player, blockLoc);
     } else {
-      openFinancialPortalUI(player, blockLoc);
+      openVehicleServiceUI(player, blockLoc);
     }
   });
 }
@@ -2205,21 +2346,21 @@ function openVehicleServiceUI(player: Player, blockLoc?: { x: number, y: number,
 // Scratch Lottery UI
 function openScratchLotteryUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
 
-  const normalCost = Math.floor(5 * usdRate);
-  const premiumCost = Math.floor(25 * usdRate);
+  const normalCost = Math.floor(5 * fedRate);
+  const premiumCost = Math.floor(25 * fedRate);
 
   const form = new ActionFormData()
     .title("🎰 Misskey スクラッチくじ & ガチャ")
     .body(
-      `口座残高: §a${bank.toLocaleString()} 円§r (§b$${(bank / usdRate).toFixed(2)} USD§r)\n\n` +
+      `口座残高: §a${bank.toLocaleString()} M§r (§b${(bank / fedRate).toFixed(2)} FED§r)\n\n` +
       `一攫千金を狙えるスクラッチくじです！\n` +
-      `🌟 特等 (JACKPOT): §e$10,000 USD (約150万円) ＋ ネザライトフル装備§r\n` +
-      `🥇 1等: §6$1,000 USD§r / 🥈 2等: §b偉業のツール (予備)§r / 🥉 3等: §aスイーツ詰め合わせ§r`
+      `🌟 特等 (JACKPOT): §e10,000 FED (約150万M) ＋ ネザライトフル装備§r\n` +
+      `🥇 1等: §61,000 FED§r / 🥈 2等: §b偉業のツール (予備)§r / 🥉 3等: §aスイーツ詰め合わせ§r`
     )
-    .button(`🎲 通常スクラッチ ($5 USD / 約${normalCost.toLocaleString()}円)`)
-    .button(`💎 プレミアムスクラッチ ($25 USD / 約${premiumCost.toLocaleString()}円)`)
+    .button(`🎲 通常スクラッチ (5 FED / 約${normalCost.toLocaleString()} M)`)
+    .button(`💎 プレミアムスクラッチ (25 FED / 約${premiumCost.toLocaleString()} M)`)
     .button("🔙 戻る");
 
   showFormSafe(player, form, (res) => {
@@ -2246,24 +2387,24 @@ function openScratchLotteryUI(player: Player, blockLoc?: { x: number, y: number,
       const thirdRate = isPremium ? 40.0 : 25.0;
 
       let resultMsg = "";
-      let rewardYen = 0;
+      let rewardM = 0;
 
       if (roll < jackpotRate) {
         // JACKPOT!
-        rewardYen = Math.floor(10000 * usdRate);
+        rewardM = Math.floor(10000 * fedRate);
         if (inv) {
           inv.addItem(new ItemStack("minecraft:netherite_helmet", 1));
           inv.addItem(new ItemStack("minecraft:netherite_chestplate", 1));
           inv.addItem(new ItemStack("minecraft:netherite_leggings", 1));
           inv.addItem(new ItemStack("minecraft:netherite_boots", 1));
         }
-        resultMsg = `§6🌟🎉【特等 JACKPOT 当選！！！】§r\n§e賞金 $10,000 USD (${rewardYen.toLocaleString()}円) ＋ ネザライトフル装備一式§6 を獲得しました！！！§r`;
-        world.sendMessage(`§6📢 [Misskeyくじ速報] プレイヤー「${player.name}」がスクラッチくじで特等 JACKPOT ($10,000 USD) に当選しました！！！§r`);
+        resultMsg = `§6🌟🎉【特等 JACKPOT 当選！！！】§r\n§e賞金 10,000 FED (${rewardM.toLocaleString()} M) ＋ ネザライトフル装備一式§6 を獲得しました！！！§r`;
+        world.sendMessage(`§6📢 [Misskeyくじ速報] プレイヤー「${player.name}」がスクラッチくじで特等 JACKPOT (10,000 FED) に当選しました！！！§r`);
         player.dimension.spawnParticle("minecraft:large_explosion", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else if (roll < jackpotRate + firstRate) {
         // 1st Prize
-        rewardYen = Math.floor(1000 * usdRate);
-        resultMsg = `§e🥇【1等 当選！！】§r\n§a賞金 $1,000 USD (${rewardYen.toLocaleString()}円)§e を獲得しました！§r`;
+        rewardM = Math.floor(1000 * fedRate);
+        resultMsg = `§e🥇【1等 当選！！】§r\n§a賞金 1,000 FED (${rewardM.toLocaleString()} M)§e を獲得しました！§r`;
       } else if (roll < jackpotRate + firstRate + secondRate) {
         // 2nd Prize
         if (inv) inv.addItem(new ItemStack("mi:igyo_tool", 1));
@@ -2282,9 +2423,9 @@ function openScratchLotteryUI(player: Player, blockLoc?: { x: number, y: number,
         resultMsg = `§7【参加賞】ベイクドモチョチョ × 1 を獲得しました。次回に期待！§r`;
       }
 
-      if (rewardYen > 0) {
+      if (rewardM > 0) {
         const curBal = getPlayerBankAccount(player);
-        setPlayerBankAccount(player, curBal + rewardYen);
+        setPlayerBankAccount(player, curBal + rewardM);
       }
 
       player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
@@ -2328,21 +2469,21 @@ function openWealthRankUI(player: Player, blockLoc?: { x: number, y: number, z: 
     if (pair) fxTotal += calculatePositionProfit(pos, pair.currentRate);
   }
 
-  const totalJpy = cash + bank + stockValue + fxTotal;
-  const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
-  const totalUsd = totalJpy / usdRate;
-  const myRank = getPlayerWealthRank(totalUsd);
+  const totalM = cash + bank + stockValue + fxTotal;
+  const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
+  const totalFed = totalM / fedRate;
+  const myRank = getPlayerWealthRank(totalFed);
 
   let rankList = "";
   for (const r of WEALTH_RANKS) {
     const isCurrent = myRank.rankName === r.rankName ? " §e◀ あなたのランク§r" : "";
-    rankList += `${r.badge} §f${r.rankName}§r (基準: $${r.minUsd.toLocaleString()} USD)${isCurrent}\n§7${r.description}§r\n\n`;
+    rankList += `${r.badge} §f${r.rankName}§r (基準: ${r.minFed.toLocaleString()} FED)${isCurrent}\n§7${r.description}§r\n\n`;
   }
 
   const form = new ActionFormData()
     .title("👑 富豪ランキング & 称号システム")
     .body(
-      `👤 現在の総資産: §6${totalJpy.toLocaleString()} 円§r (§b$${totalUsd.toFixed(2)} USD§r)\n` +
+      `👤 現在の総資産: §6${totalM.toLocaleString()} M§r (§b${totalFed.toFixed(2)} FED§r)\n` +
       `現在の称号: ${myRank.badge} §l${myRank.rankName}§r\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
       `【称号・ランク一覧】\n\n` +
@@ -2363,12 +2504,12 @@ function openAtmUI(player: Player, blockLoc?: { x: number, y: number, z: number 
 
   const form = new ActionFormData()
     .title("🏦 Misskey銀行 ATM")
-    .body(`所持現金: §e${cash.toLocaleString()} 円§r\n口座残高: §a${bank.toLocaleString()} 円§r\n\n操作を選択してください:`)
-    .button(`💰 手持ちの現金を全額入金 (+${cash.toLocaleString()}円)`)
-    .button("💵 10,000円 出金 (一万円札×1)")
-    .button("💵 5,000円 出金 (五千円札×1)")
-    .button("💵 1,000円 出金 (千円札×1)")
-    .button("🪙 500円 出金 (500円玉×1)")
+    .body(`所持現金: §e${cash.toLocaleString()} M§r\n口座残高: §a${bank.toLocaleString()} M§r\n\n操作を選択してください:`)
+    .button(`💰 手持ちの現金を全額入金 (+${cash.toLocaleString()} M)`)
+    .button("💵 10,000 M 出金 (10,000 M紙幣×1)")
+    .button("💵 5,000 M 出金 (5,000 M紙幣×1)")
+    .button("💵 1,000 M 出金 (1,000 M紙幣×1)")
+    .button("🪙 500 M 出金 (500 M硬貨×1)")
     .button("🔢 金額を指定して出金")
     .button("🔙 戻る");
 
@@ -2379,36 +2520,36 @@ function openAtmUI(player: Player, blockLoc?: { x: number, y: number, z: number 
       // Deposit all
       const dep = depositAllCash(player);
       if (dep > 0) {
-        player.sendMessage(`§a🏦 [入金完了] 手持ちの現金 §e${dep.toLocaleString()} 円§a を口座に入金しました！§r`);
+        player.sendMessage(`§a🏦 [入金完了] 手持ちの現金 §e${dep.toLocaleString()} M§a を口座に入金しました！§r`);
         player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else {
-        player.sendMessage("§c⚠️ インベントリに円アイテムがありません。§r");
+        player.sendMessage("§c⚠️ インベントリにMコインアイテムがありません。§r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 1) {
       if (withdrawCash(player, 10000)) {
-        player.sendMessage("§a🏧 [出金完了] 口座から §e10,000 円§a を引き出しました。§r");
+        player.sendMessage("§a🏧 [出金完了] 口座から §e10,000 M§a を引き出しました。§r");
       } else {
         player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 2) {
       if (withdrawCash(player, 5000)) {
-        player.sendMessage("§a🏧 [出金完了] 口座から §e5,000 円§a を引き出しました。§r");
+        player.sendMessage("§a🏧 [出金完了] 口座から §e5,000 M§a を引き出しました。§r");
       } else {
         player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 3) {
       if (withdrawCash(player, 1000)) {
-        player.sendMessage("§a🏧 [出金完了] 口座から §e1,000 円§a を引き出しました。§r");
+        player.sendMessage("§a🏧 [出金完了] 口座から §e1,000 M§a を引き出しました。§r");
       } else {
         player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 4) {
       if (withdrawCash(player, 500)) {
-        player.sendMessage("§a🏧 [出金完了] 口座から §e500 円§a を引き出しました。§r");
+        player.sendMessage("§a🏧 [出金完了] 口座から §e500 M§a を引き出しました。§r");
       } else {
         player.sendMessage("§c⚠️ 口座残高が不足しています。§r");
       }
@@ -2417,7 +2558,7 @@ function openAtmUI(player: Player, blockLoc?: { x: number, y: number, z: number 
       // Custom amount withdraw
       const modal = new ModalFormData()
         .title("🔢 出金金額の指定")
-        .textField(`出金したい金額を入力してください (口座残高: ${bank.toLocaleString()}円):`, "例: 30000");
+        .textField(`出金したい金額を入力してください (口座残高: ${bank.toLocaleString()} M):`, "例: 30000");
 
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
@@ -2428,7 +2569,7 @@ function openAtmUI(player: Player, blockLoc?: { x: number, y: number, z: number 
         if (isNaN(val) || val <= 0) {
           player.sendMessage("§c⚠️ 正しい金額を入力してください。§r");
         } else if (withdrawCash(player, val)) {
-          player.sendMessage(`§a🏧 [出金完了] 口座から §e${val.toLocaleString()} 円§a を引き出しました！§r`);
+          player.sendMessage(`§a🏧 [出金完了] 口座から §e${val.toLocaleString()} M§a を引き出しました！§r`);
         } else {
           player.sendMessage("§c⚠️ 口座残高が不足しているか、インベントリに空きがありません。§r");
         }
@@ -2464,15 +2605,15 @@ function openItemSellUI(player: Player, blockLoc?: { x: number, y: number, z: nu
   const form = new ActionFormData()
     .title("🛒 買取・換金所")
     .body(
-      `鉱石や特産品を売却して口座に yen をチャージできます！\n` +
-      `インベントリ内の換金可能アイテム総額: §e${totalSellValue.toLocaleString()} 円§r\n\n` +
+      `鉱石や特産品を売却して口座に Mコイン をチャージできます！\n` +
+      `インベントリ内の換金可能アイテム総額: §e${totalSellValue.toLocaleString()} M§r\n\n` +
       `売却方法を選択してください:`
     )
-    .button(`✨ 換金可能アイテムをすべて一括売却 (+${totalSellValue.toLocaleString()}円)`);
+    .button(`✨ 換金可能アイテムをすべて一括売却 (+${totalSellValue.toLocaleString()} M)`);
 
   for (const s of SELLABLE_ITEMS) {
     const count = inventoryCounts[s.typeId] || 0;
-    form.button(`${s.name} (単価: ${s.price.toLocaleString()}円)\n[所持: ${count}個 / 価値: ${(s.price * count).toLocaleString()}円]`);
+    form.button(`${s.name} (単価: ${s.price.toLocaleString()} M)\n[所持: ${count}個 / 価値: ${(s.price * count).toLocaleString()} M]`);
   }
 
   form.button("🔙 戻る");
@@ -2497,7 +2638,7 @@ function openItemSellUI(player: Player, blockLoc?: { x: number, y: number, z: nu
 
       const curBal = getPlayerBankAccount(player);
       setPlayerBankAccount(player, curBal + totalSellValue);
-      player.sendMessage(`§a🛒 [売却完了] アイテムを一括売却し、§e${totalSellValue.toLocaleString()} 円§a を口座にチャージしました！§r`);
+      player.sendMessage(`§a🛒 [売却完了] アイテムを一括売却し、§e${totalSellValue.toLocaleString()} M§a を口座にチャージしました！§r`);
       player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       openItemSellUI(player, blockLoc);
     } else if (res.selection <= SELLABLE_ITEMS.length) {
@@ -2544,9 +2685,9 @@ function openFxExchangeUI(player: Player, blockLoc?: { x: number, y: number, z: 
   const positions = getPlayerFxPositions(player);
 
   const form = new ActionFormData()
-    .title("📈 Misskey FX (外国為替取引所)")
+    .title("📈 Misskey FX (為替取引所)")
     .body(
-      `口座残高: §a${bank.toLocaleString()} 円§r\n` +
+      `口座残高: §a${bank.toLocaleString()} M§r\n` +
       `為替レートはリアルタイムにランダム変動します。レバレッジをかけて買い(Long)や売り(Short)で為替差益を狙いましょう！\n\n` +
       `取引したい通貨ペアまたはポジションを選択してください:`
     );
@@ -2554,7 +2695,7 @@ function openFxExchangeUI(player: Player, blockLoc?: { x: number, y: number, z: 
   for (const pair of fxPairs) {
     const diff = pair.currentRate - pair.prevRate;
     const arrow = diff > 0 ? "§c▲" : (diff < 0 ? "§9▼" : "§7-");
-    const diffText = `${arrow} ${pair.currentRate.toFixed(2)}円 (${diff >= 0 ? "+" : ""}${diff.toFixed(2)})§r`;
+    const diffText = `${arrow} ${pair.currentRate.toFixed(2)} M (${diff >= 0 ? "+" : ""}${diff.toFixed(2)})§r`;
     const chart = pair.history.map(h => h.toFixed(1)).join("→");
     form.button(`${pair.name}\n現在: ${diffText} [推移: ${chart}]`);
   }
@@ -2586,7 +2727,7 @@ function openFxOrderModal(player: Player, pair: FxPair, blockLoc?: { x: number, 
     .title(`📈 FX注文: ${pair.name}`)
     .dropdown("注文タイプ:", ["🟢 買い (Long - 上昇で利益)", "🔴 売り (Short - 下落で利益)"], 0)
     .dropdown("レバレッジ倍率:", ["1倍 (現物相当)", "5倍 (標準)", "10倍 (ハイレバ)", "25倍 (超ハイリスク)"], 1)
-    .textField(`証拠金 (口座から投入するyen / 口座残高: ${bank.toLocaleString()}円):`, "例: 10000", "5000");
+    .textField(`証拠金 (口座から投入するMコイン / 口座残高: ${bank.toLocaleString()} M):`, "例: 10000", "5000");
 
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues) {
@@ -2632,7 +2773,7 @@ function openFxOrderModal(player: Player, pair: FxPair, blockLoc?: { x: number, 
 
     player.sendMessage(
       `§a📈 [FX注文約定] ${pair.name} を ${type === "BUY" ? "買い(Long)" : "売り(Short)"} でエントリーしました！\n` +
-      `§7レート: ${pair.currentRate.toFixed(2)}円 | レバレッジ: ${leverage}倍 | 証拠金: ${margin.toLocaleString()}円 | 取引数量: ${volume.toFixed(2)}§r`
+      `§7レート: ${pair.currentRate.toFixed(2)} M | レバレッジ: ${leverage}倍 | 証拠金: ${margin.toLocaleString()} M | 取引数量: ${volume.toFixed(2)}§r`
     );
     openFxPositionsUI(player, blockLoc);
   });
@@ -2655,7 +2796,7 @@ function openFxPositionsUI(player: Player, blockLoc?: { x: number, y: number, z:
 
     form.button(
       `${pair ? pair.name : pos.pairId} [${pos.type} / ${pos.leverage}倍]\n` +
-      `約定: ${pos.entryRate.toFixed(2)} → 現在: ${curRate.toFixed(2)} | 損益: ${color}${sign}${profit.toLocaleString()}円§r`
+      `約定: ${pos.entryRate.toFixed(2)} → 現在: ${curRate.toFixed(2)} | 損益: ${color}${sign}${profit.toLocaleString()} M§r`
     );
   }
 
@@ -2683,7 +2824,7 @@ function openFxPositionsUI(player: Player, blockLoc?: { x: number, y: number, z:
 
       const color = profit >= 0 ? "§a" : "§c";
       const sign = profit >= 0 ? "+" : "";
-      player.sendMessage(`§a💼 [FX決済完了] ポジションを決済しました。損益: ${color}${sign}${profit.toLocaleString()} 円§a (受取額: ${returnAmount.toLocaleString()}円)§r`);
+      player.sendMessage(`§a💼 [FX決済完了] ポジションを決済しました。損益: ${color}${sign}${profit.toLocaleString()} M§a (受取額: ${returnAmount.toLocaleString()} M)§r`);
       openFxPositionsUI(player, blockLoc);
     } else if (positions.length > 0 && res.selection === positions.length) {
       // Close all positions
@@ -2704,7 +2845,7 @@ function openFxPositionsUI(player: Player, blockLoc?: { x: number, y: number, z:
 
       const color = totalProfit >= 0 ? "§a" : "§c";
       const sign = totalProfit >= 0 ? "+" : "";
-      player.sendMessage(`§a💼 [FX全決済完了] すべてのポジションを決済しました。合計損益: ${color}${sign}${totalProfit.toLocaleString()} 円§a (受取額: ${totalReturn.toLocaleString()}円)§r`);
+      player.sendMessage(`§a💼 [FX全決済完了] すべてのポジションを決済しました。合計損益: ${color}${sign}${totalProfit.toLocaleString()} M§a (受取額: ${totalReturn.toLocaleString()} M)§r`);
       openFxPositionsUI(player, blockLoc);
     } else {
       openFxExchangeUI(player, blockLoc);
@@ -2720,7 +2861,7 @@ function openStockMarketUI(player: Player, blockLoc?: { x: number, y: number, z:
   const form = new ActionFormData()
     .title("🏢 Misskey 株式市場")
     .body(
-      `口座残高: §a${bank.toLocaleString()} 円§r\n` +
+      `口座残高: §a${bank.toLocaleString()} M§r\n` +
       `Misskey世界の有力企業の株式を売買できます。保有していると定期的に「配当金」も得られます！\n\n` +
       `銘柄を選択して詳細確認・購入・売却を行えます:`
     );
@@ -2728,7 +2869,7 @@ function openStockMarketUI(player: Player, blockLoc?: { x: number, y: number, z:
   for (const stock of stockMarket) {
     const diff = stock.currentPrice - stock.prevPrice;
     const arrow = diff > 0 ? "§c▲" : (diff < 0 ? "§9▼" : "§7-");
-    const diffText = `${arrow} ${stock.currentPrice.toLocaleString()}円 (${diff >= 0 ? "+" : ""}${diff.toLocaleString()})§r`;
+    const diffText = `${arrow} ${stock.currentPrice.toLocaleString()} M (${diff >= 0 ? "+" : ""}${diff.toLocaleString()})§r`;
     const myCount = holdings[stock.code] || 0;
     const holdText = myCount > 0 ? ` [保有: ${myCount}株]` : "";
 
@@ -2761,13 +2902,13 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
     .title(`🏢 銘柄詳細: ${stock.name}`)
     .body(
       `【銘柄コード】: §e${stock.code}§r (${stock.sector})\n` +
-      `【現在株価】: §6${stock.currentPrice.toLocaleString()} 円§r (基準: ${stock.basePrice.toLocaleString()}円)\n` +
+      `【現在株価】: §6${stock.currentPrice.toLocaleString()} M§r (基準: ${stock.basePrice.toLocaleString()} M)\n` +
       `【配当利回り】: §a${(stock.dividendRate * 100).toFixed(1)}% / 周期§r\n` +
       `【企業概要】: ${stock.description}\n` +
       `【直近推移】: ${chart}\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
-      `👤 あなたの保有数: §b${myCount} 株§r (評価額: ${myValue.toLocaleString()}円)\n` +
-      `口座残高: §a${bank.toLocaleString()} 円§r`
+      `👤 あなたの保有数: §b${myCount} 株§r (評価額: ${myValue.toLocaleString()} M)\n` +
+      `口座残高: §a${bank.toLocaleString()} M§r`
     )
     .button("🛒 この株を購入する")
     .button(myCount > 0 ? `💰 この株を売却する (保有: ${myCount}株)` : "🔒 売却不可 (未保有)")
@@ -2781,7 +2922,7 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
       const maxBuy = Math.floor(bank / stock.currentPrice);
       const modal = new ModalFormData()
         .title(`🛒 株の購入: ${stock.name}`)
-        .textField(`購入株数を入力してください (単価: ${stock.currentPrice.toLocaleString()}円 / 最大: ${maxBuy}株):`, "例: 10", "1");
+        .textField(`購入株数を入力してください (単価: ${stock.currentPrice.toLocaleString()} M / 最大: ${maxBuy}株):`, "例: 10", "1");
 
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
@@ -2799,7 +2940,7 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
             setPlayerBankAccount(player, bank - totalCost);
             holdings[stock.code] = (holdings[stock.code] || 0) + count;
             setPlayerStockHoldings(player, holdings);
-            player.sendMessage(`§a🛒 [購入完了] ${stock.name} を ${count} 株購入しました！（総額: ${totalCost.toLocaleString()}円）§r`);
+            player.sendMessage(`§a🛒 [購入完了] ${stock.name} を ${count} 株購入しました！（総額: ${totalCost.toLocaleString()} M）§r`);
             player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
           }
         }
@@ -2809,7 +2950,7 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
       // Sell stock modal
       const modal = new ModalFormData()
         .title(`💰 株の売却: ${stock.name}`)
-        .textField(`売却株数を入力してください (単価: ${stock.currentPrice.toLocaleString()}円 / 保有: ${myCount}株):`, `最大: ${myCount}`, String(myCount));
+        .textField(`売却株数を入力してください (単価: ${stock.currentPrice.toLocaleString()} M / 保有: ${myCount}株):`, `最大: ${myCount}`, String(myCount));
 
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
@@ -2825,7 +2966,7 @@ function openStockDetailUI(player: Player, stock: StockInfo, blockLoc?: { x: num
           holdings[stock.code] = myCount - count;
           if (holdings[stock.code] <= 0) delete holdings[stock.code];
           setPlayerStockHoldings(player, holdings);
-          player.sendMessage(`§a💰 [売却完了] ${stock.name} を ${count} 株売却し、§e${totalEarned.toLocaleString()} 円§a を口座に受け取りました！§r`);
+          player.sendMessage(`§a💰 [売却完了] ${stock.name} を ${count} 株売却し、§e${totalEarned.toLocaleString()} M§a を口座に受け取りました！§r`);
         }
         openStockDetailUI(player, stock, blockLoc);
       });
@@ -2880,15 +3021,15 @@ function openMarketNewsUI(player: Player, blockLoc?: { x: number, y: number, z: 
   });
 }
 
-// Quick Wallet Menu on Yen Item Sneak + Right Click
+// Quick Wallet Menu on M Item Sneak + Right Click
 function openQuickWalletUI(player: Player) {
   const cash = countPlayerCash(player);
   const bank = getPlayerBankAccount(player);
 
   const form = new ActionFormData()
     .title("👛 お財布 & 口座クイックメニュー")
-    .body(`所持現金: §e${cash.toLocaleString()} 円§r\n口座残高: §a${bank.toLocaleString()} 円§r`)
-    .button(`💰 手持ちの現金を全額口座に入金 (+${cash.toLocaleString()}円)`)
+    .body(`所持現金: §e${cash.toLocaleString()} M§r\n口座残高: §a${bank.toLocaleString()} M§r`)
+    .button(`💰 手持ちの現金を全額口座に入金 (+${cash.toLocaleString()} M)`)
     .button("💹 Misskey証券 & FX取引所を開く")
     .button("🔙 閉じる");
 
@@ -2898,10 +3039,10 @@ function openQuickWalletUI(player: Player) {
     if (res.selection === 0) {
       const dep = depositAllCash(player);
       if (dep > 0) {
-        player.sendMessage(`§a👛 [クイック入金] 手持ちの現金 §e${dep.toLocaleString()} 円§a を口座に入金しました！§r`);
+        player.sendMessage(`§a👛 [クイック入金] 手持ちの現金 §e${dep.toLocaleString()} M§a を口座に入金しました！§r`);
         player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else {
-        player.sendMessage("§c⚠️ インベントリに円アイテムがありません。§r");
+        player.sendMessage("§c⚠️ インベントリにMコインアイテムがありません。§r");
       }
     } else if (res.selection === 1) {
       openFinancialPortalUI(player);
@@ -4483,11 +4624,34 @@ system.runInterval(() => {
     }
   }
 
-  // A.5. All Dimensions: The End Detection & Wealth Aura Particles
+  // A.5. All Dimensions: The End Detection, Ore Unlocks & Wealth Aura Particles
   for (const allP of world.getAllPlayers()) {
     // 1. 遠征の偉業判定: ジ・エンドに到達
     if (allP.dimension.id.includes("the_end")) {
       grantAchievement(allP, "ensei");
+    }
+
+    // 1.5. 鉱石購入アンロック判定 (ダイヤモンド & ネザライト)
+    if (!allP.hasTag("unlocked_diamond")) {
+      const diamondItems = [
+        "minecraft:diamond", "minecraft:diamond_block", "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore",
+        "minecraft:diamond_sword", "minecraft:diamond_pickaxe", "minecraft:diamond_axe", "minecraft:diamond_shovel",
+        "minecraft:diamond_hoe", "minecraft:diamond_helmet", "minecraft:diamond_chestplate", "minecraft:diamond_leggings", "minecraft:diamond_boots"
+      ];
+      if (diamondItems.some(it => playerHasItem(allP, it))) {
+        allP.addTag("unlocked_diamond");
+      }
+    }
+
+    if (!allP.hasTag("unlocked_netherite")) {
+      if (
+        playerHasItem(allP, "minecraft:netherite_ingot") ||
+        playerHasItem(allP, "minecraft:netherite_scrap") ||
+        playerHasItem(allP, "minecraft:ancient_debris") ||
+        hasPlayerAchieved(allP, "upgrade")
+      ) {
+        allP.addTag("unlocked_netherite");
+      }
     }
 
     // 2. 富豪オーラ & 称号エフェクト
@@ -4500,9 +4664,9 @@ system.runInterval(() => {
       if (stock && count > 0) stockVal += stock.currentPrice * count;
     }
     const totalAssets = cash + bank + stockVal;
-    const usdRate = fxPairs.find(p => p.id === "USD_JPY")?.currentRate || 155.0;
-    const totalUsd = totalAssets / usdRate;
-    const rank = getPlayerWealthRank(totalUsd);
+    const fedRate = fxPairs.find(p => p.id === "FED_M")?.currentRate || 155.0;
+    const totalFed = totalAssets / fedRate;
+    const rank = getPlayerWealthRank(totalFed);
 
     if (rank.particle) {
       const loc = allP.location;
@@ -4512,6 +4676,35 @@ system.runInterval(() => {
           allP.addEffect("speed", 30, { amplifier: 0, showParticles: false });
         }
       } catch (e) { }
+    }
+
+    // 3. 車両サービス（サブスクリプション）の自動更新 & 満了処理
+    const perkKeysList: ("turbo" | "insurance" | "gold_license")[] = ["turbo", "insurance", "gold_license"];
+    for (const perkKey of perkKeysList) {
+      const perkDef = CAR_PERK_DEFS[perkKey];
+      const pStatus = getCarPerkStatus(allP, perkKey);
+      const lastCheckProp = `mi_perk_${perkKey}_last_check`;
+      const lastCheckedExpires = Number(allP.getDynamicProperty(lastCheckProp) || 0);
+
+      if (pStatus.expiresAt > 0 && !pStatus.active && lastCheckedExpires !== pStatus.expiresAt) {
+        allP.setDynamicProperty(lastCheckProp, pStatus.expiresAt);
+        const renewCost = Math.floor(perkDef.fedPrice * fedRate);
+
+        if (pStatus.autoRenew) {
+          const curBank = getPlayerBankAccount(allP);
+          if (curBank >= renewCost) {
+            setPlayerBankAccount(allP, curBank - renewCost);
+            const newStatus = subscribeCarPerk(allP, perkKey);
+            allP.sendMessage(`§b🚗💳 [車両サブスク] 「${perkDef.name}」の保険料（${perkDef.fedPrice} FED / 約 ${renewCost.toLocaleString()} M）を引き落とし、契約を30分間自動更新しました！§r`);
+          } else {
+            cancelCarPerkSubscription(allP, perkKey);
+            allP.sendMessage(`§c⚠️ [車両サブスク] 口座残高不足のため「${perkDef.name}」の自動更新に失敗しました（必要額: ${renewCost.toLocaleString()} M）。契約が失効しました。§r`);
+          }
+        } else {
+          cancelCarPerkSubscription(allP, perkKey);
+          allP.sendMessage(`§7🚗 [車両サブスク] 「${perkDef.name}」の契約期間が満了しました。再度ご利用の際は金融ポータルからご加入ください。§r`);
+        }
+      }
     }
   }
 
@@ -4686,14 +4879,17 @@ system.runInterval(() => {
       }
 
       if (hasWallHit) {
-        // Check if any rider has Car Insurance
+        // Check if any rider has Car Insurance (Subscription)
         let hasInsuranceRider = false;
         for (const rider of riders) {
-          if (rider instanceof Player && hasCarPerk(rider, "insurance")) {
-            hasInsuranceRider = true;
-            rider.sendMessage("§b🛡️🚗 [車両保険発動] 車が大破したが、車両保険により即座に現場修復されました！§r");
-            overworld.spawnParticle("minecraft:totem_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
-            break;
+          if (rider instanceof Player) {
+            const insStatus = getInsuranceStatus(rider);
+            if (insStatus.active) {
+              hasInsuranceRider = true;
+              rider.sendMessage(`§b🛡️🚗 [車両保険発動] 車が大破したが、車両保険サブスクにより即座に現場修復されました！（残り時間: 約 ${insStatus.remainingMinutes} 分）§r`);
+              overworld.spawnParticle("minecraft:totem_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+              break;
+            }
           }
         }
 
@@ -5023,6 +5219,11 @@ world.afterEvents.itemUse.subscribe((event) => {
 
   // 2. Yahata Steelworks Blueprint (mi:yahata_blueprint)
   if (itemStack.typeId === "mi:yahata_blueprint") {
+    const now = Date.now();
+    const lastUse = blueprintCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 2000) return;
+    blueprintCooldownMap.set(player.id, now);
+
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -5033,6 +5234,7 @@ world.afterEvents.itemUse.subscribe((event) => {
       z: Math.floor(pLoc.z + viewDir.z * 8)
     };
 
+    decrementPlayerHeldItem(player);
     player.sendMessage("§e🏭 [官営八幡製鉄所] 設計図を展開し、歴史ある製鉄所廃墟を建設中...！§r");
     try {
       dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
@@ -5050,6 +5252,11 @@ world.afterEvents.itemUse.subscribe((event) => {
 
   // 3. Misskey HQ Blueprint (mi:hq_blueprint)
   if (itemStack.typeId === "mi:hq_blueprint") {
+    const now = Date.now();
+    const lastUse = blueprintCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 2000) return;
+    blueprintCooldownMap.set(player.id, now);
+
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -5060,6 +5267,7 @@ world.afterEvents.itemUse.subscribe((event) => {
       z: Math.floor(pLoc.z + viewDir.z * 12)
     };
 
+    decrementPlayerHeldItem(player);
     player.sendMessage("§b🏢 [Misskey開発所] 設計図を展開し、開発所ビル（4階建てダンジョン）を建設中...！§r");
     try {
       dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });

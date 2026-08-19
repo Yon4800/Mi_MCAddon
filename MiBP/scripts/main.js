@@ -40,6 +40,7 @@ function decrementPlayerHeldItem(player) {
   }
 }
 var zabutonPlaceCooldownMap = /* @__PURE__ */ new Map();
+var blueprintCooldownMap = /* @__PURE__ */ new Map();
 var yosanoLoveMap = /* @__PURE__ */ new Map();
 var mochochoEatMap = /* @__PURE__ */ new Map();
 var licensedPlayers = /* @__PURE__ */ new Set();
@@ -849,16 +850,16 @@ function openDMDetailUI(player, dm, blockLoc, isInbox = true) {
   });
 }
 var YEN_ITEMS = [
-  { typeId: "mi:yen_10000", value: 1e4, name: "\u4E00\u4E07\u5186\u672D" },
-  { typeId: "mi:yen_5000", value: 5e3, name: "\u4E94\u5343\u5186\u672D" },
-  { typeId: "mi:yen_2000", value: 2e3, name: "\u4E8C\u5343\u5186\u672D" },
-  { typeId: "mi:yen_1000", value: 1e3, name: "\u5343\u5186\u672D" },
-  { typeId: "mi:yen_500", value: 500, name: "500\u5186\u7389" },
-  { typeId: "mi:yen_100", value: 100, name: "100\u5186\u7389" },
-  { typeId: "mi:yen_50", value: 50, name: "50\u5186\u7389" },
-  { typeId: "mi:yen_10", value: 10, name: "10\u5186\u7389" },
-  { typeId: "mi:yen_5", value: 5, name: "5\u5186\u7389" },
-  { typeId: "mi:yen_1", value: 1, name: "1\u5186\u7389" }
+  { typeId: "mi:yen_10000", value: 1e4, name: "10,000 M\u7D19\u5E63" },
+  { typeId: "mi:yen_5000", value: 5e3, name: "5,000 M\u7D19\u5E63" },
+  { typeId: "mi:yen_2000", value: 2e3, name: "2,000 M\u7D19\u5E63" },
+  { typeId: "mi:yen_1000", value: 1e3, name: "1,000 M\u7D19\u5E63" },
+  { typeId: "mi:yen_500", value: 500, name: "500 M\u786C\u8CA8" },
+  { typeId: "mi:yen_100", value: 100, name: "100 M\u786C\u8CA8" },
+  { typeId: "mi:yen_50", value: 50, name: "50 M\u786C\u8CA8" },
+  { typeId: "mi:yen_10", value: 10, name: "10 M\u786C\u8CA8" },
+  { typeId: "mi:yen_5", value: 5, name: "5 M\u786C\u8CA8" },
+  { typeId: "mi:yen_1", value: 1, name: "1 M\u786C\u8CA8" }
 ];
 var SELLABLE_ITEMS = [
   { typeId: "minecraft:iron_ingot", name: "\u9244\u30A4\u30F3\u30B4\u30C3\u30C8", price: 100 },
@@ -890,9 +891,9 @@ function getPlayerBankAccount(player) {
     } catch (e) {
     }
     if (bal === void 0) {
-      bal = 3e4;
+      bal = 5e3;
       setPlayerBankAccount(player, bal);
-      player.sendMessage("\xA76\u{1F3E6}\u2728 [Misskey\u9280\u884C] \u53E3\u5EA7\u958B\u8A2D\u304A\u3081\u3067\u3068\u3046\u3054\u3056\u3044\u307E\u3059\uFF01 \u53E3\u5EA7\u958B\u8A2D\u795D\u3044\u91D1 \xA7e30,000 \u5186\xA76 \u3092\u53E3\u5EA7\u306B\u4ED8\u4E0E\u3057\u307E\u3057\u305F\uFF01\xA7r");
+      player.sendMessage("\xA76\u{1F3E6}\u2728 [Misskey\u9280\u884C] \u53E3\u5EA7\u958B\u8A2D\u304A\u3081\u3067\u3068\u3046\u3054\u3056\u3044\u307E\u3059\uFF01 \u53E3\u5EA7\u958B\u8A2D\u795D\u3044\u91D1 \xA7e5,000 M\xA76 \u3092\u53E3\u5EA7\u306B\u4ED8\u4E0E\u3057\u307E\u3057\u305F\uFF01\xA7r");
     } else {
       playerBankBalanceMap.set(player.id, bal);
     }
@@ -1023,41 +1024,41 @@ function setPlayerFxPositions(player, positions) {
 }
 var fxPairs = [
   {
-    id: "USD_JPY",
-    name: "\u7C73\u30C9\u30EB / \u5186 (USD/JPY)",
-    symbol: "$",
+    id: "FED_M",
+    name: "Fediverse\u30AF\u30EC\u30B8\u30C3\u30C8 / M\u30B3\u30A4\u30F3 (FED/M)",
+    symbol: "FED",
     baseRate: 155,
     currentRate: 155,
     prevRate: 155,
     volatility: 0.35,
     history: [154.8, 155, 155.2, 155],
-    description: "\u5B89\u5B9A\u3057\u305F\u6A19\u6E96\u901A\u8CA8\u30DA\u30A2\u3002\u30DC\u30E9\u30C6\u30A3\u30EA\u30C6\u30A3\u4F4E\u3002"
+    description: "Fediverse\u9023\u5408\u306E\u57FA\u8EF8\u30AF\u30EC\u30B8\u30C3\u30C8\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2\u6C7A\u6E08\u306B\u5BFE\u5FDC\u3002"
   },
   {
-    id: "EUR_JPY",
-    name: "\u30E6\u30FC\u30ED / \u5186 (EUR/JPY)",
-    symbol: "\u20AC",
+    id: "BLOB_M",
+    name: "\u30D6\u30ED\u30C3\u30D6\u30B3\u30A4\u30F3 / M\u30B3\u30A4\u30F3 (BLOB/M)",
+    symbol: "BLOB",
     baseRate: 168,
     currentRate: 168,
     prevRate: 168,
     volatility: 0.55,
     history: [167.5, 168, 168.2, 168],
-    description: "\u30E8\u30FC\u30ED\u30C3\u30D1\u4E3B\u8981\u901A\u8CA8\u30DA\u30A2\u3002\u30DC\u30E9\u30C6\u30A3\u30EA\u30C6\u30A3\u4E2D\u3002"
+    description: "\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u7D4C\u6E08\u570F\u306E\u4E3B\u8981\u30C8\u30FC\u30AF\u30F3\u3002\u30DC\u30E9\u30C6\u30A3\u30EA\u30C6\u30A3\u4E2D\u3002"
   },
   {
-    id: "FED_JPY",
-    name: "Fediverse\u30B3\u30A4\u30F3 / \u5186 (FED/JPY)",
-    symbol: "FED",
+    id: "NEKO_M",
+    name: "\u3092\u306D\u3053\u30C8\u30FC\u30AF\u30F3 / M\u30B3\u30A4\u30F3 (NEKO/M)",
+    symbol: "NEKO",
     baseRate: 850,
     currentRate: 850,
     prevRate: 850,
     volatility: 12,
     history: [840, 855, 848, 850],
-    description: "Misskey\u9023\u5408\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u306E\u4EEE\u60F3\u901A\u8CA8\u3002\u30DC\u30E9\u30C6\u30A3\u30EA\u30C6\u30A3\u9AD8\u3002"
+    description: "\u3092\u306D\u3053\u30B3\u30DF\u30E5\u30CB\u30C6\u30A3\u306E\u5E0C\u5C11\u30C8\u30FC\u30AF\u30F3\u3002\u30DC\u30E9\u30C6\u30A3\u30EA\u30C6\u30A3\u9AD8\u3002"
   },
   {
-    id: "MCC_JPY",
-    name: "\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3 / \u5186 (MCC/JPY)",
+    id: "MCC_M",
+    name: "\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3 / M\u30B3\u30A4\u30F3 (MCC/M)",
     symbol: "MCC",
     baseRate: 12.5,
     currentRate: 12.5,
@@ -1160,6 +1161,7 @@ var stockMarket = [
     description: "\u753A\u7530\u30FB\u795E\u5948\u5DDD\u9593\u306E\u30A8\u30F3\u30C0\u30FC\u30D1\u30FC\u30EB\u7A7A\u9593\u8EE2\u9001\u3092\u624B\u639B\u3051\u308B\u6B21\u4E16\u4EE3\u7269\u6D41\u4F01\u696D\u3002"
   }
 ];
+var marketNewsHistory = [];
 function saveMarketWorldData() {
   try {
     const fxData = {};
@@ -1228,7 +1230,6 @@ function loadMarketWorldData() {
   }
 }
 loadMarketWorldData();
-var marketNewsHistory = [];
 var STOCK_NEWS_TEMPLATES = [
   // SYUIL (しゅいろソフトウェア)
   { title: "\u{1F680}\u3010\u901F\u5831\u3011\u3057\u3085\u3044\u308D\u6C0F\u3001\u65B0\u6A5F\u80FD\u3092\u7DCA\u6025\u30C7\u30D7\u30ED\u30A4\uFF01", content: "Misskey\u306B\u9769\u65B0\u7684\u306A\u65B0\u6A5F\u80FD\u304C\u5B9F\u88C5\u3055\u308C\u3001\u30E6\u30FC\u30B6\u30FC\u6570\u304C\u7206\u767A\u7684\u306B\u5897\u52A0\u3057\u3066\u3044\u307E\u3059\uFF01", code: "SYUIL", minImpact: 15, maxImpact: 35 },
@@ -1264,26 +1265,26 @@ var STOCK_NEWS_TEMPLATES = [
   { title: "\u{1F30C}\u3010\u5B87\u5B99\u3011\u30B8\u30FB\u30A8\u30F3\u30C9\u5411\u3051\u8D85\u9577\u8DDD\u96E2\u30C7\u30EA\u30D0\u30EA\u30FC\u5B9F\u8A3C\u5B9F\u9A13\u306B\u6210\u529F", content: "\u7570\u6B21\u5143\u7A7A\u9593\u3092\u8DE8\u3050\u914D\u9001\u7DB2\u306E\u69CB\u7BC9\u306B\u6210\u529F\u3057\u3001\u7269\u6D41\u754C\u306E\u9769\u547D\u5150\u3068\u3057\u3066\u682A\u4FA1\u304C\u6025\u4E0A\u6607\uFF01", code: "YSNO", minImpact: 20, maxImpact: 40 }
 ];
 var FX_NEWS_TEMPLATES = [
-  // USD/JPY (米ドル/円)
-  { title: "\u{1F1FA}\u{1F1F8}\u3010\u5229\u4E0A\u3052\u3011FRB\u304C\u30B5\u30D7\u30E9\u30A4\u30BA\u5229\u4E0A\u3052\u767A\u8868\uFF01\u30C9\u30EB\u8CB7\u3044\u52A0\u901F", content: "\u7C73\u9023\u90A6\u6E96\u5099\u5236\u5EA6\u304C\u30A4\u30F3\u30D5\u30EC\u6291\u5236\u306E\u305F\u3081\u5229\u4E0A\u3052\u3092\u5B9F\u65BD\u3002\u65E5\u7C73\u91D1\u5229\u5DEE\u62E1\u5927\u304B\u3089\u30C9\u30EB\u9AD8\u5186\u5B89\u304C\u6025\u4F38\uFF01", pairId: "USD_JPY", minImpact: 3, maxImpact: 7 },
-  { title: "\u{1F1EF}\u{1F1F5}\u3010\u70BA\u66FF\u4ECB\u5165\u3011\u65E5\u9280\u304C\u5186\u8CB7\u3044\u70BA\u66FF\u4ECB\u5165\u3092\u5B9F\u65BD\u3001\u30C9\u30EB\u5186\u6025\u843D\uFF01", content: "\u6025\u6FC0\u306A\u5186\u5B89\u3092\u662F\u6B63\u3059\u308B\u305F\u3081\u901A\u8CA8\u5F53\u5C40\u304C\u5E02\u5834\u4ECB\u5165\u3092\u5B9F\u65BD\u3002\u30C9\u30EB\u304C\u4E00\u6C17\u306B\u58F2\u308A\u6D74\u3073\u305B\u3089\u308C\u307E\u3057\u305F\u3002", pairId: "USD_JPY", minImpact: -6, maxImpact: -3 },
-  { title: "\u{1F4CA}\u3010\u96C7\u7528\u7D71\u8A08\u3011\u7C73\u96C7\u7528\u7D71\u8A08\u304C\u5E02\u5834\u4E88\u60F3\u3092\u5927\u5E45\u306B\u4E0A\u56DE\u308B", content: "\u7C73\u666F\u6C17\u306E\u529B\u5F37\u3055\u304C\u78BA\u8A8D\u3055\u308C\u3001\u6295\u8CC7\u5BB6\u306E\u30C9\u30EB\u8CB7\u3044\u610F\u6B32\u304C\u6025\u62E1\u5927\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "USD_JPY", minImpact: 2, maxImpact: 5 },
-  { title: "\u{1F4C9}\u3010\u30EA\u30B9\u30AF\u30AA\u30D5\u3011\u4E16\u754C\u7684\u8B66\u6212\u611F\u306E\u9AD8\u307E\u308A\u304B\u3089\u5B89\u5168\u8CC7\u7523\u306E\u5186\u8CB7\u3044", content: "\u5730\u653F\u5B66\u7684\u30EA\u30B9\u30AF\u306E\u9AD8\u307E\u308A\u3092\u53D7\u3051\u3001\u30EA\u30B9\u30AF\u56DE\u907F\u306E\u5186\u8CB7\u3044\u304C\u512A\u52E2\u3068\u306A\u3063\u3066\u3044\u307E\u3059\u3002", pairId: "USD_JPY", minImpact: -4, maxImpact: -2 },
-  // EUR/JPY (ユーロ/円)
-  { title: "\u{1F1EA}\u{1F1FA}\u3010\u5229\u4E0A\u3052\u3011\u6B27\u5DDE\u4E2D\u592E\u9280\u884C (ECB) \u304C\u8FFD\u52A0\u5229\u4E0A\u3052\u3092\u6C7A\u5B9A", content: "\u6B27\u5DDE\u570F\u306E\u30A4\u30F3\u30D5\u30EC\u9AD8\u6B62\u307E\u308A\u3092\u6291\u3048\u8FBC\u3080\u305F\u3081\u30BF\u30AB\u6D3E\u59FF\u52E2\u3092\u7DAD\u6301\u3002\u30E6\u30FC\u30ED\u8CB7\u3044\u304C\u9032\u3093\u3067\u3044\u307E\u3059\u3002", pairId: "EUR_JPY", minImpact: 3, maxImpact: 6 },
-  { title: "\u{1F1EA}\u{1F1FA}\u3010\u666F\u6C17\u6E1B\u901F\u3011\u6B27\u5DDE\u4E3B\u8981\u56FD\u306E\u88FD\u9020\u696D\u6307\u6A19\u304C\u60AA\u5316\u3001\u30E6\u30FC\u30ED\u6025\u843D", content: "\u30A8\u30CD\u30EB\u30AE\u30FC\u4FA1\u683C\u3068\u9700\u8981\u6E1B\u9000\u306B\u3088\u308A\u6B27\u5DDE\u666F\u6C17\u306E\u5F8C\u9000\u61F8\u5FF5\u304C\u5F37\u307E\u308A\u3001\u30E6\u30FC\u30ED\u304C\u6025\u6FC0\u306B\u58F2\u3089\u308C\u3066\u3044\u307E\u3059\u3002", pairId: "EUR_JPY", minImpact: -5, maxImpact: -2 },
-  { title: "\u{1F91D}\u3010\u5354\u5B9A\u7DE0\u7D50\u3011\u65E5\u6B27\u5305\u62EC\u7684\u30C7\u30B8\u30BF\u30EB\u7D4C\u6E08\u9023\u643A\u5354\u5B9A\u304C\u6210\u7ACB", content: "\u6B27\u5DDE\u3068\u65E5\u672C\u9593\u306E\u8CBF\u6613\u30FB\u6295\u8CC7\u6D3B\u6027\u5316\u3078\u306E\u671F\u5F85\u611F\u304B\u3089\u30E6\u30FC\u30ED\u5186\u304C\u8CB7\u308F\u308C\u3066\u3044\u307E\u3059\u3002", pairId: "EUR_JPY", minImpact: 2, maxImpact: 5 },
-  { title: "\u26A1\u3010\u96FB\u529B\u5371\u6A5F\u3011\u6B27\u5DDE\u9001\u96FB\u7DB2\u306E\u5BD2\u6CE2\u30C8\u30E9\u30D6\u30EB\u3067\u30E6\u30FC\u30ED\u58F2\u308A\u5148\u884C", content: "\u5B63\u7BC0\u7684\u306A\u30A8\u30CD\u30EB\u30AE\u30FC\u4E0D\u5B89\u304C\u518D\u71C3\u3057\u3001\u30E6\u30FC\u30ED\u306E\u4E0B\u843D\u5727\u529B\u3068\u306A\u3063\u3066\u3044\u307E\u3059\u3002", pairId: "EUR_JPY", minImpact: -4, maxImpact: -2 },
-  // FED/JPY (Fediverseコイン/円)
-  { title: "\u{1F310}\u3010\u9023\u5408\u62E1\u5927\u3011Fediverse\u63A5\u7D9A\u30B5\u30FC\u30D0\u30FC\u6570\u304C10\u4E07\u53F0\u3092\u7A81\u7834\uFF01", content: "\u5206\u6563\u578BSNS\u306E\u7206\u767A\u7684\u62E1\u5927\u306B\u4F34\u3044\u3001\u9023\u5408\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u57FA\u8EF8\u30C8\u30FC\u30AF\u30F3FED\u30B3\u30A4\u30F3\u304C\u731B\u70C8\u306A\u8CB7\u3044\u3092\u96C6\u3081\u3066\u3044\u307E\u3059\uFF01", pairId: "FED_JPY", minImpact: 25, maxImpact: 55 },
-  { title: "\u26A0\uFE0F\u3010\u969C\u5BB3\u3011\u5927\u624B\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u7FA4\u306E\u9023\u9396\u30C0\u30A6\u30F3\u3067\u4E00\u6642\u58F2\u308A\u6D74\u3073\u305B", content: "\u4E00\u6642\u7684\u306A\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u5206\u65AD\u306B\u3088\u308AFED\u30B3\u30A4\u30F3\u306E\u6D41\u52D5\u6027\u61F8\u5FF5\u304C\u751F\u3058\u3001\u4FA1\u683C\u304C\u6025\u843D\u3057\u307E\u3057\u305F\u3002", pairId: "FED_JPY", minImpact: -30, maxImpact: -15 },
-  { title: "\u{1F4B3}\u3010\u516C\u5F0F\u6C7A\u6E08\u3011\u4E3B\u8981Misskey\u30B5\u30FC\u30D0\u30FC\u304CFED\u6C7A\u6E08\u3092\u6A19\u6E96\u63A1\u7528", content: "\u30B5\u30FC\u30D0\u30FC\u7DAD\u6301\u8CBB\u3084\u6295\u3052\u92AD\u3067\u306EFED\u5229\u7528\u304C\u7FA9\u52D9\u4ED8\u3051\u3089\u308C\u3001\u5B9F\u9700\u8CB7\u3044\u304C\u6BBA\u5230\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "FED_JPY", minImpact: 18, maxImpact: 38 },
-  { title: "\u{1F512}\u3010\u898F\u5236\u61F8\u5FF5\u3011\u5206\u6563\u578B\u30D7\u30ED\u30C8\u30B3\u30EB\u3078\u306E\u56FD\u969B\u898F\u5236\u5831\u9053\u3067\u6025\u843D", content: "\u5404\u56FD\u898F\u5236\u5F53\u5C40\u306B\u3088\u308B\u76E3\u8996\u5F37\u5316\u306E\u5642\u304C\u6D41\u308C\u3001\u4E00\u6642\u7684\u306A\u30D1\u30CB\u30C3\u30AF\u58F2\u308A\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002", pairId: "FED_JPY", minImpact: -25, maxImpact: -10 },
-  // MCC/JPY (モチョコイン/円 - 超ハイリスク草コイン)
-  { title: "\u{1F315}\u3010TO THE MOON!\u3011\u6709\u540D\u30A4\u30F3\u30D5\u30EB\u30A8\u30F3\u30B5\u30FC\u306E\u30C4\u30A4\u30FC\u30C8\u3067\u72C2\u4E71\u6025\u9A30\uFF01", content: "\u300C\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3\u3057\u304B\u52DD\u305F\u3093\u300D\u3068\u3044\u3046\u4E00\u8A00\u3067\u4E16\u754C\u4E2D\u306E\u6295\u6A5F\u8CC7\u91D1\u304C\u6D41\u5165\u3001\u4FA1\u683C\u304C\u6570\u500D\u306B\u7206\u9A30\u4E2D\uFF01", pairId: "MCC_JPY", minImpact: 70, maxImpact: 160 },
-  { title: "\u{1F4A5}\u3010\u5927\u66B4\u843D\u3011CEO\u304C\u300C\u305F\u3060\u306E\u30CD\u30BF\u30B3\u30A4\u30F3\u300D\u3068\u767A\u8A00\u3057\u5927\u66B4\u843D\uFF01", content: "\u958B\u767A\u9663\u306E\u68AF\u5B50\u5916\u3057\u767A\u8A00\u306B\u6295\u8CC7\u5BB6\u304C\u6FC0\u6012\u3002\u6295\u3052\u58F2\u308A\u304C\u6B62\u307E\u3089\u305A\u5927\u66B4\u843D\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "MCC_JPY", minImpact: -65, maxImpact: -35 },
-  { title: "\u{1F36E}\u3010\u9084\u5143\u796D\u3011\u30D7\u30EA\u30F3\u8CFC\u5165\u3067\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3\u5168\u984D\u30AD\u30E3\u30C3\u30B7\u30E5\u30D0\u30C3\u30AF\uFF01", content: "\u30E2\u30C1\u30E7\u30C1\u30E7\u88FD\u83D3\u3068\u306E\u5927\u578B\u30BF\u30A4\u30A2\u30C3\u30D7\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u304C\u59CB\u307E\u308A\u3001\u8CB7\u3044\u304C\u8CB7\u3044\u3092\u547C\u3076\u5C55\u958B\u306B\uFF01", pairId: "MCC_JPY", minImpact: 40, maxImpact: 90 },
-  { title: "\u{1F40B}\u3010\u30AF\u30B8\u30E9\u5229\u78BA\u3011\u5927\u53E3\u6295\u8CC7\u5BB6\uFF08\u30AF\u30B8\u30E9\uFF09\u304C\u4FDD\u6709\u30B3\u30A4\u30F3\u3092\u4E00\u6589\u653E\u51FA", content: "\u521D\u671F\u304B\u3089\u306E\u5927\u53E3\u30DB\u30EB\u30C0\u30FC\u304C\u83AB\u5927\u306A\u5229\u76CA\u78BA\u5B9A\u58F2\u308A\u3092\u884C\u3044\u3001\u4FA1\u683C\u304C\u6025\u843D\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "MCC_JPY", minImpact: -50, maxImpact: -25 }
+  // FED/M (Fediverseクレジット/Mコイン)
+  { title: "\u{1F310}\u3010\u9023\u5408\u62E1\u5927\u3011Fediverse\u63A5\u7D9A\u30B5\u30FC\u30D0\u30FC\u6570\u304C10\u4E07\u53F0\u3092\u7A81\u7834\uFF01", content: "\u5206\u6563\u578BSNS\u306E\u7206\u767A\u7684\u62E1\u5927\u306B\u4F34\u3044\u3001\u9023\u5408\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u57FA\u8EF8\u30AF\u30EC\u30B8\u30C3\u30C8FED\u304C\u731B\u70C8\u306A\u8CB7\u3044\u3092\u96C6\u3081\u3066\u3044\u307E\u3059\uFF01", pairId: "FED_M", minImpact: 4, maxImpact: 8 },
+  { title: "\u26A0\uFE0F\u3010\u969C\u5BB3\u3011\u5927\u624B\u30A4\u30F3\u30B9\u30BF\u30F3\u30B9\u7FA4\u306E\u9023\u9396\u30C0\u30A6\u30F3\u3067\u4E00\u6642\u58F2\u308A\u6D74\u3073\u305B", content: "\u4E00\u6642\u7684\u306A\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u5206\u65AD\u306B\u3088\u308AFED\u30AF\u30EC\u30B8\u30C3\u30C8\u306E\u6D41\u52D5\u6027\u61F8\u5FF5\u304C\u751F\u3058\u3001\u4FA1\u683C\u304C\u6025\u843D\u3057\u307E\u3057\u305F\u3002", pairId: "FED_M", minImpact: -6, maxImpact: -3 },
+  { title: "\u{1F4B3}\u3010\u516C\u5F0F\u6C7A\u6E08\u3011\u4E3B\u8981Misskey\u30B5\u30FC\u30D0\u30FC\u304CFED\u6C7A\u6E08\u3092\u6A19\u6E96\u63A1\u7528", content: "\u30B5\u30FC\u30D0\u30FC\u7DAD\u6301\u8CBB\u3084\u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2\u3067\u306EFED\u5229\u7528\u304C\u62E1\u5927\u3057\u3001\u5B9F\u9700\u8CB7\u3044\u304C\u6BBA\u5230\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "FED_M", minImpact: 3, maxImpact: 7 },
+  { title: "\u{1F512}\u3010\u6697\u53F7\u5316\u3011\u6B21\u4E16\u4EE3\u9023\u5408\u30D7\u30ED\u30C8\u30B3\u30EB\u306E\u6697\u53F7\u5316\u5F37\u5316\u304C\u767A\u8868", content: "\u30BB\u30AD\u30E5\u30EA\u30C6\u30A3\u5411\u4E0A\u3078\u306E\u9AD8\u8A55\u4FA1\u304B\u3089\u3001FED\u30AF\u30EC\u30B8\u30C3\u30C8\u306E\u4FE1\u983C\u6027\u304C\u6025\u4E0A\u6607\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "FED_M", minImpact: 2, maxImpact: 5 },
+  // BLOB/M (ブロッブコイン/Mコイン)
+  { title: "\u{1F431}\u3010\u7206\u8CB7\u3044\u3011\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u306E\u306C\u3044\u3050\u308B\u307F\u767A\u58F2\u3067BLOB\u8CB7\u3044\u6BBA\u5230", content: "\u516C\u5F0F\u30B0\u30C3\u30BA\u306E\u6C7A\u6E08\u901A\u8CA8\u306B\u6307\u5B9A\u3055\u308C\u3001\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u7D4C\u6E08\u570F\u30C8\u30FC\u30AF\u30F3BLOB\u304C\u9AD8\u9A30\uFF01", pairId: "BLOB_M", minImpact: 4, maxImpact: 9 },
+  { title: "\u{1F327}\uFE0F\u3010\u54C1\u8584\u3011\u611B\u77E5\u30A2\u30A4\u30C6\u30E0\u306E\u53CE\u7A6B\u91CF\u6E1B\u5C11\u3067BLOB\u58F2\u308A\u5148\u884C", content: "\u9032\u5316\u30A2\u30A4\u30C6\u30E0\u306E\u4F9B\u7D66\u4E0D\u8DB3\u304C\u61F8\u5FF5\u3055\u308C\u3001\u4E00\u6642\u7684\u306A\u8ABF\u6574\u58F2\u308A\u304C\u767A\u751F\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "BLOB_M", minImpact: -5, maxImpact: -2 },
+  { title: "\u{1F91D}\u3010\u63D0\u643A\u3011\u30E2\u30C1\u30E7\u30C1\u30E7\u88FD\u83D3\u3068BLOB\u30DD\u30A4\u30F3\u30C8\u306E\u76F8\u4E92\u4EA4\u63DB\u304C\u6C7A\u5B9A", content: "\u30B9\u30A4\u30FC\u30C4\u3068\u306E\u30BF\u30A4\u30A2\u30C3\u30D7\u306B\u3088\u308ABLOB\u30C8\u30FC\u30AF\u30F3\u306E\u5229\u7528\u8005\u304C\u6025\u5897\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "BLOB_M", minImpact: 3, maxImpact: 6 },
+  { title: "\u{1F389}\u3010\u751F\u8A95\u796D\u3011\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u8A95\u751F\u796D\u30A4\u30D9\u30F3\u30C8\u3067\u53D6\u5F15\u9AD8\u6700\u9AD8\u8A18\u9332", content: "\u304A\u796D\u308A\u30E0\u30FC\u30C9\u306B\u5305\u307E\u308C\u3001\u4E16\u754C\u4E2D\u304B\u3089BLOB\u8CB7\u3044\u304C\u6D41\u5165\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "BLOB_M", minImpact: 5, maxImpact: 10 },
+  // NEKO/M (をねこトークン/Mコイン)
+  { title: "\u{1F634}\u3010\u306E\u3093\u3073\u308A\u3011\u3092\u306D\u3053\u30EA\u30E9\u30C3\u30AF\u30B9\u52B9\u679C\u3067NEKO\u30C8\u30FC\u30AF\u30F3\u6025\u9A30\uFF01", content: "\u7652\u3084\u3057\u3092\u6C42\u3081\u308B\u30C8\u30EC\u30FC\u30C0\u30FC\u306B\u3088\u308B\u8CB7\u3044\u304C\u96C6\u307E\u308A\u3001\u9AD8\u6C34\u6E96\u3092\u7DAD\u6301\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "NEKO_M", minImpact: 15, maxImpact: 35 },
+  { title: "\u{1F63F}\u3010\u6D99\u76EE\u3011\u3092\u306D\u3053\u6CE3\u304D\u9854\u30B9\u30BF\u30F3\u30D7\u9023\u6253\u3067\u30B5\u30FC\u30D0\u30FC\u904E\u71B1", content: "\u4E00\u90E8\u8CA0\u8377\u306B\u3088\u308B\u9045\u5EF6\u304C\u5ACC\u6C17\u3055\u308C\u3001\u4E00\u6642\u7684\u306B\u58F2\u308A\u304C\u512A\u52E2\u3068\u306A\u308A\u307E\u3057\u305F\u3002", pairId: "NEKO_M", minImpact: -20, maxImpact: -8 },
+  { title: "\u{1F375}\u3010\u9759\u5CA1\u7279\u9700\u3011\u9759\u5CA1\u30A2\u30A4\u30C6\u30E0\u306E\u9700\u8981\u6025\u5897\u3067NEKO\u8CB7\u3044\u52A0\u901F", content: "\u3092\u306D\u3053\u9032\u5316\u7D20\u6750\u306E\u53D6\u5F15\u6D3B\u767A\u5316\u306B\u3088\u308A\u30C8\u30FC\u30AF\u30F3\u4FA1\u5024\u304C\u6025\u4E0A\u6607\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "NEKO_M", minImpact: 12, maxImpact: 25 },
+  { title: "\u26A1\u3010\u30E9\u30A4\u30D0\u30EB\u3011\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u3068\u306E\u30A8\u30F3\u30AB\u30A6\u30F3\u30C8\u3067\u653B\u6483\u529B\uFF06\u30EC\u30FC\u30C8UP", content: "\u30E9\u30A4\u30D0\u30EB\u95A2\u4FC2\u306B\u3088\u308B\u6CE8\u76EE\u5EA6\u6025\u4E0A\u6607\u3067NEKO\u30C8\u30FC\u30AF\u30F3\u304C\u5927\u5E45\u9AD8\uFF01", pairId: "NEKO_M", minImpact: 18, maxImpact: 30 },
+  // MCC/M (モチョコイン/Mコイン - 超ハイリスク草コイン)
+  { title: "\u{1F315}\u3010TO THE MOON!\u3011\u6709\u540D\u30A4\u30F3\u30D5\u30EB\u30A8\u30F3\u30B5\u30FC\u306E\u6295\u7A3F\u3067\u72C2\u4E71\u6025\u9A30\uFF01", content: "\u300C\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3\u3057\u304B\u52DD\u305F\u3093\u300D\u3068\u3044\u3046\u4E00\u8A00\u3067\u6295\u6A5F\u8CC7\u91D1\u304C\u6D41\u5165\u3001\u4FA1\u683C\u304C\u7206\u9A30\u4E2D\uFF01", pairId: "MCC_M", minImpact: 70, maxImpact: 160 },
+  { title: "\u{1F4A5}\u3010\u5927\u66B4\u843D\u3011CEO\u304C\u300C\u305F\u3060\u306E\u30CD\u30BF\u30B3\u30A4\u30F3\u300D\u3068\u767A\u8A00\u3057\u5927\u66B4\u843D\uFF01", content: "\u958B\u767A\u9663\u306E\u68AF\u5B50\u5916\u3057\u767A\u8A00\u306B\u6295\u8CC7\u5BB6\u304C\u6FC0\u6012\u3002\u6295\u3052\u58F2\u308A\u304C\u6B62\u307E\u3089\u305A\u5927\u66B4\u843D\u3057\u3066\u3044\u307E\u3059\uFF01", pairId: "MCC_M", minImpact: -65, maxImpact: -35 },
+  { title: "\u{1F36E}\u3010\u9084\u5143\u796D\u3011\u30D7\u30EA\u30F3\u8CFC\u5165\u3067\u30E2\u30C1\u30E7\u30B3\u30A4\u30F3\u5168\u984D\u30AD\u30E3\u30C3\u30B7\u30E5\u30D0\u30C3\u30AF\uFF01", content: "\u30E2\u30C1\u30E7\u30C1\u30E7\u88FD\u83D3\u3068\u306E\u5927\u578B\u30BF\u30A4\u30A2\u30C3\u30D7\u30AD\u30E3\u30F3\u30DA\u30FC\u30F3\u304C\u59CB\u307E\u308A\u3001\u8CB7\u3044\u304C\u8CB7\u3044\u3092\u547C\u3076\u5C55\u958B\u306B\uFF01", pairId: "MCC_M", minImpact: 40, maxImpact: 90 },
+  { title: "\u{1F40B}\u3010\u30AF\u30B8\u30E9\u5229\u78BA\u3011\u5927\u53E3\u6295\u8CC7\u5BB6\uFF08\u30AF\u30B8\u30E9\uFF09\u304C\u4FDD\u6709\u30B3\u30A4\u30F3\u3092\u4E00\u6589\u653E\u51FA", content: "\u521D\u671F\u304B\u3089\u306E\u5927\u53E3\u30DB\u30EB\u30C0\u30FC\u304C\u83AB\u5927\u306A\u5229\u76CA\u78BA\u5B9A\u58F2\u308A\u3092\u884C\u3044\u3001\u4FA1\u683C\u304C\u6025\u843D\u3057\u3066\u3044\u307E\u3059\u3002", pairId: "MCC_M", minImpact: -50, maxImpact: -25 }
 ];
 function updateStockPrices() {
   for (const stock of stockMarket) {
@@ -1310,7 +1311,7 @@ function updateStockPrices() {
     if (totalDividends > 0) {
       const current = getPlayerBankAccount(player);
       setPlayerBankAccount(player, current + totalDividends);
-      player.sendMessage(`\xA7a\u{1F4B5} [\u914D\u5F53\u91D1\u53D7\u53D6] \u4FDD\u6709\u682A\u5F0F\u306E\u914D\u5F53\u91D1 \xA7e${totalDividends.toLocaleString()} \u5186\xA7a \u304C\u53E3\u5EA7\u306B\u632F\u308A\u8FBC\u307E\u308C\u307E\u3057\u305F\uFF01\xA7r`);
+      player.sendMessage(`\xA7a\u{1F4B5} [\u914D\u5F53\u91D1\u53D7\u53D6] \u4FDD\u6709\u682A\u5F0F\u306E\u914D\u5F53\u91D1 \xA7e${totalDividends.toLocaleString()} M\xA7a \u304C\u53E3\u5EA7\u306B\u632F\u308A\u8FBC\u307E\u308C\u307E\u3057\u305F\uFF01\xA7r`);
     }
   }
 }
@@ -1383,7 +1384,7 @@ system.runInterval(() => {
         const refund = Math.max(0, pos.margin + profit);
         const curBal = getPlayerBankAccount(player);
         setPlayerBankAccount(player, curBal + refund);
-        player.sendMessage(`\xA7c\u{1F6A8} [\u30ED\u30B9\u30AB\u30C3\u30C8\u57F7\u884C] ${pair.name} \u306E\u30DD\u30B8\u30B7\u30E7\u30F3\u304C\u5F37\u5236\u6C7A\u6E08\u3055\u308C\u307E\u3057\u305F\uFF08\u640D\u5931: ${Math.abs(profit).toLocaleString()}\u5186, \u8FD4\u9084: ${refund.toLocaleString()}\u5186\uFF09\u3002\xA7r`);
+        player.sendMessage(`\xA7c\u{1F6A8} [\u30ED\u30B9\u30AB\u30C3\u30C8\u57F7\u884C] ${pair.name} \u306E\u30DD\u30B8\u30B7\u30E7\u30F3\u304C\u5F37\u5236\u6C7A\u6E08\u3055\u308C\u307E\u3057\u305F\uFF08\u640D\u5931: ${Math.abs(profit).toLocaleString()} M, \u8FD4\u9084: ${refund.toLocaleString()} M\uFF09\u3002\xA7r`);
         modified = true;
       } else {
         remainingPositions.push(pos);
@@ -1395,44 +1396,88 @@ system.runInterval(() => {
   }
   saveMarketWorldData();
 }, 600);
-var playerCarTurboSet = /* @__PURE__ */ new Set();
-var playerCarInsuranceSet = /* @__PURE__ */ new Set();
-var playerGoldLicenseSet = /* @__PURE__ */ new Set();
-function hasCarPerk(player, perkKey) {
-  if (perkKey === "turbo" && playerCarTurboSet.has(player.id)) return true;
-  if (perkKey === "insurance" && playerCarInsuranceSet.has(player.id)) return true;
-  if (perkKey === "gold_license" && playerGoldLicenseSet.has(player.id)) return true;
-  try {
-    const prop = player.getDynamicProperty(`car_perk_${perkKey}`);
-    if (prop === true) {
-      if (perkKey === "turbo") playerCarTurboSet.add(player.id);
-      if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
-      if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
-      return true;
-    }
-  } catch (e) {
+var CAR_PERK_DURATION_MS = 30 * 60 * 1e3;
+var CAR_PERK_DEFS = {
+  turbo: {
+    key: "turbo",
+    name: "\u26A1 \u30BF\u30FC\u30DC\u30D6\u30FC\u30B9\u30BF\u30FC",
+    badge: "\u30BF\u30FC\u30DC",
+    fedPrice: 30,
+    description: "\u9577\u3044\u5909\u306A\u8ECA\u306E\u30A8\u30F3\u30B8\u30F3\u3092\u8D85\u5F37\u5316\u3057\u3001\u6700\u9AD8\u901F\u5EA6\u30921.5\u500D\u306B\u7206\u901F\u52A0\u901F\uFF01",
+    effectSummary: "\u6700\u9AD8\u901F\u5EA6\u304C1.5\u500D\u306B\u8D85\u52A0\u901F"
+  },
+  insurance: {
+    key: "insurance",
+    name: "\u{1F6E1}\uFE0F \u8ECA\u4E21\u4FDD\u967A",
+    badge: "\u4FDD\u967A",
+    fedPrice: 20,
+    description: "\u58C1\u6FC0\u7A81\u306B\u3088\u308B\u5927\u7834\u4E8B\u6545\u6642\u306B\u30011\u5206\u505C\u6B62\u305B\u305A\u5373\u5EA7\u306B\u73FE\u5834\u4FEE\u5FA9\uFF01",
+    effectSummary: "\u4E8B\u6545\u5927\u7834\u6642\u306E1\u5206\u505C\u6B62\u3092\u5373\u6642\u5FA9\u65E7"
+  },
+  gold_license: {
+    key: "gold_license",
+    name: "\u{1F530} \u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u8A3C",
+    badge: "\u91D1\u514D",
+    fedPrice: 15,
+    description: "\u512A\u826F\u30C9\u30E9\u30A4\u30D0\u30FC\u8A8D\u5B9A\u8A3C\u3002\u8ECA\u3092\u8AA4\u3063\u3066\u6BB4\u3063\u3066\u3082\u8ECA\u304C\u6012\u3089\u306A\u304F\u306A\u308B\uFF01",
+    effectSummary: "\u8ECA\u3092\u6BB4\u3063\u3066\u3082\u6012\u3089\u308C\u306A\u304F\u306A\u308B"
   }
-  return false;
+};
+function getCarPerkStatus(player, perkKey) {
+  try {
+    const expiresAt = Number(player.getDynamicProperty(`mi_perk_${perkKey}_expires`) || 0);
+    const rawAutoRenew = player.getDynamicProperty(`mi_perk_${perkKey}_auto_renew`);
+    const autoRenew = rawAutoRenew === void 0 ? true : Boolean(rawAutoRenew);
+    const now = Date.now();
+    const active = now < expiresAt;
+    const remainingMinutes = active ? Math.max(1, Math.ceil((expiresAt - now) / 6e4)) : 0;
+    return { active, expiresAt, remainingMinutes, autoRenew };
+  } catch (e) {
+    return { active: false, expiresAt: 0, remainingMinutes: 0, autoRenew: false };
+  }
 }
-function setCarPerk(player, perkKey) {
-  if (perkKey === "turbo") playerCarTurboSet.add(player.id);
-  if (perkKey === "insurance") playerCarInsuranceSet.add(player.id);
-  if (perkKey === "gold_license") playerGoldLicenseSet.add(player.id);
+function subscribeCarPerk(player, perkKey, durationMs = CAR_PERK_DURATION_MS) {
+  const current = getCarPerkStatus(player, perkKey);
+  const now = Date.now();
+  const baseTime = current.active ? current.expiresAt : now;
+  const newExpires = baseTime + durationMs;
   try {
-    player.setDynamicProperty(`car_perk_${perkKey}`, true);
+    player.setDynamicProperty(`mi_perk_${perkKey}_expires`, newExpires);
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, true);
   } catch (e) {
   }
+  return getCarPerkStatus(player, perkKey);
+}
+function setCarPerkAutoRenew(player, perkKey, autoRenew) {
+  try {
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, autoRenew);
+  } catch (e) {
+  }
+}
+function cancelCarPerkSubscription(player, perkKey) {
+  try {
+    player.setDynamicProperty(`mi_perk_${perkKey}_expires`, 0);
+    player.setDynamicProperty(`mi_perk_${perkKey}_auto_renew`, false);
+  } catch (e) {
+  }
+}
+function hasCarPerk(player, perkKey) {
+  return getCarPerkStatus(player, perkKey).active;
+}
+function getInsuranceStatus(player) {
+  const s = getCarPerkStatus(player, "insurance");
+  return { active: s.active, expiresAt: s.expiresAt, remainingMinutes: s.remainingMinutes, autoRenew: s.autoRenew };
 }
 var WEALTH_RANKS = [
-  { rankName: "Misskey\u306E\u5927\u682A\u4E3B", minUsd: 1e5, badge: "\xA7d\u{1F451}[\u5927\u682A\u4E3B]\xA7r", particle: "minecraft:mob_portal", description: "\u7DCF\u8CC7\u752310\u4E07\u30C9\u30EB\u7A81\u7834\u3002\u8679\u8272\u306E\u30DD\u30FC\u30BF\u30EB\u30AA\u30FC\u30E9\u3068\u52A0\u901F\u30D0\u30D5\u3002" },
-  { rankName: "\u77F3\u6CB9\u738B", minUsd: 2e4, badge: "\xA76\u{1F48E}[\u77F3\u6CB9\u738B]\xA7r", particle: "minecraft:totem_particle", description: "\u7DCF\u8CC7\u75232\u4E07\u30C9\u30EB\u7A81\u7834\u3002\u9EC4\u91D1\u3068\u30A8\u30E1\u30E9\u30EB\u30C9\u306E\u30AA\u30FC\u30E9\u3002" },
-  { rankName: "\u5927\u5BCC\u8C6A", minUsd: 5e3, badge: "\xA7e\u{1F3A9}[\u5927\u5BCC\u8C6A]\xA7r", particle: "minecraft:villager_happy", description: "\u7DCF\u8CC7\u75235\u5343\u30C9\u30EB\u7A81\u7834\u3002\u9EC4\u91D1\u306E\u304D\u3089\u3081\u304D\u30AA\u30FC\u30E9\u3002" },
-  { rankName: "\u8CC7\u7523\u5BB6", minUsd: 1e3, badge: "\xA7a\u{1F4BC}[\u8CC7\u7523\u5BB6]\xA7r", particle: "minecraft:villager_happy", description: "\u7DCF\u8CC7\u7523\u5343\u30C9\u30EB\u7A81\u7834\u3002\u9285\u8272\u306E\u304D\u3089\u3081\u304D\u3002" },
-  { rankName: "\u4E00\u822C\u5E02\u6C11", minUsd: 0, badge: "\xA77[\u4E00\u822C]\xA7r", particle: "", description: "\u307E\u305A\u306F\u6295\u8CC7\u3084\u63A1\u6398\u3067\u8CC7\u7523\u3092\u7BC9\u304D\u307E\u3057\u3087\u3046\uFF01" }
+  { rankName: "Misskey\u306E\u5927\u682A\u4E3B", minFed: 1e5, badge: "\xA7d\u{1F451}[\u5927\u682A\u4E3B]\xA7r", particle: "minecraft:mob_portal", description: "\u7DCF\u8CC7\u752310\u4E07FED\u7A81\u7834\u3002\u8679\u8272\u306E\u30DD\u30FC\u30BF\u30EB\u30AA\u30FC\u30E9\u3068\u52A0\u901F\u30D0\u30D5\u3002" },
+  { rankName: "\u77F3\u6CB9\u738B", minFed: 2e4, badge: "\xA76\u{1F48E}[\u77F3\u6CB9\u738B]\xA7r", particle: "minecraft:totem_particle", description: "\u7DCF\u8CC7\u75232\u4E07FED\u7A81\u7834\u3002\u9EC4\u91D1\u3068\u30A8\u30E1\u30E9\u30EB\u30C9\u306E\u30AA\u30FC\u30E9\u3002" },
+  { rankName: "\u5927\u5BCC\u8C6A", minFed: 5e3, badge: "\xA7e\u{1F3A9}[\u5927\u5BCC\u8C6A]\xA7r", particle: "minecraft:villager_happy", description: "\u7DCF\u8CC7\u75235\u5343FED\u7A81\u7834\u3002\u9EC4\u91D1\u306E\u304D\u3089\u3081\u304D\u30AA\u30FC\u30E9\u3002" },
+  { rankName: "\u8CC7\u7523\u5BB6", minFed: 1e3, badge: "\xA7a\u{1F4BC}[\u8CC7\u7523\u5BB6]\xA7r", particle: "minecraft:villager_happy", description: "\u7DCF\u8CC7\u7523\u5343FED\u7A81\u7834\u3002\u9285\u8272\u306E\u304D\u3089\u3081\u304D\u3002" },
+  { rankName: "\u4E00\u822C\u5E02\u6C11", minFed: 0, badge: "\xA77[\u4E00\u822C]\xA7r", particle: "", description: "\u307E\u305A\u306F\u6295\u8CC7\u3084\u63A1\u6398\u3067\u8CC7\u7523\u3092\u7BC9\u304D\u307E\u3057\u3087\u3046\uFF01" }
 ];
-function getPlayerWealthRank(totalUsd) {
+function getPlayerWealthRank(totalFed) {
   for (const r of WEALTH_RANKS) {
-    if (totalUsd >= r.minUsd) return r;
+    if (totalFed >= r.minFed) return r;
   }
   return WEALTH_RANKS[WEALTH_RANKS.length - 1];
 }
@@ -1458,22 +1503,22 @@ function openFinancialPortalUI(player, blockLoc) {
     }
   }
   const totalAssets = cash + bank + stockValue + fxMargin + fxUnrealizedProfit;
-  const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-  const totalUsd = parseFloat((totalAssets / usdRate).toFixed(2));
-  const wealthRank = getPlayerWealthRank(totalUsd);
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const totalFed = parseFloat((totalAssets / fedRate).toFixed(2));
+  const wealthRank = getPlayerWealthRank(totalFed);
   const profitSign = fxUnrealizedProfit >= 0 ? "+" : "";
-  const fxProfitText = fxUnrealizedProfit !== 0 ? ` (\u542B\u307F\u640D\u76CA: ${profitSign}${fxUnrealizedProfit.toLocaleString()}\u5186)` : "";
+  const fxProfitText = fxUnrealizedProfit !== 0 ? ` (\u542B\u307F\u640D\u76CA: ${profitSign}${fxUnrealizedProfit.toLocaleString()} M)` : "";
   const form = new ActionFormData().title("\u{1F4B9} Misskey\u8A3C\u5238 & \u91D1\u878D\u30DD\u30FC\u30BF\u30EB").body(
     `\u{1F464} \xA7l${player.name}\xA7r \u69D8\u306E\u8CC7\u7523\u30B5\u30DE\u30EA\u30FC [${wealthRank.badge}]
 \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
-\u{1F4B0} \xA76\u7DCF\u8CC7\u7523\u8A55\u4FA1\u984D: \xA7e${totalAssets.toLocaleString()} \u5186\xA7r (\xA7b$${totalUsd.toLocaleString()} USD\xA7r)
-\u{1F4B5} \u6240\u6301\u91D1 (\u73FE\u91D1): \xA7f${cash.toLocaleString()} \u5186\xA7r
-\u{1F3E6} \u53E3\u5EA7\u6B8B\u9AD8 (\u9810\u91D1): \xA7a${bank.toLocaleString()} \u5186\xA7r
-\u{1F3E2} \u682A\u5F0F\u4FDD\u6709\u984D: \xA7b${stockValue.toLocaleString()} \u5186\xA7r
-\u{1F4C8} FX\u8A3C\u62E0\u91D1: \xA7d${fxMargin.toLocaleString()} \u5186\xA7r${fxProfitText}
-\u{1F4B9} USD\u70BA\u66FF\u30EC\u30FC\u30C8: \xA7e1 USD = ${usdRate.toFixed(2)} \u5186\xA7r
+\u{1F4B0} \xA76\u7DCF\u8CC7\u7523\u8A55\u4FA1\u984D: \xA7e${totalAssets.toLocaleString()} M\xA7r (\xA7b${totalFed.toLocaleString()} FED\xA7r)
+\u{1F4B5} \u6240\u6301\u91D1 (\u73FE\u91D1): \xA7f${cash.toLocaleString()} M\xA7r
+\u{1F3E6} \u53E3\u5EA7\u6B8B\u9AD8 (\u9810\u91D1): \xA7a${bank.toLocaleString()} M\xA7r
+\u{1F3E2} \u682A\u5F0F\u4FDD\u6709\u984D: \xA7b${stockValue.toLocaleString()} M\xA7r
+\u{1F4C8} FX\u8A3C\u62E0\u91D1: \xA7d${fxMargin.toLocaleString()} M\xA7r${fxProfitText}
+\u{1F4B9} FED\u70BA\u66FF\u30EC\u30FC\u30C8: \xA7e1 FED = ${fedRate.toFixed(2)} M\xA7r
 \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501`
-  ).button("\u{1F6D2} Misskey\u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2 (USD\u6C7A\u6E08)").button("\u{1F697} \u8ECA\u4E21\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9 & \u4FDD\u967A\u6240").button("\u{1F3B0} Misskey \u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058 (\u30AC\u30C1\u30E3)").button("\u{1F3E6} ATM\u30FB\u53E3\u5EA7\u7BA1\u7406 (\u5165\u91D1\u30FB\u51FA\u91D1\u30FB\u4E21\u66FF)").button("\u{1F6CD}\uFE0F \u8CB7\u53D6\u30FB\u63DB\u91D1\u6240 (\u9271\u77F3\u30FB\u7279\u7523\u54C1\u3092\u58F2\u5374)").button(`\u{1F4C8} FX \u70BA\u66FF\u53D6\u5F15\u6240 (${positions.length}\u4EF6\u4FDD\u6709\u4E2D)`).button("\u{1F3E2} Misskey\u682A\u5F0F\u5E02\u5834 (\u682A\u306E\u58F2\u8CB7\u30FB\u914D\u5F53)").button(`\u{1F4F0} \u7D4C\u6E08\u30CB\u30E5\u30FC\u30B9\u901F\u5831 (${marketNewsHistory.length}\u4EF6)`).button("\u{1F451} \u5BCC\u8C6A\u30E9\u30F3\u30AD\u30F3\u30B0 & \u79F0\u53F7").button("\u{1F519} \u9589\u3058\u308B");
+  ).button("\u{1F6D2} Misskey\u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2 (FED\u6C7A\u6E08)").button("\u{1F697} \u8ECA\u4E21\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9 & \u4FDD\u967A\u6240").button("\u{1F3B0} Misskey \u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058 (\u30AC\u30C1\u30E3)").button("\u{1F3E6} ATM\u30FB\u53E3\u5EA7\u7BA1\u7406 (\u5165\u91D1\u30FB\u51FA\u91D1\u30FB\u4E21\u66FF)").button("\u{1F6CD}\uFE0F \u8CB7\u53D6\u30FB\u63DB\u91D1\u6240 (\u9271\u77F3\u30FB\u7279\u7523\u54C1\u3092\u58F2\u5374)").button(`\u{1F4C8} FX \u70BA\u66FF\u53D6\u5F15\u6240 (${positions.length}\u4EF6\u4FDD\u6709\u4E2D)`).button("\u{1F3E2} Misskey\u682A\u5F0F\u5E02\u5834 (\u682A\u306E\u58F2\u8CB7\u30FB\u914D\u5F53)").button(`\u{1F4F0} \u7D4C\u6E08\u30CB\u30E5\u30FC\u30B9\u901F\u5831 (${marketNewsHistory.length}\u4EF6)`).button("\u{1F451} \u5BCC\u8C6A\u30E9\u30F3\u30AD\u30F3\u30B0 & \u79F0\u53F7").button("\u{1F519} \u9589\u3058\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection === 0) {
@@ -1501,55 +1546,64 @@ var STORE_ITEMS = [
   {
     id: "elytra",
     name: "\u30A8\u30EA\u30C8\u30E9 (\u6ED1\u7A7A\u7FFC)",
-    usdPrice: 5e3,
+    fedPrice: 5e3,
     typeId: "minecraft:elytra",
     amount: 1,
     requiredIgyo: "ensei",
-    description: "\u5927\u7A7A\u3092\u98DB\u7FD4\u3067\u304D\u308B\u81F3\u9AD8\u306E\u7FFC\u3002\u9060\u5F81\u306E\u5049\u696D\uFF08\u30A8\u30F3\u30C9\u30E9\u8A0E\u4F10\uFF09\u9054\u6210\u8005\u9650\u5B9A\uFF01"
+    lockReason: "\u9060\u5F81\u306E\u5049\u696D (\u30A8\u30F3\u30C9\u5230\u9054/\u8A0E\u4F10) \u304C\u5FC5\u8981",
+    description: "\u5927\u7A7A\u3092\u98DB\u7FD4\u3067\u304D\u308B\u81F3\u9AD8\u306E\u7FFC\u3002\u9060\u5F81\u306E\u5049\u696D\u9054\u6210\u8005\u9650\u5B9A\uFF01"
   },
   {
     id: "shulker_box",
     name: "\u30B7\u30E5\u30EB\u30AB\u30FC\u30DC\u30C3\u30AF\u30B9",
-    usdPrice: 100,
+    fedPrice: 800,
     typeId: "minecraft:shulker_box",
     amount: 1,
-    description: "\u5927\u91CF\u306E\u30A2\u30A4\u30C6\u30E0\u3092\u6301\u3061\u904B\u3079\u308B\u30DD\u30FC\u30BF\u30D6\u30EB\u5009\u5EAB\u3002"
-  },
-  {
-    id: "diamond_pack",
-    name: "\u30C0\u30A4\u30E4\u30E2\u30F3\u30C9 \xD7 8",
-    usdPrice: 150,
-    typeId: "minecraft:diamond",
-    amount: 8,
-    description: "\u9AD8\u54C1\u8CEA\u306A\u30C0\u30A4\u30E4\u30E2\u30F3\u30C98\u500B\u30BB\u30C3\u30C8\u3002"
+    requiredIgyo: "ensei",
+    lockReason: "\u9060\u5F81\u306E\u5049\u696D (\u30A8\u30F3\u30C9\u5230\u9054/\u8A0E\u4F10) \u304C\u5FC5\u8981",
+    description: "\u5927\u91CF\u306E\u30A2\u30A4\u30C6\u30E0\u3092\u6301\u3061\u904B\u3079\u308B\u30DD\u30FC\u30BF\u30D6\u30EB\u5009\u5EAB\u3002\u30A8\u30F3\u30C9\u5230\u9054\u8005\u9650\u5B9A\uFF01"
   },
   {
     id: "netherite",
     name: "\u30CD\u30B6\u30E9\u30A4\u30C8\u30A4\u30F3\u30B4\u30C3\u30C8 \xD7 1",
-    usdPrice: 180,
+    fedPrice: 1500,
     typeId: "minecraft:netherite_ingot",
     amount: 1,
-    description: "\u6700\u4E0A\u4F4D\u88C5\u5099\u306E\u5F37\u5316\u7D20\u6750\u3002"
+    requiredUnlockTag: "unlocked_netherite",
+    lockReason: "\u4E00\u5EA6\u81EA\u529B\u3067\u30CD\u30B6\u30E9\u30A4\u30C8\u3092\u5165\u624B/\u5F37\u5316\u3059\u308B\u5FC5\u8981\u3042\u308A",
+    description: "\u6700\u4E0A\u4F4D\u88C5\u5099\u306E\u5F37\u5316\u7D20\u6750\u3002\u4E00\u5EA6\u5165\u624B\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u307F\u8CFC\u5165\u53EF\u80FD\u3002"
+  },
+  {
+    id: "diamond_pack",
+    name: "\u30C0\u30A4\u30E4\u30E2\u30F3\u30C9 \xD7 8",
+    fedPrice: 500,
+    typeId: "minecraft:diamond",
+    amount: 8,
+    requiredUnlockTag: "unlocked_diamond",
+    lockReason: "\u4E00\u5EA6\u81EA\u529B\u3067\u30C0\u30A4\u30E4\u30E2\u30F3\u30C9\u3092\u5165\u624B\u3059\u308B\u5FC5\u8981\u3042\u308A",
+    description: "\u9AD8\u54C1\u8CEA\u306A\u30C0\u30A4\u30E4\u30E2\u30F3\u30C98\u500B\u30BB\u30C3\u30C8\u3002\u4E00\u5EA6\u5165\u624B\u3057\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u307F\u8CFC\u5165\u53EF\u80FD\u3002"
   },
   {
     id: "notch_apple",
     name: "\u30A8\u30F3\u30C1\u30E3\u30F3\u30C8\u91D1\u30EA\u30F3\u30B4 \xD7 1",
-    usdPrice: 200,
+    fedPrice: 600,
     typeId: "minecraft:enchanted_golden_apple",
     amount: 1,
+    requiredIgyo: "chokin",
+    lockReason: "\u8CAF\u91D1\u306E\u5049\u696D (\u91D1\u6240\u6301) \u304C\u5FC5\u8981",
     description: "\u518D\u751FV\u30FB\u8010\u6027\u3092\u6388\u3051\u308B\u7A76\u6975\u306E\u795E\u30EA\u30F3\u30B4\u3002"
   },
   {
     id: "special_pack",
     name: "Misskey\u7279\u7523\u54C1\u30D1\u30C3\u30AF",
-    usdPrice: 25,
+    fedPrice: 80,
     isPack: true,
     description: "\u753A\u7530\u30FB\u4E09\u91CD\u30FB\u9759\u5CA1\u30FB\u611B\u77E5\u30FB\u5C90\u961C\u30FB\u6587\u9CE5\u304C\u54041\u500B\u5165\u3063\u305F\u7D20\u6750\u30BB\u30C3\u30C8\u3002"
   },
   {
     id: "ecology_server",
     name: "\u751F\u614B\u30B5\u30FC\u30D0\u30FC \xD7 1",
-    usdPrice: 30,
+    fedPrice: 50,
     typeId: "mi:ecology_server",
     amount: 1,
     description: "\u30C4\u30C1\u30CE\u30B3\u7E41\u6B96\u3084\u30AF\u30E9\u30D5\u30C8\u306B\u5FC5\u9808\u306E\u751F\u4F53\u30D1\u30FC\u30C4\u3002"
@@ -1557,7 +1611,7 @@ var STORE_ITEMS = [
   {
     id: "mochocho_pack",
     name: "\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7 \xD7 16",
-    usdPrice: 5,
+    fedPrice: 15,
     typeId: "mi:baked_mochocho",
     amount: 16,
     description: "\u7F8E\u5473\u3057\u3044\u30E2\u30C1\u30E7\u30C1\u30E7\u3002\u98DF\u3079\u904E\u304E\u306B\u306F\u6CE8\u610F\uFF01"
@@ -1565,7 +1619,7 @@ var STORE_ITEMS = [
   {
     id: "pudding_pack",
     name: "\u30D7\u30EA\u30F3 \xD7 4",
-    usdPrice: 6,
+    fedPrice: 20,
     typeId: "mi:pudding",
     amount: 4,
     description: "\u307D\u3088\u3093\u307D\u3088\u3093\u8DF3\u306D\u308B\u30B9\u30A4\u30FC\u30C4\u3002"
@@ -1573,7 +1627,7 @@ var STORE_ITEMS = [
   {
     id: "nekomimi_pack",
     name: "\u732B\u8033\u30D7\u30EA\u30F3 \xD7 2",
-    usdPrice: 15,
+    fedPrice: 40,
     typeId: "mi:nekomimi_pudding",
     amount: 2,
     description: "\u98DF\u3079\u308B\u3068\u732B\u8033\u304C\u751F\u3048\u3066\u8DB3\u304C\u901F\u304F\u306A\u308B\uFF01"
@@ -1581,7 +1635,7 @@ var STORE_ITEMS = [
   {
     id: "blueprint_yahata",
     name: "\u516B\u5E61\u88FD\u9244\u6240\u306E\u8A2D\u8A08\u56F3",
-    usdPrice: 250,
+    fedPrice: 2e3,
     typeId: "mi:yahata_blueprint",
     amount: 1,
     description: "\u7523\u696D\u907A\u69CB\u30C0\u30F3\u30B8\u30E7\u30F3\u3092\u76EE\u306E\u524D\u306B\u5373\u6642\u5EFA\u8A2D\u3002"
@@ -1589,7 +1643,7 @@ var STORE_ITEMS = [
   {
     id: "blueprint_hq",
     name: "Misskey\u958B\u767A\u6240\u306E\u8A2D\u8A08\u56F3",
-    usdPrice: 350,
+    fedPrice: 3e3,
     typeId: "mi:hq_blueprint",
     amount: 1,
     description: "4\u968E\u5EFA\u3066\uFF0B\u30D8\u30EA\u30DD\u30FC\u30C8\u306E\u5DE8\u5927\u30C0\u30F3\u30B8\u30E7\u30F3\u3092\u5373\u6642\u5EFA\u8A2D\u3002"
@@ -1597,7 +1651,7 @@ var STORE_ITEMS = [
   {
     id: "egg_blobcat",
     name: "\u306B\u3083\u3093\u3077\u3063\u3077\u30FC\u306E\u5375",
-    usdPrice: 35,
+    fedPrice: 100,
     typeId: "mi:blobcat_spawn_egg",
     amount: 1,
     description: "\u611B\u3055\u308C\u30DE\u30B9\u30B3\u30C3\u30C8\u3092\u76F4\u63A5\u53EC\u559A\u3002"
@@ -1605,7 +1659,7 @@ var STORE_ITEMS = [
   {
     id: "egg_woneko",
     name: "\u3092\u306D\u3053\u306E\u5375",
-    usdPrice: 35,
+    fedPrice: 100,
     typeId: "mi:woneko_spawn_egg",
     amount: 1,
     description: "\u8868\u60C5\u8C4A\u304B\u306A\u306E\u3093\u3073\u308A\u732B\u3092\u53EC\u559A\u3002"
@@ -1613,31 +1667,40 @@ var STORE_ITEMS = [
   {
     id: "egg_car",
     name: "\u9577\u3044\u5909\u306A\u8ECA\u306E\u5375",
-    usdPrice: 80,
+    fedPrice: 250,
     typeId: "mi:regretcar_spawn_egg",
     amount: 1,
     description: "2\u4EBA\u4E57\u308A\u8D85\u9AD8\u901F\u8ECA\u4E21\u3092\u53EC\u559A\u3002"
   }
 ];
+function isStoreItemLocked(player, item) {
+  if (item.requiredIgyo && !hasPlayerAchieved(player, item.requiredIgyo)) {
+    return true;
+  }
+  if (item.requiredUnlockTag && !player.hasTag(item.requiredUnlockTag)) {
+    return true;
+  }
+  return false;
+}
 function openOnlineStoreUI(player, blockLoc) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-  const form = new ActionFormData().title("\u{1F6D2} Misskey \u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2 ($ USD)").body(
-    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r (\xA7b$${(bank / usdRate).toFixed(2)} USD\xA7r)
-\u73FE\u5728\u306E\u70BA\u66FF\u30EC\u30FC\u30C8: \xA7e1 USD = ${usdRate.toFixed(2)} \u5186\xA7r
-\uFF08\u203B\u5186\u9AD8\u306E\u6642\u306B\u8CB7\u3046\u3068\u65E5\u672C\u5186\u306E\u652F\u6255\u984D\u304C\u304A\u5F97\u306B\u306A\u308A\u307E\u3059\uFF01\uFF09
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const form = new ActionFormData().title("\u{1F6D2} Misskey \u30AA\u30F3\u30E9\u30A4\u30F3\u30B9\u30C8\u30A2 (FED\u6C7A\u6E08)").body(
+    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r (\xA7b${(bank / fedRate).toFixed(2)} FED\xA7r)
+\u73FE\u5728\u306E\u70BA\u66FF\u30EC\u30FC\u30C8: \xA7e1 FED = ${fedRate.toFixed(2)} M\xA7r
+\uFF08\u203BM\u30B3\u30A4\u30F3\u9AD8\u30FBFED\u5B89\u306E\u6642\u306B\u8CB7\u3046\u3068\u652F\u6255\u984D\u304C\u304A\u5F97\u306B\u306A\u308A\u307E\u3059\uFF01\uFF09
 
 \u8CFC\u5165\u3057\u305F\u3044\u5546\u54C1\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`
   );
   for (const item of STORE_ITEMS) {
-    const jpyCost = Math.floor(item.usdPrice * usdRate);
-    const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
-    if (isLocked) {
-      form.button(`\u{1F512} ${item.name} ($${item.usdPrice.toLocaleString()} USD)
-[\u672A\u89E3\u653E: \u9060\u5F81\u306E\u5049\u696D (\u30A8\u30F3\u30C9\u30E9\u8A0E\u4F10) \u304C\u5FC5\u8981]`);
+    const mCost = Math.floor(item.fedPrice * fedRate);
+    const locked = isStoreItemLocked(player, item);
+    if (locked) {
+      form.button(`\u{1F512} ${item.name} (${item.fedPrice.toLocaleString()} FED)
+[\u672A\u89E3\u653E: ${item.lockReason || "\u6761\u4EF6\u672A\u9054\u6210"}]`);
     } else {
-      form.button(`${item.name} ($${item.usdPrice.toLocaleString()} USD)
-[\u652F\u6255\u984D: \u7D04 ${jpyCost.toLocaleString()} \u5186]`);
+      form.button(`${item.name} (${item.fedPrice.toLocaleString()} FED)
+[\u652F\u6255\u984D: \u7D04 ${mCost.toLocaleString()} M]`);
     }
   }
   form.button("\u{1F519} \u623B\u308B");
@@ -1645,21 +1708,21 @@ function openOnlineStoreUI(player, blockLoc) {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection < STORE_ITEMS.length) {
       const item = STORE_ITEMS[res.selection];
-      const isLocked = item.requiredIgyo ? !hasPlayerAchieved(player, item.requiredIgyo) : false;
-      if (isLocked) {
-        player.sendMessage(`\xA7c\u{1F512} [\u8CFC\u5165\u4E0D\u53EF] \u300C${item.name}\u300D\u306F\u9060\u5F81\u306E\u5049\u696D\uFF08\u30B8\u30FB\u30A8\u30F3\u30C9\u5230\u9054\u307E\u305F\u306F\u30A8\u30F3\u30C9\u30E9\u8A0E\u4F10\uFF09\u3092\u9054\u6210\u3059\u308B\u307E\u3067\u30ED\u30C3\u30AF\u3055\u308C\u3066\u3044\u307E\u3059\uFF01\xA7r`);
+      const locked = isStoreItemLocked(player, item);
+      if (locked) {
+        player.sendMessage(`\xA7c\u{1F512} [\u8CFC\u5165\u4E0D\u53EF] \u300C${item.name}\u300D\u306F\u30ED\u30C3\u30AF\u3055\u308C\u3066\u3044\u307E\u3059\uFF01\uFF08\u89E3\u9664\u6761\u4EF6: ${item.lockReason || "\u672A\u9054\u6210"}\uFF09\xA7r`);
         openOnlineStoreUI(player, blockLoc);
         return;
       }
-      const jpyCost = Math.floor(item.usdPrice * usdRate);
-      if (bank < jpyCost) {
-        player.sendMessage(`\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\uFF08\u5FC5\u8981\u984D: ${jpyCost.toLocaleString()}\u5186 / \u6B8B\u9AD8: ${bank.toLocaleString()}\u5186\uFF09\xA7r`);
+      const mCost = Math.floor(item.fedPrice * fedRate);
+      if (bank < mCost) {
+        player.sendMessage(`\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\uFF08\u5FC5\u8981\u984D: ${mCost.toLocaleString()} M / \u6B8B\u9AD8: ${bank.toLocaleString()} M\uFF09\xA7r`);
         openOnlineStoreUI(player, blockLoc);
         return;
       }
       const inv = player.getComponent(EntityComponentTypes.Inventory)?.container;
       if (!inv) return;
-      setPlayerBankAccount(player, bank - jpyCost);
+      setPlayerBankAccount(player, bank - mCost);
       if (item.isPack) {
         inv.addItem(new ItemStack("mi:machida", 1));
         inv.addItem(new ItemStack("mi:sanjuu", 1));
@@ -1670,7 +1733,7 @@ function openOnlineStoreUI(player, blockLoc) {
       } else if (item.typeId) {
         inv.addItem(new ItemStack(item.typeId, item.amount || 1));
       }
-      player.sendMessage(`\xA7a\u{1F6D2}\u2728 [\u8CFC\u5165\u5B8C\u4E86] \u300C${item.name}\u300D\u3092 $${item.usdPrice.toLocaleString()} USD (${jpyCost.toLocaleString()}\u5186) \u3067\u8CFC\u5165\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+      player.sendMessage(`\xA7a\u{1F6D2}\u2728 [\u8CFC\u5165\u5B8C\u4E86] \u300C${item.name}\u300D\u3092 ${item.fedPrice.toLocaleString()} FED (${mCost.toLocaleString()} M) \u3067\u8CFC\u5165\u3057\u307E\u3057\u305F\uFF01\xA7r`);
       player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.8, z: player.location.z });
       openOnlineStoreUI(player, blockLoc);
@@ -1681,82 +1744,112 @@ function openOnlineStoreUI(player, blockLoc) {
 }
 function openVehicleServiceUI(player, blockLoc) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-  const hasTurbo = hasCarPerk(player, "turbo");
-  const hasInsurance = hasCarPerk(player, "insurance");
-  const hasGold = hasCarPerk(player, "gold_license");
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const perkKeys = ["turbo", "insurance", "gold_license"];
+  const statuses = perkKeys.map((k) => ({ def: CAR_PERK_DEFS[k], status: getCarPerkStatus(player, k) }));
   const form = new ActionFormData().title("\u{1F697} \u8ECA\u4E21\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9 & \u81EA\u52D5\u8ECA\u4FDD\u967A\u6240").body(
-    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r (\xA7b$${(bank / usdRate).toFixed(2)} USD\xA7r)
+    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r (\xA7b${(bank / fedRate).toFixed(2)} FED\xA7r)
 
-\u9577\u3044\u5909\u306A\u8ECA\uFF08\u30EC\u30B0\u30AB\u30FC\uFF09\u306E\u6027\u80FD\u5F37\u5316\u3084\u4FDD\u967A\u30FB\u7279\u5225\u514D\u8A31\u3092\u53D6\u5F97\u3067\u304D\u307E\u3059:`
-  ).button(hasTurbo ? "\u2705 \u26A1 \u30BF\u30FC\u30DC\u30D6\u30FC\u30B9\u30BF\u30FC [\u9069\u7528\u4E2D]" : `\u26A1 \u30BF\u30FC\u30DC\u30D6\u30FC\u30B9\u30BF\u30FC\u6539\u9020 ($150 USD / \u7D04${Math.floor(150 * usdRate).toLocaleString()}\u5186)
-[\u6700\u9AD8\u901F\u5EA6\u304C1.5\u500D\u306B\u8D85\u52A0\u901F]`).button(hasInsurance ? "\u2705 \u{1F6E1}\uFE0F \u8ECA\u4E21\u4FDD\u967A\u30FB\u5373\u6642\u5FA9\u65E7 [\u52A0\u5165\u6E08]" : `\u{1F6E1}\uFE0F \u8ECA\u4E21\u4FDD\u967A ($80 USD / \u7D04${Math.floor(80 * usdRate).toLocaleString()}\u5186)
-[\u58C1\u6FC0\u7A81\u6642\u306E1\u5206\u505C\u6B62\u3092\u5373\u6642\u5FA9\u65E7]`).button(hasGold ? "\u2705 \u{1F530} \u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u8A3C [\u53D6\u5F97\u6E08]" : `\u{1F530} \u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u8A3C ($200 USD / \u7D04${Math.floor(200 * usdRate).toLocaleString()}\u5186)
-[\u8ECA\u3092\u8AA4\u3063\u3066\u6BB4\u3063\u3066\u3082\u6012\u3089\u308C\u306A\u3044]`).button("\u{1F519} \u623B\u308B");
+\u9577\u3044\u5909\u306A\u8ECA\uFF08\u30EC\u30B0\u30AB\u30FC\uFF09\u306E\u6027\u80FD\u5F37\u5316\u30FB\u4FDD\u967A\u30FB\u7279\u5225\u514D\u8A31\u3092\u30B5\u30D6\u30B9\u30AF\u5951\u7D04\u3067\u304D\u307E\u3059:
+\uFF08\u203B30\u5206\u5B9A\u671F\u5951\u7D04\u3002\u81EA\u52D5\u66F4\u65B0\u3092ON\u306B\u3059\u308B\u3068\u53E3\u5EA7\u6B8B\u9AD8\u304B\u3089\u81EA\u52D5\u5F15\u304D\u843D\u3068\u3057\u7D99\u7D9A\u3055\u308C\u307E\u3059\uFF09`
+  );
+  for (const { def, status } of statuses) {
+    const costM = Math.floor(def.fedPrice * fedRate);
+    if (status.active) {
+      form.button(`\u2705 ${def.name} [\u5951\u7D04\u4E2D: \u6B8B\u308A${status.remainingMinutes}\u5206 / \u66F4\u65B0:${status.autoRenew ? "ON" : "OFF"}]
+[\u30BF\u30C3\u30D7\u3057\u3066\u5951\u7D04\u7BA1\u7406\u30FB\u5EF6\u9577\u30FB\u89E3\u7D04]`);
+    } else {
+      form.button(`${def.name} (${def.fedPrice} FED/30\u5206 / \u7D04${costM.toLocaleString()} M)
+[${def.effectSummary}]`);
+    }
+  }
+  form.button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
-    if (res.selection === 0) {
-      if (hasTurbo) {
-        player.sendMessage("\xA7e\u26A1 \u30BF\u30FC\u30DC\u30D6\u30FC\u30B9\u30BF\u30FC\u306F\u3059\u3067\u306B\u9069\u7528\u3055\u308C\u3066\u3044\u307E\u3059\uFF01\xA7r");
+    if (res.selection < perkKeys.length) {
+      const chosenKey = perkKeys[res.selection];
+      const { def, status } = statuses[res.selection];
+      const costM = Math.floor(def.fedPrice * fedRate);
+      if (status.active) {
+        openCarPerkManageUI(player, chosenKey, blockLoc);
       } else {
-        const cost = Math.floor(150 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
+        if (bank < costM) {
+          player.sendMessage(`\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\uFF08\u5FC5\u8981\u984D: ${costM.toLocaleString()} M / \u6B8B\u9AD8: ${bank.toLocaleString()} M\uFF09\xA7r`);
+          openVehicleServiceUI(player, blockLoc);
         } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "turbo");
-          player.sendMessage("\xA7a\u26A1 [\u6539\u9020\u5B8C\u4E86] \u30EC\u30B0\u30AB\u30FC\u306B\u30BF\u30FC\u30DC\u30D6\u30FC\u30B9\u30BF\u30FC\u3092\u642D\u8F09\u3057\u307E\u3057\u305F\uFF01\u6700\u9AD8\u901F\u5EA6\u304C1.5\u500D\u306B\u306A\u308A\u307E\u3059\uFF01\xA7r");
+          setPlayerBankAccount(player, bank - costM);
+          const newStatus = subscribeCarPerk(player, chosenKey);
+          player.sendMessage(`\xA7a\u{1F697}\u2728 [\u30B5\u30D6\u30B9\u30AF\u52A0\u5165\u5B8C\u4E86] \u300C${def.name}\u300D\u306B\u52A0\u5165\u3057\u307E\u3057\u305F\uFF01\uFF0830\u5206\u9593\u6709\u52B9 / \u81EA\u52D5\u66F4\u65B0: ON\uFF09\xA7r`);
+          player.sendMessage(`\xA77\u52B9\u679C: ${def.description}\xA7r`);
           player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+          openVehicleServiceUI(player, blockLoc);
         }
       }
-      openVehicleServiceUI(player, blockLoc);
-    } else if (res.selection === 1) {
-      if (hasInsurance) {
-        player.sendMessage("\xA7e\u{1F6E1}\uFE0F \u8ECA\u4E21\u4FDD\u967A\u306B\u306F\u3059\u3067\u306B\u52A0\u5165\u3057\u3066\u3044\u307E\u3059\uFF01\xA7r");
-      } else {
-        const cost = Math.floor(80 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
-        } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "insurance");
-          player.sendMessage("\xA7a\u{1F6E1}\uFE0F [\u4FDD\u967A\u52A0\u5165\u5B8C\u4E86] \u8ECA\u4E21\u4FDD\u967A\u306B\u52A0\u5165\u3057\u307E\u3057\u305F\uFF01\u58C1\u306B\u885D\u7A81\u3057\u3066\u3082\u5373\u5EA7\u306B\u4FEE\u7406\u3055\u308C\u307E\u3059\uFF01\xA7r");
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        }
-      }
-      openVehicleServiceUI(player, blockLoc);
-    } else if (res.selection === 2) {
-      if (hasGold) {
-        player.sendMessage("\xA7e\u{1F530} \u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u8A3C\u306F\u3059\u3067\u306B\u53D6\u5F97\u3057\u3066\u3044\u307E\u3059\uFF01\xA7r");
-      } else {
-        const cost = Math.floor(200 * usdRate);
-        if (bank < cost) {
-          player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
-        } else {
-          setPlayerBankAccount(player, bank - cost);
-          setCarPerk(player, "gold_license");
-          player.sendMessage("\xA7a\u{1F530} [\u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u53D6\u5F97] \u512A\u826F\u904B\u8EE2\u8005\u3068\u3057\u3066\u30B4\u30FC\u30EB\u30C9\u514D\u8A31\u8A3C\u304C\u6388\u4E0E\u3055\u308C\u307E\u3057\u305F\uFF01\u8ECA\u304C\u6012\u3089\u306A\u304F\u306A\u308A\u307E\u3059\uFF01\xA7r");
-          player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
-        }
-      }
-      openVehicleServiceUI(player, blockLoc);
     } else {
       openFinancialPortalUI(player, blockLoc);
     }
   });
 }
+function openCarPerkManageUI(player, perkKey, blockLoc) {
+  const bank = getPlayerBankAccount(player);
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const def = CAR_PERK_DEFS[perkKey];
+  const status = getCarPerkStatus(player, perkKey);
+  const costM = Math.floor(def.fedPrice * fedRate);
+  const form = new ActionFormData().title(`${def.name} \u30B5\u30D6\u30B9\u30AF\u30EA\u30D7\u30B7\u30E7\u30F3\u7BA1\u7406`).body(
+    `\u{1F464} \xA7l${player.name}\xA7r \u69D8\u306E\u5951\u7D04\u72B6\u6CC1 [${def.name}]
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+\u{1F4CB} \u5951\u7D04\u72B6\u614B: \xA7a\u2705 \u6709\u52B9\uFF08\u52B9\u679C\u767A\u52D5\u4E2D\uFF09\xA7r
+\u{1F3AF} \u52B9\u679C\u6982\u8981: ${def.description}
+\u23F1\uFE0F \u6B8B\u308A\u6642\u9593: \xA7e\u7D04 ${status.remainingMinutes} \u5206\xA7r
+\u{1F504} \u81EA\u52D5\u66F4\u65B0: ${status.autoRenew ? "\xA7aON (\u671F\u9593\u6E80\u4E86\u6642\u306B\u81EA\u52D5\u5F15\u304D\u843D\u3068\u3057)\xA7r" : "\xA7cOFF (\u671F\u9593\u6E80\u4E86\u3067\u5931\u52B9)\xA7r"}
+\u{1F4B0} \u4FDD\u967A\u6599\u30FB\u6708\u984D: \xA7b${def.fedPrice} FED\xA7r (\u7D04 \xA7e${costM.toLocaleString()} M\xA7r / 30\u5206)
+\u{1F3E6} \u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+\u3054\u5E0C\u671B\u306E\u64CD\u4F5C\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`
+  ).button(`\u23F1\uFE0F \u5951\u7D04\u671F\u9593\u3092\u5EF6\u9577 (+30\u5206 / \u7D04${costM.toLocaleString()} M)`).button(`\u{1F504} \u81EA\u52D5\u66F4\u65B0\u3092\u5207\u308A\u66FF\u3048 (\u73FE\u5728: ${status.autoRenew ? "ON \u2794 OFF" : "OFF \u2794 ON"})`).button("\u274C \u30B5\u30D6\u30B9\u30AF\u30EA\u30D7\u30B7\u30E7\u30F3\u3092\u5373\u6642\u89E3\u7D04").button("\u{1F519} \u623B\u308B");
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === void 0) return;
+    if (res.selection === 0) {
+      if (bank < costM) {
+        player.sendMessage(`\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\uFF08\u5FC5\u8981\u984D: ${costM.toLocaleString()} M\uFF09\xA7r`);
+      } else {
+        setPlayerBankAccount(player, bank - costM);
+        const newStatus = subscribeCarPerk(player, perkKey);
+        player.sendMessage(`\xA7a\u23F1\uFE0F\u2728 [\u671F\u9593\u5EF6\u9577\u5B8C\u4E86] \u300C${def.name}\u300D\u306E\u671F\u9593\u309230\u5206\u5EF6\u9577\u3057\u307E\u3057\u305F\uFF01\uFF08\u6B8B\u308A: \u7D04 ${newStatus.remainingMinutes} \u5206\uFF09\xA7r`);
+        player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
+      }
+      openCarPerkManageUI(player, perkKey, blockLoc);
+    } else if (res.selection === 1) {
+      const nextAutoRenew = !status.autoRenew;
+      setCarPerkAutoRenew(player, perkKey, nextAutoRenew);
+      if (nextAutoRenew) {
+        player.sendMessage(`\xA7a\u{1F504} [\u8A2D\u5B9A\u5909\u66F4] \u300C${def.name}\u300D\u306E\u81EA\u52D5\u66F4\u65B0\u3092 \xA7l\u6709\u52B9 (ON)\xA7r\xA7a \u306B\u8A2D\u5B9A\u3057\u307E\u3057\u305F\u3002\u671F\u9593\u6E80\u4E86\u6642\u306B\u81EA\u52D5\u5F15\u304D\u843D\u3068\u3057\u3055\u308C\u307E\u3059\u3002\xA7r`);
+      } else {
+        player.sendMessage(`\xA7e\u{1F504} [\u8A2D\u5B9A\u5909\u66F4] \u300C${def.name}\u300D\u306E\u81EA\u52D5\u66F4\u65B0\u3092 \xA7l\u7121\u52B9 (OFF)\xA7r\xA7e \u306B\u8A2D\u5B9A\u3057\u307E\u3057\u305F\u3002\u6B8B\u308A\u6642\u9593\u304C\u30BC\u30ED\u306B\u306A\u308B\u3068\u5931\u52B9\u3057\u307E\u3059\u3002\xA7r`);
+      }
+      openCarPerkManageUI(player, perkKey, blockLoc);
+    } else if (res.selection === 2) {
+      cancelCarPerkSubscription(player, perkKey);
+      player.sendMessage(`\xA7c\u274C [\u89E3\u7D04\u5B8C\u4E86] \u300C${def.name}\u300D\u306E\u30B5\u30D6\u30B9\u30AF\u30EA\u30D7\u30B7\u30E7\u30F3\u3092\u89E3\u7D04\u3057\u307E\u3057\u305F\u3002\xA7r`);
+      openVehicleServiceUI(player, blockLoc);
+    } else {
+      openVehicleServiceUI(player, blockLoc);
+    }
+  });
+}
 function openScratchLotteryUI(player, blockLoc) {
   const bank = getPlayerBankAccount(player);
-  const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-  const normalCost = Math.floor(5 * usdRate);
-  const premiumCost = Math.floor(25 * usdRate);
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const normalCost = Math.floor(5 * fedRate);
+  const premiumCost = Math.floor(25 * fedRate);
   const form = new ActionFormData().title("\u{1F3B0} Misskey \u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058 & \u30AC\u30C1\u30E3").body(
-    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r (\xA7b$${(bank / usdRate).toFixed(2)} USD\xA7r)
+    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r (\xA7b${(bank / fedRate).toFixed(2)} FED\xA7r)
 
 \u4E00\u652B\u5343\u91D1\u3092\u72D9\u3048\u308B\u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058\u3067\u3059\uFF01
-\u{1F31F} \u7279\u7B49 (JACKPOT): \xA7e$10,000 USD (\u7D04150\u4E07\u5186) \uFF0B \u30CD\u30B6\u30E9\u30A4\u30C8\u30D5\u30EB\u88C5\u5099\xA7r
-\u{1F947} 1\u7B49: \xA76$1,000 USD\xA7r / \u{1F948} 2\u7B49: \xA7b\u5049\u696D\u306E\u30C4\u30FC\u30EB (\u4E88\u5099)\xA7r / \u{1F949} 3\u7B49: \xA7a\u30B9\u30A4\u30FC\u30C4\u8A70\u3081\u5408\u308F\u305B\xA7r`
-  ).button(`\u{1F3B2} \u901A\u5E38\u30B9\u30AF\u30E9\u30C3\u30C1 ($5 USD / \u7D04${normalCost.toLocaleString()}\u5186)`).button(`\u{1F48E} \u30D7\u30EC\u30DF\u30A2\u30E0\u30B9\u30AF\u30E9\u30C3\u30C1 ($25 USD / \u7D04${premiumCost.toLocaleString()}\u5186)`).button("\u{1F519} \u623B\u308B");
+\u{1F31F} \u7279\u7B49 (JACKPOT): \xA7e10,000 FED (\u7D04150\u4E07M) \uFF0B \u30CD\u30B6\u30E9\u30A4\u30C8\u30D5\u30EB\u88C5\u5099\xA7r
+\u{1F947} 1\u7B49: \xA761,000 FED\xA7r / \u{1F948} 2\u7B49: \xA7b\u5049\u696D\u306E\u30C4\u30FC\u30EB (\u4E88\u5099)\xA7r / \u{1F949} 3\u7B49: \xA7a\u30B9\u30A4\u30FC\u30C4\u8A70\u3081\u5408\u308F\u305B\xA7r`
+  ).button(`\u{1F3B2} \u901A\u5E38\u30B9\u30AF\u30E9\u30C3\u30C1 (5 FED / \u7D04${normalCost.toLocaleString()} M)`).button(`\u{1F48E} \u30D7\u30EC\u30DF\u30A2\u30E0\u30B9\u30AF\u30E9\u30C3\u30C1 (25 FED / \u7D04${premiumCost.toLocaleString()} M)`).button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection === 0 || res.selection === 1) {
@@ -1775,9 +1868,9 @@ function openScratchLotteryUI(player, blockLoc) {
       const secondRate = isPremium ? 15 : 6;
       const thirdRate = isPremium ? 40 : 25;
       let resultMsg = "";
-      let rewardYen = 0;
+      let rewardM = 0;
       if (roll < jackpotRate) {
-        rewardYen = Math.floor(1e4 * usdRate);
+        rewardM = Math.floor(1e4 * fedRate);
         if (inv) {
           inv.addItem(new ItemStack("minecraft:netherite_helmet", 1));
           inv.addItem(new ItemStack("minecraft:netherite_chestplate", 1));
@@ -1785,13 +1878,13 @@ function openScratchLotteryUI(player, blockLoc) {
           inv.addItem(new ItemStack("minecraft:netherite_boots", 1));
         }
         resultMsg = `\xA76\u{1F31F}\u{1F389}\u3010\u7279\u7B49 JACKPOT \u5F53\u9078\uFF01\uFF01\uFF01\u3011\xA7r
-\xA7e\u8CDE\u91D1 $10,000 USD (${rewardYen.toLocaleString()}\u5186) \uFF0B \u30CD\u30B6\u30E9\u30A4\u30C8\u30D5\u30EB\u88C5\u5099\u4E00\u5F0F\xA76 \u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\uFF01\uFF01\xA7r`;
-        world.sendMessage(`\xA76\u{1F4E2} [Misskey\u304F\u3058\u901F\u5831] \u30D7\u30EC\u30A4\u30E4\u30FC\u300C${player.name}\u300D\u304C\u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058\u3067\u7279\u7B49 JACKPOT ($10,000 USD) \u306B\u5F53\u9078\u3057\u307E\u3057\u305F\uFF01\uFF01\uFF01\xA7r`);
+\xA7e\u8CDE\u91D1 10,000 FED (${rewardM.toLocaleString()} M) \uFF0B \u30CD\u30B6\u30E9\u30A4\u30C8\u30D5\u30EB\u88C5\u5099\u4E00\u5F0F\xA76 \u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\uFF01\uFF01\xA7r`;
+        world.sendMessage(`\xA76\u{1F4E2} [Misskey\u304F\u3058\u901F\u5831] \u30D7\u30EC\u30A4\u30E4\u30FC\u300C${player.name}\u300D\u304C\u30B9\u30AF\u30E9\u30C3\u30C1\u304F\u3058\u3067\u7279\u7B49 JACKPOT (10,000 FED) \u306B\u5F53\u9078\u3057\u307E\u3057\u305F\uFF01\uFF01\uFF01\xA7r`);
         player.dimension.spawnParticle("minecraft:large_explosion", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else if (roll < jackpotRate + firstRate) {
-        rewardYen = Math.floor(1e3 * usdRate);
+        rewardM = Math.floor(1e3 * fedRate);
         resultMsg = `\xA7e\u{1F947}\u30101\u7B49 \u5F53\u9078\uFF01\uFF01\u3011\xA7r
-\xA7a\u8CDE\u91D1 $1,000 USD (${rewardYen.toLocaleString()}\u5186)\xA7e \u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r`;
+\xA7a\u8CDE\u91D1 1,000 FED (${rewardM.toLocaleString()} M)\xA7e \u3092\u7372\u5F97\u3057\u307E\u3057\u305F\uFF01\xA7r`;
       } else if (roll < jackpotRate + firstRate + secondRate) {
         if (inv) inv.addItem(new ItemStack("mi:igyo_tool", 1));
         resultMsg = `\xA7b\u{1F948}\u30102\u7B49 \u5F53\u9078\uFF01\u3011\xA7r
@@ -1808,9 +1901,9 @@ function openScratchLotteryUI(player, blockLoc) {
         if (inv) inv.addItem(new ItemStack("mi:baked_mochocho", 1));
         resultMsg = `\xA77\u3010\u53C2\u52A0\u8CDE\u3011\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7 \xD7 1 \u3092\u7372\u5F97\u3057\u307E\u3057\u305F\u3002\u6B21\u56DE\u306B\u671F\u5F85\uFF01\xA7r`;
       }
-      if (rewardYen > 0) {
+      if (rewardM > 0) {
         const curBal = getPlayerBankAccount(player);
-        setPlayerBankAccount(player, curBal + rewardYen);
+        setPlayerBankAccount(player, curBal + rewardM);
       }
       player.dimension.spawnParticle("minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       const resForm = new ActionFormData().title("\u{1F3B0} \u30B9\u30AF\u30E9\u30C3\u30C1\u7D50\u679C\u767A\u8868\uFF01").body(`\u524A\u3063\u305F\u7D50\u679C...
@@ -1844,20 +1937,20 @@ function openWealthRankUI(player, blockLoc) {
     const pair = fxPairs.find((p) => p.id === pos.pairId);
     if (pair) fxTotal += calculatePositionProfit(pos, pair.currentRate);
   }
-  const totalJpy = cash + bank + stockValue + fxTotal;
-  const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-  const totalUsd = totalJpy / usdRate;
-  const myRank = getPlayerWealthRank(totalUsd);
+  const totalM = cash + bank + stockValue + fxTotal;
+  const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+  const totalFed = totalM / fedRate;
+  const myRank = getPlayerWealthRank(totalFed);
   let rankList = "";
   for (const r of WEALTH_RANKS) {
     const isCurrent = myRank.rankName === r.rankName ? " \xA7e\u25C0 \u3042\u306A\u305F\u306E\u30E9\u30F3\u30AF\xA7r" : "";
-    rankList += `${r.badge} \xA7f${r.rankName}\xA7r (\u57FA\u6E96: $${r.minUsd.toLocaleString()} USD)${isCurrent}
+    rankList += `${r.badge} \xA7f${r.rankName}\xA7r (\u57FA\u6E96: ${r.minFed.toLocaleString()} FED)${isCurrent}
 \xA77${r.description}\xA7r
 
 `;
   }
   const form = new ActionFormData().title("\u{1F451} \u5BCC\u8C6A\u30E9\u30F3\u30AD\u30F3\u30B0 & \u79F0\u53F7\u30B7\u30B9\u30C6\u30E0").body(
-    `\u{1F464} \u73FE\u5728\u306E\u7DCF\u8CC7\u7523: \xA76${totalJpy.toLocaleString()} \u5186\xA7r (\xA7b$${totalUsd.toFixed(2)} USD\xA7r)
+    `\u{1F464} \u73FE\u5728\u306E\u7DCF\u8CC7\u7523: \xA76${totalM.toLocaleString()} M\xA7r (\xA7b${totalFed.toFixed(2)} FED\xA7r)
 \u73FE\u5728\u306E\u79F0\u53F7: ${myRank.badge} \xA7l${myRank.rankName}\xA7r
 \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 \u3010\u79F0\u53F7\u30FB\u30E9\u30F3\u30AF\u4E00\u89A7\u3011
@@ -1871,51 +1964,51 @@ function openWealthRankUI(player, blockLoc) {
 function openAtmUI(player, blockLoc) {
   const cash = countPlayerCash(player);
   const bank = getPlayerBankAccount(player);
-  const form = new ActionFormData().title("\u{1F3E6} Misskey\u9280\u884C ATM").body(`\u6240\u6301\u73FE\u91D1: \xA7e${cash.toLocaleString()} \u5186\xA7r
-\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r
+  const form = new ActionFormData().title("\u{1F3E6} Misskey\u9280\u884C ATM").body(`\u6240\u6301\u73FE\u91D1: \xA7e${cash.toLocaleString()} M\xA7r
+\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r
 
-\u64CD\u4F5C\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`).button(`\u{1F4B0} \u624B\u6301\u3061\u306E\u73FE\u91D1\u3092\u5168\u984D\u5165\u91D1 (+${cash.toLocaleString()}\u5186)`).button("\u{1F4B5} 10,000\u5186 \u51FA\u91D1 (\u4E00\u4E07\u5186\u672D\xD71)").button("\u{1F4B5} 5,000\u5186 \u51FA\u91D1 (\u4E94\u5343\u5186\u672D\xD71)").button("\u{1F4B5} 1,000\u5186 \u51FA\u91D1 (\u5343\u5186\u672D\xD71)").button("\u{1FA99} 500\u5186 \u51FA\u91D1 (500\u5186\u7389\xD71)").button("\u{1F522} \u91D1\u984D\u3092\u6307\u5B9A\u3057\u3066\u51FA\u91D1").button("\u{1F519} \u623B\u308B");
+\u64CD\u4F5C\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`).button(`\u{1F4B0} \u624B\u6301\u3061\u306E\u73FE\u91D1\u3092\u5168\u984D\u5165\u91D1 (+${cash.toLocaleString()} M)`).button("\u{1F4B5} 10,000 M \u51FA\u91D1 (10,000 M\u7D19\u5E63\xD71)").button("\u{1F4B5} 5,000 M \u51FA\u91D1 (5,000 M\u7D19\u5E63\xD71)").button("\u{1F4B5} 1,000 M \u51FA\u91D1 (1,000 M\u7D19\u5E63\xD71)").button("\u{1FA99} 500 M \u51FA\u91D1 (500 M\u786C\u8CA8\xD71)").button("\u{1F522} \u91D1\u984D\u3092\u6307\u5B9A\u3057\u3066\u51FA\u91D1").button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection === 0) {
       const dep = depositAllCash(player);
       if (dep > 0) {
-        player.sendMessage(`\xA7a\u{1F3E6} [\u5165\u91D1\u5B8C\u4E86] \u624B\u6301\u3061\u306E\u73FE\u91D1 \xA7e${dep.toLocaleString()} \u5186\xA7a \u3092\u53E3\u5EA7\u306B\u5165\u91D1\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        player.sendMessage(`\xA7a\u{1F3E6} [\u5165\u91D1\u5B8C\u4E86] \u624B\u6301\u3061\u306E\u73FE\u91D1 \xA7e${dep.toLocaleString()} M\xA7a \u3092\u53E3\u5EA7\u306B\u5165\u91D1\u3057\u307E\u3057\u305F\uFF01\xA7r`);
         player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else {
-        player.sendMessage("\xA7c\u26A0\uFE0F \u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306B\u5186\u30A2\u30A4\u30C6\u30E0\u304C\u3042\u308A\u307E\u305B\u3093\u3002\xA7r");
+        player.sendMessage("\xA7c\u26A0\uFE0F \u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306BM\u30B3\u30A4\u30F3\u30A2\u30A4\u30C6\u30E0\u304C\u3042\u308A\u307E\u305B\u3093\u3002\xA7r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 1) {
       if (withdrawCash(player, 1e4)) {
-        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e10,000 \u5186\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
+        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e10,000 M\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
       } else {
         player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 2) {
       if (withdrawCash(player, 5e3)) {
-        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e5,000 \u5186\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
+        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e5,000 M\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
       } else {
         player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 3) {
       if (withdrawCash(player, 1e3)) {
-        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e1,000 \u5186\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
+        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e1,000 M\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
       } else {
         player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 4) {
       if (withdrawCash(player, 500)) {
-        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e500 \u5186\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
+        player.sendMessage("\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e500 M\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\u3002\xA7r");
       } else {
         player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002\xA7r");
       }
       openAtmUI(player, blockLoc);
     } else if (res.selection === 5) {
-      const modal = new ModalFormData().title("\u{1F522} \u51FA\u91D1\u91D1\u984D\u306E\u6307\u5B9A").textField(`\u51FA\u91D1\u3057\u305F\u3044\u91D1\u984D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u53E3\u5EA7\u6B8B\u9AD8: ${bank.toLocaleString()}\u5186):`, "\u4F8B: 30000");
+      const modal = new ModalFormData().title("\u{1F522} \u51FA\u91D1\u91D1\u984D\u306E\u6307\u5B9A").textField(`\u51FA\u91D1\u3057\u305F\u3044\u91D1\u984D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u53E3\u5EA7\u6B8B\u9AD8: ${bank.toLocaleString()} M):`, "\u4F8B: 30000");
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
           openAtmUI(player, blockLoc);
@@ -1925,7 +2018,7 @@ function openAtmUI(player, blockLoc) {
         if (isNaN(val) || val <= 0) {
           player.sendMessage("\xA7c\u26A0\uFE0F \u6B63\u3057\u3044\u91D1\u984D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002\xA7r");
         } else if (withdrawCash(player, val)) {
-          player.sendMessage(`\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e${val.toLocaleString()} \u5186\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          player.sendMessage(`\xA7a\u{1F3E7} [\u51FA\u91D1\u5B8C\u4E86] \u53E3\u5EA7\u304B\u3089 \xA7e${val.toLocaleString()} M\xA7a \u3092\u5F15\u304D\u51FA\u3057\u307E\u3057\u305F\uFF01\xA7r`);
         } else {
           player.sendMessage("\xA7c\u26A0\uFE0F \u53E3\u5EA7\u6B8B\u9AD8\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u308B\u304B\u3001\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306B\u7A7A\u304D\u304C\u3042\u308A\u307E\u305B\u3093\u3002\xA7r");
         }
@@ -1953,15 +2046,15 @@ function openItemSellUI(player, blockLoc) {
     totalSellValue += s.price * count;
   }
   const form = new ActionFormData().title("\u{1F6D2} \u8CB7\u53D6\u30FB\u63DB\u91D1\u6240").body(
-    `\u9271\u77F3\u3084\u7279\u7523\u54C1\u3092\u58F2\u5374\u3057\u3066\u53E3\u5EA7\u306B yen \u3092\u30C1\u30E3\u30FC\u30B8\u3067\u304D\u307E\u3059\uFF01
-\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u5185\u306E\u63DB\u91D1\u53EF\u80FD\u30A2\u30A4\u30C6\u30E0\u7DCF\u984D: \xA7e${totalSellValue.toLocaleString()} \u5186\xA7r
+    `\u9271\u77F3\u3084\u7279\u7523\u54C1\u3092\u58F2\u5374\u3057\u3066\u53E3\u5EA7\u306B M\u30B3\u30A4\u30F3 \u3092\u30C1\u30E3\u30FC\u30B8\u3067\u304D\u307E\u3059\uFF01
+\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u5185\u306E\u63DB\u91D1\u53EF\u80FD\u30A2\u30A4\u30C6\u30E0\u7DCF\u984D: \xA7e${totalSellValue.toLocaleString()} M\xA7r
 
 \u58F2\u5374\u65B9\u6CD5\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`
-  ).button(`\u2728 \u63DB\u91D1\u53EF\u80FD\u30A2\u30A4\u30C6\u30E0\u3092\u3059\u3079\u3066\u4E00\u62EC\u58F2\u5374 (+${totalSellValue.toLocaleString()}\u5186)`);
+  ).button(`\u2728 \u63DB\u91D1\u53EF\u80FD\u30A2\u30A4\u30C6\u30E0\u3092\u3059\u3079\u3066\u4E00\u62EC\u58F2\u5374 (+${totalSellValue.toLocaleString()} M)`);
   for (const s of SELLABLE_ITEMS) {
     const count = inventoryCounts[s.typeId] || 0;
-    form.button(`${s.name} (\u5358\u4FA1: ${s.price.toLocaleString()}\u5186)
-[\u6240\u6301: ${count}\u500B / \u4FA1\u5024: ${(s.price * count).toLocaleString()}\u5186]`);
+    form.button(`${s.name} (\u5358\u4FA1: ${s.price.toLocaleString()} M)
+[\u6240\u6301: ${count}\u500B / \u4FA1\u5024: ${(s.price * count).toLocaleString()} M]`);
   }
   form.button("\u{1F519} \u623B\u308B");
   showFormSafe(player, form, (res) => {
@@ -1980,7 +2073,7 @@ function openItemSellUI(player, blockLoc) {
       }
       const curBal = getPlayerBankAccount(player);
       setPlayerBankAccount(player, curBal + totalSellValue);
-      player.sendMessage(`\xA7a\u{1F6D2} [\u58F2\u5374\u5B8C\u4E86] \u30A2\u30A4\u30C6\u30E0\u3092\u4E00\u62EC\u58F2\u5374\u3057\u3001\xA7e${totalSellValue.toLocaleString()} \u5186\xA7a \u3092\u53E3\u5EA7\u306B\u30C1\u30E3\u30FC\u30B8\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+      player.sendMessage(`\xA7a\u{1F6D2} [\u58F2\u5374\u5B8C\u4E86] \u30A2\u30A4\u30C6\u30E0\u3092\u4E00\u62EC\u58F2\u5374\u3057\u3001\xA7e${totalSellValue.toLocaleString()} M\xA7a \u3092\u53E3\u5EA7\u306B\u30C1\u30E3\u30FC\u30B8\u3057\u307E\u3057\u305F\uFF01\xA7r`);
       player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       openItemSellUI(player, blockLoc);
     } else if (res.selection <= SELLABLE_ITEMS.length) {
@@ -2019,8 +2112,8 @@ function openItemSellUI(player, blockLoc) {
 function openFxExchangeUI(player, blockLoc) {
   const bank = getPlayerBankAccount(player);
   const positions = getPlayerFxPositions(player);
-  const form = new ActionFormData().title("\u{1F4C8} Misskey FX (\u5916\u56FD\u70BA\u66FF\u53D6\u5F15\u6240)").body(
-    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r
+  const form = new ActionFormData().title("\u{1F4C8} Misskey FX (\u70BA\u66FF\u53D6\u5F15\u6240)").body(
+    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r
 \u70BA\u66FF\u30EC\u30FC\u30C8\u306F\u30EA\u30A2\u30EB\u30BF\u30A4\u30E0\u306B\u30E9\u30F3\u30C0\u30E0\u5909\u52D5\u3057\u307E\u3059\u3002\u30EC\u30D0\u30EC\u30C3\u30B8\u3092\u304B\u3051\u3066\u8CB7\u3044(Long)\u3084\u58F2\u308A(Short)\u3067\u70BA\u66FF\u5DEE\u76CA\u3092\u72D9\u3044\u307E\u3057\u3087\u3046\uFF01
 
 \u53D6\u5F15\u3057\u305F\u3044\u901A\u8CA8\u30DA\u30A2\u307E\u305F\u306F\u30DD\u30B8\u30B7\u30E7\u30F3\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:`
@@ -2028,7 +2121,7 @@ function openFxExchangeUI(player, blockLoc) {
   for (const pair of fxPairs) {
     const diff = pair.currentRate - pair.prevRate;
     const arrow = diff > 0 ? "\xA7c\u25B2" : diff < 0 ? "\xA79\u25BC" : "\xA77-";
-    const diffText = `${arrow} ${pair.currentRate.toFixed(2)}\u5186 (${diff >= 0 ? "+" : ""}${diff.toFixed(2)})\xA7r`;
+    const diffText = `${arrow} ${pair.currentRate.toFixed(2)} M (${diff >= 0 ? "+" : ""}${diff.toFixed(2)})\xA7r`;
     const chart = pair.history.map((h) => h.toFixed(1)).join("\u2192");
     form.button(`${pair.name}
 \u73FE\u5728: ${diffText} [\u63A8\u79FB: ${chart}]`);
@@ -2051,7 +2144,7 @@ function openFxOrderModal(player, pair, blockLoc) {
   const bank = getPlayerBankAccount(player);
   const diff = pair.currentRate - pair.prevRate;
   const arrow = diff >= 0 ? "\u25B2" : "\u25BC";
-  const modal = new ModalFormData().title(`\u{1F4C8} FX\u6CE8\u6587: ${pair.name}`).dropdown("\u6CE8\u6587\u30BF\u30A4\u30D7:", ["\u{1F7E2} \u8CB7\u3044 (Long - \u4E0A\u6607\u3067\u5229\u76CA)", "\u{1F534} \u58F2\u308A (Short - \u4E0B\u843D\u3067\u5229\u76CA)"], 0).dropdown("\u30EC\u30D0\u30EC\u30C3\u30B8\u500D\u7387:", ["1\u500D (\u73FE\u7269\u76F8\u5F53)", "5\u500D (\u6A19\u6E96)", "10\u500D (\u30CF\u30A4\u30EC\u30D0)", "25\u500D (\u8D85\u30CF\u30A4\u30EA\u30B9\u30AF)"], 1).textField(`\u8A3C\u62E0\u91D1 (\u53E3\u5EA7\u304B\u3089\u6295\u5165\u3059\u308Byen / \u53E3\u5EA7\u6B8B\u9AD8: ${bank.toLocaleString()}\u5186):`, "\u4F8B: 10000", "5000");
+  const modal = new ModalFormData().title(`\u{1F4C8} FX\u6CE8\u6587: ${pair.name}`).dropdown("\u6CE8\u6587\u30BF\u30A4\u30D7:", ["\u{1F7E2} \u8CB7\u3044 (Long - \u4E0A\u6607\u3067\u5229\u76CA)", "\u{1F534} \u58F2\u308A (Short - \u4E0B\u843D\u3067\u5229\u76CA)"], 0).dropdown("\u30EC\u30D0\u30EC\u30C3\u30B8\u500D\u7387:", ["1\u500D (\u73FE\u7269\u76F8\u5F53)", "5\u500D (\u6A19\u6E96)", "10\u500D (\u30CF\u30A4\u30EC\u30D0)", "25\u500D (\u8D85\u30CF\u30A4\u30EA\u30B9\u30AF)"], 1).textField(`\u8A3C\u62E0\u91D1 (\u53E3\u5EA7\u304B\u3089\u6295\u5165\u3059\u308BM\u30B3\u30A4\u30F3 / \u53E3\u5EA7\u6B8B\u9AD8: ${bank.toLocaleString()} M):`, "\u4F8B: 10000", "5000");
   showFormSafe(player, modal, (res) => {
     if (res.canceled || !res.formValues) {
       openFxExchangeUI(player, blockLoc);
@@ -2088,7 +2181,7 @@ function openFxOrderModal(player, pair, blockLoc) {
     setPlayerFxPositions(player, positions);
     player.sendMessage(
       `\xA7a\u{1F4C8} [FX\u6CE8\u6587\u7D04\u5B9A] ${pair.name} \u3092 ${type === "BUY" ? "\u8CB7\u3044(Long)" : "\u58F2\u308A(Short)"} \u3067\u30A8\u30F3\u30C8\u30EA\u30FC\u3057\u307E\u3057\u305F\uFF01
-\xA77\u30EC\u30FC\u30C8: ${pair.currentRate.toFixed(2)}\u5186 | \u30EC\u30D0\u30EC\u30C3\u30B8: ${leverage}\u500D | \u8A3C\u62E0\u91D1: ${margin.toLocaleString()}\u5186 | \u53D6\u5F15\u6570\u91CF: ${volume.toFixed(2)}\xA7r`
+\xA77\u30EC\u30FC\u30C8: ${pair.currentRate.toFixed(2)} M | \u30EC\u30D0\u30EC\u30C3\u30B8: ${leverage}\u500D | \u8A3C\u62E0\u91D1: ${margin.toLocaleString()} M | \u53D6\u5F15\u6570\u91CF: ${volume.toFixed(2)}\xA7r`
     );
     openFxPositionsUI(player, blockLoc);
   });
@@ -2104,7 +2197,7 @@ function openFxPositionsUI(player, blockLoc) {
     const color = profit >= 0 ? "\xA7a" : "\xA7c";
     form.button(
       `${pair ? pair.name : pos.pairId} [${pos.type} / ${pos.leverage}\u500D]
-\u7D04\u5B9A: ${pos.entryRate.toFixed(2)} \u2192 \u73FE\u5728: ${curRate.toFixed(2)} | \u640D\u76CA: ${color}${sign}${profit.toLocaleString()}\u5186\xA7r`
+\u7D04\u5B9A: ${pos.entryRate.toFixed(2)} \u2192 \u73FE\u5728: ${curRate.toFixed(2)} | \u640D\u76CA: ${color}${sign}${profit.toLocaleString()} M\xA7r`
     );
   }
   if (positions.length > 0) {
@@ -2125,7 +2218,7 @@ function openFxPositionsUI(player, blockLoc) {
       setPlayerBankAccount(player, curBal + returnAmount);
       const color = profit >= 0 ? "\xA7a" : "\xA7c";
       const sign = profit >= 0 ? "+" : "";
-      player.sendMessage(`\xA7a\u{1F4BC} [FX\u6C7A\u6E08\u5B8C\u4E86] \u30DD\u30B8\u30B7\u30E7\u30F3\u3092\u6C7A\u6E08\u3057\u307E\u3057\u305F\u3002\u640D\u76CA: ${color}${sign}${profit.toLocaleString()} \u5186\xA7a (\u53D7\u53D6\u984D: ${returnAmount.toLocaleString()}\u5186)\xA7r`);
+      player.sendMessage(`\xA7a\u{1F4BC} [FX\u6C7A\u6E08\u5B8C\u4E86] \u30DD\u30B8\u30B7\u30E7\u30F3\u3092\u6C7A\u6E08\u3057\u307E\u3057\u305F\u3002\u640D\u76CA: ${color}${sign}${profit.toLocaleString()} M\xA7a (\u53D7\u53D6\u984D: ${returnAmount.toLocaleString()} M)\xA7r`);
       openFxPositionsUI(player, blockLoc);
     } else if (positions.length > 0 && res.selection === positions.length) {
       let totalReturn = 0;
@@ -2142,7 +2235,7 @@ function openFxPositionsUI(player, blockLoc) {
       setPlayerBankAccount(player, curBal + totalReturn);
       const color = totalProfit >= 0 ? "\xA7a" : "\xA7c";
       const sign = totalProfit >= 0 ? "+" : "";
-      player.sendMessage(`\xA7a\u{1F4BC} [FX\u5168\u6C7A\u6E08\u5B8C\u4E86] \u3059\u3079\u3066\u306E\u30DD\u30B8\u30B7\u30E7\u30F3\u3092\u6C7A\u6E08\u3057\u307E\u3057\u305F\u3002\u5408\u8A08\u640D\u76CA: ${color}${sign}${totalProfit.toLocaleString()} \u5186\xA7a (\u53D7\u53D6\u984D: ${totalReturn.toLocaleString()}\u5186)\xA7r`);
+      player.sendMessage(`\xA7a\u{1F4BC} [FX\u5168\u6C7A\u6E08\u5B8C\u4E86] \u3059\u3079\u3066\u306E\u30DD\u30B8\u30B7\u30E7\u30F3\u3092\u6C7A\u6E08\u3057\u307E\u3057\u305F\u3002\u5408\u8A08\u640D\u76CA: ${color}${sign}${totalProfit.toLocaleString()} M\xA7a (\u53D7\u53D6\u984D: ${totalReturn.toLocaleString()} M)\xA7r`);
       openFxPositionsUI(player, blockLoc);
     } else {
       openFxExchangeUI(player, blockLoc);
@@ -2153,7 +2246,7 @@ function openStockMarketUI(player, blockLoc) {
   const bank = getPlayerBankAccount(player);
   const holdings = getPlayerStockHoldings(player);
   const form = new ActionFormData().title("\u{1F3E2} Misskey \u682A\u5F0F\u5E02\u5834").body(
-    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r
+    `\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r
 Misskey\u4E16\u754C\u306E\u6709\u529B\u4F01\u696D\u306E\u682A\u5F0F\u3092\u58F2\u8CB7\u3067\u304D\u307E\u3059\u3002\u4FDD\u6709\u3057\u3066\u3044\u308B\u3068\u5B9A\u671F\u7684\u306B\u300C\u914D\u5F53\u91D1\u300D\u3082\u5F97\u3089\u308C\u307E\u3059\uFF01
 
 \u9298\u67C4\u3092\u9078\u629E\u3057\u3066\u8A73\u7D30\u78BA\u8A8D\u30FB\u8CFC\u5165\u30FB\u58F2\u5374\u3092\u884C\u3048\u307E\u3059:`
@@ -2161,7 +2254,7 @@ Misskey\u4E16\u754C\u306E\u6709\u529B\u4F01\u696D\u306E\u682A\u5F0F\u3092\u58F2\
   for (const stock of stockMarket) {
     const diff = stock.currentPrice - stock.prevPrice;
     const arrow = diff > 0 ? "\xA7c\u25B2" : diff < 0 ? "\xA79\u25BC" : "\xA77-";
-    const diffText = `${arrow} ${stock.currentPrice.toLocaleString()}\u5186 (${diff >= 0 ? "+" : ""}${diff.toLocaleString()})\xA7r`;
+    const diffText = `${arrow} ${stock.currentPrice.toLocaleString()} M (${diff >= 0 ? "+" : ""}${diff.toLocaleString()})\xA7r`;
     const myCount = holdings[stock.code] || 0;
     const holdText = myCount > 0 ? ` [\u4FDD\u6709: ${myCount}\u682A]` : "";
     form.button(`${stock.name} (${stock.code})
@@ -2186,19 +2279,19 @@ function openStockDetailUI(player, stock, blockLoc) {
   const chart = stock.history.map((h) => h.toLocaleString()).join(" \u2192 ");
   const form = new ActionFormData().title(`\u{1F3E2} \u9298\u67C4\u8A73\u7D30: ${stock.name}`).body(
     `\u3010\u9298\u67C4\u30B3\u30FC\u30C9\u3011: \xA7e${stock.code}\xA7r (${stock.sector})
-\u3010\u73FE\u5728\u682A\u4FA1\u3011: \xA76${stock.currentPrice.toLocaleString()} \u5186\xA7r (\u57FA\u6E96: ${stock.basePrice.toLocaleString()}\u5186)
+\u3010\u73FE\u5728\u682A\u4FA1\u3011: \xA76${stock.currentPrice.toLocaleString()} M\xA7r (\u57FA\u6E96: ${stock.basePrice.toLocaleString()} M)
 \u3010\u914D\u5F53\u5229\u56DE\u308A\u3011: \xA7a${(stock.dividendRate * 100).toFixed(1)}% / \u5468\u671F\xA7r
 \u3010\u4F01\u696D\u6982\u8981\u3011: ${stock.description}
 \u3010\u76F4\u8FD1\u63A8\u79FB\u3011: ${chart}
 \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
-\u{1F464} \u3042\u306A\u305F\u306E\u4FDD\u6709\u6570: \xA7b${myCount} \u682A\xA7r (\u8A55\u4FA1\u984D: ${myValue.toLocaleString()}\u5186)
-\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r`
+\u{1F464} \u3042\u306A\u305F\u306E\u4FDD\u6709\u6570: \xA7b${myCount} \u682A\xA7r (\u8A55\u4FA1\u984D: ${myValue.toLocaleString()} M)
+\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r`
   ).button("\u{1F6D2} \u3053\u306E\u682A\u3092\u8CFC\u5165\u3059\u308B").button(myCount > 0 ? `\u{1F4B0} \u3053\u306E\u682A\u3092\u58F2\u5374\u3059\u308B (\u4FDD\u6709: ${myCount}\u682A)` : "\u{1F512} \u58F2\u5374\u4E0D\u53EF (\u672A\u4FDD\u6709)").button("\u{1F519} \u9298\u67C4\u4E00\u89A7\u306B\u623B\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection === 0) {
       const maxBuy = Math.floor(bank / stock.currentPrice);
-      const modal = new ModalFormData().title(`\u{1F6D2} \u682A\u306E\u8CFC\u5165: ${stock.name}`).textField(`\u8CFC\u5165\u682A\u6570\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u5358\u4FA1: ${stock.currentPrice.toLocaleString()}\u5186 / \u6700\u5927: ${maxBuy}\u682A):`, "\u4F8B: 10", "1");
+      const modal = new ModalFormData().title(`\u{1F6D2} \u682A\u306E\u8CFC\u5165: ${stock.name}`).textField(`\u8CFC\u5165\u682A\u6570\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u5358\u4FA1: ${stock.currentPrice.toLocaleString()} M / \u6700\u5927: ${maxBuy}\u682A):`, "\u4F8B: 10", "1");
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
           openStockDetailUI(player, stock, blockLoc);
@@ -2215,14 +2308,14 @@ function openStockDetailUI(player, stock, blockLoc) {
             setPlayerBankAccount(player, bank - totalCost);
             holdings[stock.code] = (holdings[stock.code] || 0) + count;
             setPlayerStockHoldings(player, holdings);
-            player.sendMessage(`\xA7a\u{1F6D2} [\u8CFC\u5165\u5B8C\u4E86] ${stock.name} \u3092 ${count} \u682A\u8CFC\u5165\u3057\u307E\u3057\u305F\uFF01\uFF08\u7DCF\u984D: ${totalCost.toLocaleString()}\u5186\uFF09\xA7r`);
+            player.sendMessage(`\xA7a\u{1F6D2} [\u8CFC\u5165\u5B8C\u4E86] ${stock.name} \u3092 ${count} \u682A\u8CFC\u5165\u3057\u307E\u3057\u305F\uFF01\uFF08\u7DCF\u984D: ${totalCost.toLocaleString()} M\uFF09\xA7r`);
             player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
           }
         }
         openStockDetailUI(player, stock, blockLoc);
       });
     } else if (res.selection === 1 && myCount > 0) {
-      const modal = new ModalFormData().title(`\u{1F4B0} \u682A\u306E\u58F2\u5374: ${stock.name}`).textField(`\u58F2\u5374\u682A\u6570\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u5358\u4FA1: ${stock.currentPrice.toLocaleString()}\u5186 / \u4FDD\u6709: ${myCount}\u682A):`, `\u6700\u5927: ${myCount}`, String(myCount));
+      const modal = new ModalFormData().title(`\u{1F4B0} \u682A\u306E\u58F2\u5374: ${stock.name}`).textField(`\u58F2\u5374\u682A\u6570\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044 (\u5358\u4FA1: ${stock.currentPrice.toLocaleString()} M / \u4FDD\u6709: ${myCount}\u682A):`, `\u6700\u5927: ${myCount}`, String(myCount));
       showFormSafe(player, modal, (mRes) => {
         if (mRes.canceled || !mRes.formValues) {
           openStockDetailUI(player, stock, blockLoc);
@@ -2237,7 +2330,7 @@ function openStockDetailUI(player, stock, blockLoc) {
           holdings[stock.code] = myCount - count;
           if (holdings[stock.code] <= 0) delete holdings[stock.code];
           setPlayerStockHoldings(player, holdings);
-          player.sendMessage(`\xA7a\u{1F4B0} [\u58F2\u5374\u5B8C\u4E86] ${stock.name} \u3092 ${count} \u682A\u58F2\u5374\u3057\u3001\xA7e${totalEarned.toLocaleString()} \u5186\xA7a \u3092\u53E3\u5EA7\u306B\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\uFF01\xA7r`);
+          player.sendMessage(`\xA7a\u{1F4B0} [\u58F2\u5374\u5B8C\u4E86] ${stock.name} \u3092 ${count} \u682A\u58F2\u5374\u3057\u3001\xA7e${totalEarned.toLocaleString()} M\xA7a \u3092\u53E3\u5EA7\u306B\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\uFF01\xA7r`);
         }
         openStockDetailUI(player, stock, blockLoc);
       });
@@ -2282,17 +2375,17 @@ ${chosen.content}`
 function openQuickWalletUI(player) {
   const cash = countPlayerCash(player);
   const bank = getPlayerBankAccount(player);
-  const form = new ActionFormData().title("\u{1F45B} \u304A\u8CA1\u5E03 & \u53E3\u5EA7\u30AF\u30A4\u30C3\u30AF\u30E1\u30CB\u30E5\u30FC").body(`\u6240\u6301\u73FE\u91D1: \xA7e${cash.toLocaleString()} \u5186\xA7r
-\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} \u5186\xA7r`).button(`\u{1F4B0} \u624B\u6301\u3061\u306E\u73FE\u91D1\u3092\u5168\u984D\u53E3\u5EA7\u306B\u5165\u91D1 (+${cash.toLocaleString()}\u5186)`).button("\u{1F4B9} Misskey\u8A3C\u5238 & FX\u53D6\u5F15\u6240\u3092\u958B\u304F").button("\u{1F519} \u9589\u3058\u308B");
+  const form = new ActionFormData().title("\u{1F45B} \u304A\u8CA1\u5E03 & \u53E3\u5EA7\u30AF\u30A4\u30C3\u30AF\u30E1\u30CB\u30E5\u30FC").body(`\u6240\u6301\u73FE\u91D1: \xA7e${cash.toLocaleString()} M\xA7r
+\u53E3\u5EA7\u6B8B\u9AD8: \xA7a${bank.toLocaleString()} M\xA7r`).button(`\u{1F4B0} \u624B\u6301\u3061\u306E\u73FE\u91D1\u3092\u5168\u984D\u53E3\u5EA7\u306B\u5165\u91D1 (+${cash.toLocaleString()} M)`).button("\u{1F4B9} Misskey\u8A3C\u5238 & FX\u53D6\u5F15\u6240\u3092\u958B\u304F").button("\u{1F519} \u9589\u3058\u308B");
   showFormSafe(player, form, (res) => {
     if (res.canceled || res.selection === void 0) return;
     if (res.selection === 0) {
       const dep = depositAllCash(player);
       if (dep > 0) {
-        player.sendMessage(`\xA7a\u{1F45B} [\u30AF\u30A4\u30C3\u30AF\u5165\u91D1] \u624B\u6301\u3061\u306E\u73FE\u91D1 \xA7e${dep.toLocaleString()} \u5186\xA7a \u3092\u53E3\u5EA7\u306B\u5165\u91D1\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+        player.sendMessage(`\xA7a\u{1F45B} [\u30AF\u30A4\u30C3\u30AF\u5165\u91D1] \u624B\u6301\u3061\u306E\u73FE\u91D1 \xA7e${dep.toLocaleString()} M\xA7a \u3092\u53E3\u5EA7\u306B\u5165\u91D1\u3057\u307E\u3057\u305F\uFF01\xA7r`);
         player.dimension.spawnParticle("minecraft:villager_happy", { x: player.location.x, y: player.location.y + 1.5, z: player.location.z });
       } else {
-        player.sendMessage("\xA7c\u26A0\uFE0F \u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306B\u5186\u30A2\u30A4\u30C6\u30E0\u304C\u3042\u308A\u307E\u305B\u3093\u3002\xA7r");
+        player.sendMessage("\xA7c\u26A0\uFE0F \u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306BM\u30B3\u30A4\u30F3\u30A2\u30A4\u30C6\u30E0\u304C\u3042\u308A\u307E\u305B\u3093\u3002\xA7r");
       }
     } else if (res.selection === 1) {
       openFinancialPortalUI(player);
@@ -3549,6 +3642,31 @@ system.runInterval(() => {
     if (allP.dimension.id.includes("the_end")) {
       grantAchievement(allP, "ensei");
     }
+    if (!allP.hasTag("unlocked_diamond")) {
+      const diamondItems = [
+        "minecraft:diamond",
+        "minecraft:diamond_block",
+        "minecraft:diamond_ore",
+        "minecraft:deepslate_diamond_ore",
+        "minecraft:diamond_sword",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_boots"
+      ];
+      if (diamondItems.some((it) => playerHasItem(allP, it))) {
+        allP.addTag("unlocked_diamond");
+      }
+    }
+    if (!allP.hasTag("unlocked_netherite")) {
+      if (playerHasItem(allP, "minecraft:netherite_ingot") || playerHasItem(allP, "minecraft:netherite_scrap") || playerHasItem(allP, "minecraft:ancient_debris") || hasPlayerAchieved(allP, "upgrade")) {
+        allP.addTag("unlocked_netherite");
+      }
+    }
     const cash = countPlayerCash(allP);
     const bank = getPlayerBankAccount(allP);
     const holdings = getPlayerStockHoldings(allP);
@@ -3558,9 +3676,9 @@ system.runInterval(() => {
       if (stock && count > 0) stockVal += stock.currentPrice * count;
     }
     const totalAssets = cash + bank + stockVal;
-    const usdRate = fxPairs.find((p) => p.id === "USD_JPY")?.currentRate || 155;
-    const totalUsd = totalAssets / usdRate;
-    const rank = getPlayerWealthRank(totalUsd);
+    const fedRate = fxPairs.find((p) => p.id === "FED_M")?.currentRate || 155;
+    const totalFed = totalAssets / fedRate;
+    const rank = getPlayerWealthRank(totalFed);
     if (rank.particle) {
       const loc = allP.location;
       try {
@@ -3569,6 +3687,31 @@ system.runInterval(() => {
           allP.addEffect("speed", 30, { amplifier: 0, showParticles: false });
         }
       } catch (e) {
+      }
+    }
+    const perkKeysList = ["turbo", "insurance", "gold_license"];
+    for (const perkKey of perkKeysList) {
+      const perkDef = CAR_PERK_DEFS[perkKey];
+      const pStatus = getCarPerkStatus(allP, perkKey);
+      const lastCheckProp = `mi_perk_${perkKey}_last_check`;
+      const lastCheckedExpires = Number(allP.getDynamicProperty(lastCheckProp) || 0);
+      if (pStatus.expiresAt > 0 && !pStatus.active && lastCheckedExpires !== pStatus.expiresAt) {
+        allP.setDynamicProperty(lastCheckProp, pStatus.expiresAt);
+        const renewCost = Math.floor(perkDef.fedPrice * fedRate);
+        if (pStatus.autoRenew) {
+          const curBank = getPlayerBankAccount(allP);
+          if (curBank >= renewCost) {
+            setPlayerBankAccount(allP, curBank - renewCost);
+            const newStatus = subscribeCarPerk(allP, perkKey);
+            allP.sendMessage(`\xA7b\u{1F697}\u{1F4B3} [\u8ECA\u4E21\u30B5\u30D6\u30B9\u30AF] \u300C${perkDef.name}\u300D\u306E\u4FDD\u967A\u6599\uFF08${perkDef.fedPrice} FED / \u7D04 ${renewCost.toLocaleString()} M\uFF09\u3092\u5F15\u304D\u843D\u3068\u3057\u3001\u5951\u7D04\u309230\u5206\u9593\u81EA\u52D5\u66F4\u65B0\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+          } else {
+            cancelCarPerkSubscription(allP, perkKey);
+            allP.sendMessage(`\xA7c\u26A0\uFE0F [\u8ECA\u4E21\u30B5\u30D6\u30B9\u30AF] \u53E3\u5EA7\u6B8B\u9AD8\u4E0D\u8DB3\u306E\u305F\u3081\u300C${perkDef.name}\u300D\u306E\u81EA\u52D5\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF08\u5FC5\u8981\u984D: ${renewCost.toLocaleString()} M\uFF09\u3002\u5951\u7D04\u304C\u5931\u52B9\u3057\u307E\u3057\u305F\u3002\xA7r`);
+          }
+        } else {
+          cancelCarPerkSubscription(allP, perkKey);
+          allP.sendMessage(`\xA77\u{1F697} [\u8ECA\u4E21\u30B5\u30D6\u30B9\u30AF] \u300C${perkDef.name}\u300D\u306E\u5951\u7D04\u671F\u9593\u304C\u6E80\u4E86\u3057\u307E\u3057\u305F\u3002\u518D\u5EA6\u3054\u5229\u7528\u306E\u969B\u306F\u91D1\u878D\u30DD\u30FC\u30BF\u30EB\u304B\u3089\u3054\u52A0\u5165\u304F\u3060\u3055\u3044\u3002\xA7r`);
+        }
       }
     }
   }
@@ -3719,11 +3862,14 @@ system.runInterval(() => {
       if (hasWallHit) {
         let hasInsuranceRider = false;
         for (const rider of riders) {
-          if (rider instanceof Player && hasCarPerk(rider, "insurance")) {
-            hasInsuranceRider = true;
-            rider.sendMessage("\xA7b\u{1F6E1}\uFE0F\u{1F697} [\u8ECA\u4E21\u4FDD\u967A\u767A\u52D5] \u8ECA\u304C\u5927\u7834\u3057\u305F\u304C\u3001\u8ECA\u4E21\u4FDD\u967A\u306B\u3088\u308A\u5373\u5EA7\u306B\u73FE\u5834\u4FEE\u5FA9\u3055\u308C\u307E\u3057\u305F\uFF01\xA7r");
-            overworld.spawnParticle("minecraft:totem_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
-            break;
+          if (rider instanceof Player) {
+            const insStatus = getInsuranceStatus(rider);
+            if (insStatus.active) {
+              hasInsuranceRider = true;
+              rider.sendMessage(`\xA7b\u{1F6E1}\uFE0F\u{1F697} [\u8ECA\u4E21\u4FDD\u967A\u767A\u52D5] \u8ECA\u304C\u5927\u7834\u3057\u305F\u304C\u3001\u8ECA\u4E21\u4FDD\u967A\u30B5\u30D6\u30B9\u30AF\u306B\u3088\u308A\u5373\u5EA7\u306B\u73FE\u5834\u4FEE\u5FA9\u3055\u308C\u307E\u3057\u305F\uFF01\uFF08\u6B8B\u308A\u6642\u9593: \u7D04 ${insStatus.remainingMinutes} \u5206\uFF09\xA7r`);
+              overworld.spawnParticle("minecraft:totem_particle", { x: cLoc.x, y: cLoc.y + 1.2, z: cLoc.z });
+              break;
+            }
           }
         }
         if (!hasInsuranceRider) {
@@ -3981,6 +4127,10 @@ world.afterEvents.itemUse.subscribe((event) => {
     grantAchievement(player, "dokusho");
   }
   if (itemStack.typeId === "mi:yahata_blueprint") {
+    const now = Date.now();
+    const lastUse = blueprintCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 2e3) return;
+    blueprintCooldownMap.set(player.id, now);
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -3989,6 +4139,7 @@ world.afterEvents.itemUse.subscribe((event) => {
       y: Math.floor(pLoc.y),
       z: Math.floor(pLoc.z + viewDir.z * 8)
     };
+    decrementPlayerHeldItem(player);
     player.sendMessage("\xA7e\u{1F3ED} [\u5B98\u55B6\u516B\u5E61\u88FD\u9244\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u6B74\u53F2\u3042\u308B\u88FD\u9244\u6240\u5EC3\u589F\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
     try {
       dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
@@ -4005,6 +4156,10 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
   if (itemStack.typeId === "mi:hq_blueprint") {
+    const now = Date.now();
+    const lastUse = blueprintCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 2e3) return;
+    blueprintCooldownMap.set(player.id, now);
     const dim = player.dimension;
     const pLoc = player.location;
     const viewDir = player.getViewDirection();
@@ -4013,6 +4168,7 @@ world.afterEvents.itemUse.subscribe((event) => {
       y: Math.floor(pLoc.y),
       z: Math.floor(pLoc.z + viewDir.z * 12)
     };
+    decrementPlayerHeldItem(player);
     player.sendMessage("\xA7b\u{1F3E2} [Misskey\u958B\u767A\u6240] \u8A2D\u8A08\u56F3\u3092\u5C55\u958B\u3057\u3001\u958B\u767A\u6240\u30D3\u30EB\uFF084\u968E\u5EFA\u3066\u30C0\u30F3\u30B8\u30E7\u30F3\uFF09\u3092\u5EFA\u8A2D\u4E2D...\uFF01\xA7r");
     try {
       dim.spawnParticle("minecraft:large_explosion", { x: targetLoc.x, y: targetLoc.y + 2, z: targetLoc.z });
