@@ -5523,6 +5523,8 @@ function isLogBlock(typeId: string): boolean {
 
 function isLeavesBlock(typeId: string): boolean {
   return typeId.includes("leaves") || 
+         typeId.includes("leaf") || 
+         typeId.includes("azalea") || 
          typeId.includes("wart_block") || 
          typeId.includes("shroomlight") ||
          typeId.includes("mangrove_roots");
@@ -5598,10 +5600,11 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
   if (handItem && handItem.typeId === "mi:explosion_tool") {
     const isLog = isLogBlock(blockTypeId);
+    const isLeafTarget = isLeavesBlock(blockTypeId);
     const isOre = isOreBlock(blockTypeId);
     const isStone = isStoneTypeBlock(blockTypeId);
 
-    if (isLog || isOre || isStone) {
+    if (isLog || isLeafTarget || isOre || isStone) {
       const pKey = `${playerId}_vein_mining`;
       if (!isVeinMiningInProgress.has(pKey)) {
         isVeinMiningInProgress.add(pKey);
@@ -5610,7 +5613,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
         system.run(() => {
           try {
-            const maxBlocks = isLog ? 128 : 64;
+            const maxBlocks = isLog ? 128 : (isLeafTarget ? 256 : 64);
             const visited = new Set<string>();
             const queue: { x: number, y: number, z: number }[] = [];
             const destroyedBlocks: { x: number, y: number, z: number }[] = [];
@@ -5619,7 +5622,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             visited.add(startKey);
             queue.push(blockLoc);
 
-            // BFS 連鎖探索
+            // BFS 原木・鉱石・石材の連鎖探索
             while (queue.length > 0 && destroyedBlocks.length < maxBlocks) {
               const curr = queue.shift()!;
 
@@ -5639,6 +5642,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                         if (b && !b.isAir) {
                           const bType = b.typeId;
                           const matches = (isLog && isLogBlock(bType)) ||
+                                          (isLeafTarget && isLeavesBlock(bType)) ||
                                           (isOre && (bType === blockTypeId || isOreBlock(bType))) ||
                                           (isStone && (bType === blockTypeId || isStoneTypeBlock(bType)));
                           if (matches) {
@@ -5653,27 +5657,56 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
 
-            // 木の場合は周囲の葉っぱも全探索して一括破壊！
+            // 木の場合は、すべての原木の位置から周囲の葉っぱをBFSで完全連鎖探索！
             const destroyedLeaves: { x: number, y: number, z: number }[] = [];
             if (isLog) {
               const allTreePositions = [blockLoc, ...destroyedBlocks];
-              const leafVisited = new Set<string>();
+              const leafQueue: { x: number, y: number, z: number }[] = [];
 
+              // 原木の周囲6x6x6内の葉っぱをキューに追加
               for (const tp of allTreePositions) {
-                for (let lx = -4; lx <= 4; lx++) {
-                  for (let ly = -2; ly <= 6; ly++) {
-                    for (let lz = -4; lz <= 4; lz++) {
+                for (let lx = -3; lx <= 3; lx++) {
+                  for (let ly = -2; ly <= 8; ly++) {
+                    for (let lz = -3; lz <= 3; lz++) {
                       const fx = tp.x + lx;
                       const fy = tp.y + ly;
                       const fz = tp.z + lz;
                       const fKey = `${fx},${fy},${fz}`;
 
-                      if (!leafVisited.has(fKey) && !visited.has(fKey)) {
-                        leafVisited.add(fKey);
+                      if (!visited.has(fKey)) {
+                        visited.add(fKey);
                         try {
                           const lb = dim.getBlock({ x: fx, y: fy, z: fz });
                           if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
+                            leafQueue.push({ x: fx, y: fy, z: fz });
                             destroyedLeaves.push({ x: fx, y: fy, z: fz });
+                          }
+                        } catch (e) { }
+                      }
+                    }
+                  }
+                }
+              }
+
+              // 葉っぱ同士もBFSで連鎖探索（最大300枚）
+              while (leafQueue.length > 0 && destroyedLeaves.length < 300) {
+                const lCurr = leafQueue.shift()!;
+                for (let dx = -1; dx <= 1; dx++) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                      if (dx === 0 && dy === 0 && dz === 0) continue;
+                      const nx = lCurr.x + dx;
+                      const ny = lCurr.y + dy;
+                      const nz = lCurr.z + dz;
+                      const key = `${nx},${ny},${nz}`;
+
+                      if (!visited.has(key)) {
+                        visited.add(key);
+                        try {
+                          const lb = dim.getBlock({ x: nx, y: ny, z: nz });
+                          if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
+                            leafQueue.push({ x: nx, y: ny, z: nz });
+                            destroyedLeaves.push({ x: nx, y: ny, z: nz });
                           }
                         } catch (e) { }
                       }
@@ -5683,7 +5716,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
 
-            // 耐久値の計算（ブロック1個ごとにきっちり1消費）
+            // 耐久値の計算（ブロック1個ごとに正確に耐久値を消費）
             let toolBroken = false;
             let actualBrokenBlocks = 0;
             let actualBrokenLeaves = 0;
@@ -5699,7 +5732,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
 
-            // 破壊 & ドロップ実行 (setblock air destroy でバニラと同じ破壊音・ドロップを発生させる)
+            // 原木・鉱石・石材の破壊
             for (const db of destroyedBlocks) {
               if (toolBroken) break;
               try {
@@ -5708,7 +5741,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                   dim.runCommand(`setblock ${db.x} ${db.y} ${db.z} air destroy`);
                   actualBrokenBlocks++;
 
-                  // 耐久度消費
                   if (player.gameMode !== "creative" && durabilityComp) {
                     if (Math.random() < 1 / (unbreakingLevel + 1)) {
                       durabilityComp.damage += 1;
@@ -5724,7 +5756,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               } catch (e) { }
             }
 
-            // 葉っぱ破壊
+            // 葉っぱの一括破壊
             for (const lf of destroyedLeaves) {
               if (toolBroken) break;
               try {
@@ -5733,7 +5765,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                   dim.runCommand(`setblock ${lf.x} ${lf.y} ${lf.z} air destroy`);
                   actualBrokenLeaves++;
 
-                  // 葉っぱも1個につき耐久度消費
                   if (player.gameMode !== "creative" && durabilityComp) {
                     if (Math.random() < 1 / (unbreakingLevel + 1)) {
                       durabilityComp.damage += 1;

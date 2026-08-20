@@ -4381,7 +4381,7 @@ function isLogBlock(typeId) {
   return typeId.includes("log") || typeId.includes("wood") || typeId.includes("stem") || typeId.includes("hyphae");
 }
 function isLeavesBlock(typeId) {
-  return typeId.includes("leaves") || typeId.includes("wart_block") || typeId.includes("shroomlight") || typeId.includes("mangrove_roots");
+  return typeId.includes("leaves") || typeId.includes("leaf") || typeId.includes("azalea") || typeId.includes("wart_block") || typeId.includes("shroomlight") || typeId.includes("mangrove_roots");
 }
 function isOreBlock(typeId) {
   return typeId.includes("ore") || typeId.includes("ancient_debris") || typeId.includes("raw_iron_block") || typeId.includes("raw_gold_block") || typeId.includes("raw_copper_block");
@@ -4440,9 +4440,10 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
   const handItem = event.itemStackBeforeBreak || equippable?.getEquipment("Mainhand");
   if (handItem && handItem.typeId === "mi:explosion_tool") {
     const isLog = isLogBlock(blockTypeId);
+    const isLeafTarget = isLeavesBlock(blockTypeId);
     const isOre = isOreBlock(blockTypeId);
     const isStone = isStoneTypeBlock(blockTypeId);
-    if (isLog || isOre || isStone) {
+    if (isLog || isLeafTarget || isOre || isStone) {
       const pKey = `${playerId}_vein_mining`;
       if (!isVeinMiningInProgress.has(pKey)) {
         isVeinMiningInProgress.add(pKey);
@@ -4450,7 +4451,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
         const dim = event.block.dimension;
         system.run(() => {
           try {
-            const maxBlocks = isLog ? 128 : 64;
+            const maxBlocks = isLog ? 128 : isLeafTarget ? 256 : 64;
             const visited = /* @__PURE__ */ new Set();
             const queue = [];
             const destroyedBlocks = [];
@@ -4473,7 +4474,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                         const b = dim.getBlock({ x: nx, y: ny, z: nz });
                         if (b && !b.isAir) {
                           const bType = b.typeId;
-                          const matches = isLog && isLogBlock(bType) || isOre && (bType === blockTypeId || isOreBlock(bType)) || isStone && (bType === blockTypeId || isStoneTypeBlock(bType));
+                          const matches = isLog && isLogBlock(bType) || isLeafTarget && isLeavesBlock(bType) || isOre && (bType === blockTypeId || isOreBlock(bType)) || isStone && (bType === blockTypeId || isStoneTypeBlock(bType));
                           if (matches) {
                             queue.push({ x: nx, y: ny, z: nz });
                             destroyedBlocks.push({ x: nx, y: ny, z: nz });
@@ -4489,21 +4490,47 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             const destroyedLeaves = [];
             if (isLog) {
               const allTreePositions = [blockLoc, ...destroyedBlocks];
-              const leafVisited = /* @__PURE__ */ new Set();
+              const leafQueue = [];
               for (const tp of allTreePositions) {
-                for (let lx = -4; lx <= 4; lx++) {
-                  for (let ly = -2; ly <= 6; ly++) {
-                    for (let lz = -4; lz <= 4; lz++) {
+                for (let lx = -3; lx <= 3; lx++) {
+                  for (let ly = -2; ly <= 8; ly++) {
+                    for (let lz = -3; lz <= 3; lz++) {
                       const fx = tp.x + lx;
                       const fy = tp.y + ly;
                       const fz = tp.z + lz;
                       const fKey = `${fx},${fy},${fz}`;
-                      if (!leafVisited.has(fKey) && !visited.has(fKey)) {
-                        leafVisited.add(fKey);
+                      if (!visited.has(fKey)) {
+                        visited.add(fKey);
                         try {
                           const lb = dim.getBlock({ x: fx, y: fy, z: fz });
                           if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
+                            leafQueue.push({ x: fx, y: fy, z: fz });
                             destroyedLeaves.push({ x: fx, y: fy, z: fz });
+                          }
+                        } catch (e) {
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              while (leafQueue.length > 0 && destroyedLeaves.length < 300) {
+                const lCurr = leafQueue.shift();
+                for (let dx = -1; dx <= 1; dx++) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                      if (dx === 0 && dy === 0 && dz === 0) continue;
+                      const nx = lCurr.x + dx;
+                      const ny = lCurr.y + dy;
+                      const nz = lCurr.z + dz;
+                      const key = `${nx},${ny},${nz}`;
+                      if (!visited.has(key)) {
+                        visited.add(key);
+                        try {
+                          const lb = dim.getBlock({ x: nx, y: ny, z: nz });
+                          if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
+                            leafQueue.push({ x: nx, y: ny, z: nz });
+                            destroyedLeaves.push({ x: nx, y: ny, z: nz });
                           }
                         } catch (e) {
                         }
