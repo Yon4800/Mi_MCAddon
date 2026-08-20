@@ -4358,6 +4358,57 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         });
         return;
       }
+
+      // Vehicle Repair / Healing Items (鉄・金・ネザライト・生態サーバー等で修理)
+      const repairItems: Record<string, { healAmount: number, name: string, fullRepair?: boolean }> = {
+        "minecraft:iron_ingot": { healAmount: 15, name: "鉄インゴット" },
+        "minecraft:iron_block": { healAmount: 45, name: "鉄ブロック", fullRepair: true },
+        "minecraft:gold_ingot": { healAmount: 25, name: "金インゴット" },
+        "minecraft:gold_block": { healAmount: 45, name: "金ブロック", fullRepair: true },
+        "minecraft:netherite_ingot": { healAmount: 45, name: "ネザライトインゴット", fullRepair: true },
+        "mi:ecology_server": { healAmount: 45, name: "生態サーバー", fullRepair: true }
+      };
+
+      const repair = repairItems[itemStack.typeId];
+      if (repair) {
+        event.cancel = true;
+        system.run(() => {
+          const healthComp = target.getComponent(EntityComponentTypes.Health) as any;
+          const isAccident = accidentCarsMap.has(target.id);
+          const currentHp = healthComp ? healthComp.currentValue : 45;
+          const maxHp = healthComp ? healthComp.effectiveMax : 45;
+
+          if (!isAccident && currentHp >= maxHp) {
+            player.sendMessage(`§e🚗 [Mi_Addon] この車両はすでに完全な状態です！（耐久度: ${currentHp}/${maxHp}）§r`);
+            return;
+          }
+
+          // Consume 1 item
+          decrementPlayerHeldItem(player);
+
+          // Restore HP
+          if (healthComp) {
+            const newHp = Math.min(maxHp, currentHp + repair.healAmount);
+            healthComp.setCurrentValue(newHp);
+          }
+
+          // If car was in crash accident, restore immediately!
+          if (isAccident) {
+            accidentCarsMap.delete(target.id);
+          }
+
+          // Particles and feedback
+          const loc = target.location;
+          const dim = target.dimension;
+          dim.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.2, z: loc.z });
+          dim.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1.0, z: loc.z });
+          dim.spawnParticle("minecraft:lava_particle", { x: loc.x, y: loc.y + 0.6, z: loc.z });
+
+          const finalHp = healthComp ? healthComp.currentValue : 45;
+          player.sendMessage(`§a🔧🚗 [車両修理] ${repair.name} を使って車両を修理・整備しました！（耐久度: §e${finalHp}/${maxHp}§a）§r`);
+        });
+        return;
+      }
     }
   }
 

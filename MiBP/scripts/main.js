@@ -3432,6 +3432,44 @@ world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
         });
         return;
       }
+      const repairItems = {
+        "minecraft:iron_ingot": { healAmount: 15, name: "\u9244\u30A4\u30F3\u30B4\u30C3\u30C8" },
+        "minecraft:iron_block": { healAmount: 45, name: "\u9244\u30D6\u30ED\u30C3\u30AF", fullRepair: true },
+        "minecraft:gold_ingot": { healAmount: 25, name: "\u91D1\u30A4\u30F3\u30B4\u30C3\u30C8" },
+        "minecraft:gold_block": { healAmount: 45, name: "\u91D1\u30D6\u30ED\u30C3\u30AF", fullRepair: true },
+        "minecraft:netherite_ingot": { healAmount: 45, name: "\u30CD\u30B6\u30E9\u30A4\u30C8\u30A4\u30F3\u30B4\u30C3\u30C8", fullRepair: true },
+        "mi:ecology_server": { healAmount: 45, name: "\u751F\u614B\u30B5\u30FC\u30D0\u30FC", fullRepair: true }
+      };
+      const repair = repairItems[itemStack.typeId];
+      if (repair) {
+        event.cancel = true;
+        system.run(() => {
+          const healthComp = target.getComponent(EntityComponentTypes.Health);
+          const isAccident = accidentCarsMap.has(target.id);
+          const currentHp = healthComp ? healthComp.currentValue : 45;
+          const maxHp = healthComp ? healthComp.effectiveMax : 45;
+          if (!isAccident && currentHp >= maxHp) {
+            player.sendMessage(`\xA7e\u{1F697} [Mi_Addon] \u3053\u306E\u8ECA\u4E21\u306F\u3059\u3067\u306B\u5B8C\u5168\u306A\u72B6\u614B\u3067\u3059\uFF01\uFF08\u8010\u4E45\u5EA6: ${currentHp}/${maxHp}\uFF09\xA7r`);
+            return;
+          }
+          decrementPlayerHeldItem(player);
+          if (healthComp) {
+            const newHp = Math.min(maxHp, currentHp + repair.healAmount);
+            healthComp.setCurrentValue(newHp);
+          }
+          if (isAccident) {
+            accidentCarsMap.delete(target.id);
+          }
+          const loc = target.location;
+          const dim = target.dimension;
+          dim.spawnParticle("minecraft:villager_happy", { x: loc.x, y: loc.y + 1.2, z: loc.z });
+          dim.spawnParticle("minecraft:totem_particle", { x: loc.x, y: loc.y + 1, z: loc.z });
+          dim.spawnParticle("minecraft:lava_particle", { x: loc.x, y: loc.y + 0.6, z: loc.z });
+          const finalHp = healthComp ? healthComp.currentValue : 45;
+          player.sendMessage(`\xA7a\u{1F527}\u{1F697} [\u8ECA\u4E21\u4FEE\u7406] ${repair.name} \u3092\u4F7F\u3063\u3066\u8ECA\u4E21\u3092\u4FEE\u7406\u30FB\u6574\u5099\u3057\u307E\u3057\u305F\uFF01\uFF08\u8010\u4E45\u5EA6: \xA7e${finalHp}/${maxHp}\xA7a\uFF09\xA7r`);
+        });
+        return;
+      }
     }
   }
   if (!itemStack) return;
