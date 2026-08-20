@@ -2410,14 +2410,32 @@ function handlePuddingEat(player, block, isNekomimi) {
       try {
         const equippable = player.getComponent(EntityComponentTypes.Equippable);
         if (equippable) {
+          const currentHead = equippable.getEquipment("Head");
+          if (currentHead && currentHead.typeId !== "mi:nekomimi_ears") {
+            const inv = player.getComponent(EntityComponentTypes.Inventory)?.container;
+            let added = false;
+            if (inv) {
+              try {
+                const leftover = inv.addItem(currentHead);
+                if (!leftover) added = true;
+              } catch (e) {
+              }
+            }
+            if (!added) {
+              dim.spawnItem(currentHead, player.location);
+            }
+            player.sendMessage("\xA7e\u{1F43E} [\u732B\u8033\u30D7\u30EA\u30F3] \u88C5\u5099\u3057\u3066\u3044\u305F\u982D\u9632\u5177\u3092\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u306B\u5B89\u5168\u306B\u9000\u907F\u3057\u307E\u3057\u305F\uFF01\xA7r");
+          }
           equippable.setEquipment("Head", new ItemStack("mi:nekomimi_ears", 1));
         }
       } catch (e) {
       }
       player.addEffect("speed", 6e3, { amplifier: 0 });
       player.addEffect("slow_falling", 1200, { amplifier: 0 });
+      player.sendMessage("\xA7d\u{1F431}\u2728 [\u732B\u8033\u30D7\u30EA\u30F3] \u3077\u308B\u3077\u308B\u732B\u8033\u304C\u751F\u3048\u305F\u306B\u3083\uFF01 (\u79FB\u52D5\u901F\u5EA6\u4E0A\u6607 5\u5206 \uFF06 \u4F4E\u901F\u843D\u4E0B 1\u5206)\xA7r");
     } else {
       player.addEffect("regeneration", 200, { amplifier: 0 });
+      player.sendMessage("\xA7a\u{1F36E} [\u30D7\u30EA\u30F3] \u7F8E\u5473\u3057\u3044\u30D7\u30EA\u30F3\u3092\u98DF\u3079\u305F\uFF01 (\u518D\u751F\u80FD\u529B)\xA7r");
     }
   });
 }

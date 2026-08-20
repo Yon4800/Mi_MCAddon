@@ -3076,14 +3076,32 @@ function handlePuddingEat(player: Player, block: any, isNekomimi: boolean) {
       try {
         const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
         if (equippable) {
+          const currentHead = equippable.getEquipment("Head" as any);
+          if (currentHead && currentHead.typeId !== "mi:nekomimi_ears") {
+            // 既存の頭防具をインベントリに安全退避、満杯なら足元にドロップして消失を完全防止
+            const inv = (player.getComponent(EntityComponentTypes.Inventory) as any)?.container;
+            let added = false;
+            if (inv) {
+              try {
+                const leftover = inv.addItem(currentHead);
+                if (!leftover) added = true;
+              } catch (e) { }
+            }
+            if (!added) {
+              dim.spawnItem(currentHead, player.location);
+            }
+            player.sendMessage("§e🐾 [猫耳プリン] 装備していた頭防具をインベントリに安全に退避しました！§r");
+          }
           equippable.setEquipment("Head" as any, new ItemStack("mi:nekomimi_ears", 1));
         }
       } catch (e) { }
 
       player.addEffect("speed", 6000, { amplifier: 0 }); // 5m Speed
       player.addEffect("slow_falling", 1200, { amplifier: 0 }); // 1m Slow Falling
+      player.sendMessage("§d🐱✨ [猫耳プリン] ぷるぷる猫耳が生えたにゃ！ (移動速度上昇 5分 ＆ 低速落下 1分)§r");
     } else {
       player.addEffect("regeneration", 200, { amplifier: 0 });
+      player.sendMessage("§a🍮 [プリン] 美味しいプリンを食べた！ (再生能力)§r");
     }
   });
 }
