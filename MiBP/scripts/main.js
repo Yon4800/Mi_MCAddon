@@ -4602,10 +4602,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             }
             dim.spawnParticle("minecraft:lava_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
             dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
-            const totalBroken = actualBrokenBlocks + 1;
-            if (totalBroken > 1 || actualBrokenLeaves > 0) {
-              player.sendMessage(`\xA76\u{1F4A5} [\u4E00\u62EC\u7834\u58CA] \xA7e${totalBroken} \u500B\xA76 \u306E\u30D6\u30ED\u30C3\u30AF${actualBrokenLeaves > 0 ? `\uFF08\uFF0B\u8449\u3063\u3071 ${actualBrokenLeaves}\u500B\uFF09` : ""} \u3092\u4E00\u62EC\u7206\u7815\u63A1\u6398\u3057\u307E\u3057\u305F\uFF01\xA7r`);
-            }
           } finally {
             isVeinMiningInProgress.delete(pKey);
           }

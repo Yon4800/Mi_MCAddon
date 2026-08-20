@@ -5788,11 +5788,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             // 爆発火花エフェクト
             dim.spawnParticle("minecraft:lava_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
             dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
-
-            const totalBroken = actualBrokenBlocks + 1;
-            if (totalBroken > 1 || actualBrokenLeaves > 0) {
-              player.sendMessage(`§6💥 [一括破壊] §e${totalBroken} 個§6 のブロック${actualBrokenLeaves > 0 ? `（＋葉っぱ ${actualBrokenLeaves}個）` : ""} を一括爆砕採掘しました！§r`);
-            }
           } finally {
             isVeinMiningInProgress.delete(pKey);
           }
