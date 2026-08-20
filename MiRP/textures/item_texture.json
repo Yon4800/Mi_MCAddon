@@ -142,6 +142,9 @@
     },
     "ensei_ha_igyo": {
       "textures": "textures/items/igyo/ensei_ha_igyo"
+    },
+    "explosion_tool": {
+      "textures": "textures/items/explosion"
     }
   }
 }

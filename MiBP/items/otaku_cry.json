@@ -41,13 +41,13 @@
         "destroy_speeds": [
           {
             "block": {
-              "tags": "query.any_tag('stone', 'metal', 'iron', 'gold', 'diamond', 'rock', 'cobblestone', 'ore')"
+              "tags": "query.any_tag('minecraft:is_pickaxe_item_destructible', 'stone', 'metal', 'iron', 'gold', 'diamond', 'rock', 'cobblestone', 'ore')"
             },
             "speed": 6
           },
           {
             "block": {
-              "tags": "query.any_tag('dirt', 'sand', 'gravel', 'clay', 'grass')"
+              "tags": "query.any_tag('minecraft:is_shovel_item_destructible', 'dirt', 'sand', 'gravel', 'clay', 'grass')"
             },
             "speed": 6
           }

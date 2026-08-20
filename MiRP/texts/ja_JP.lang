@@ -102,3 +102,6 @@ item.mi:yen_10000.name=10,000 M紙幣
 ## 偉業
 item.mi:ensei_ha_igyo.name=遠征の偉業
 
+## ツール
+item.mi:explosion_tool.name=エクスプロージョンツール
+

@@ -4377,6 +4377,35 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
 });
+function isExplosionToolTarget(typeId) {
+  const isLog = typeId.includes("_log") || typeId.includes("_wood") || typeId.includes("_stem") || typeId.includes("_hyphae");
+  const isLeaf = typeId.includes("leaves") || typeId.includes("wart_block") || typeId.includes("shroomlight");
+  const isOre = typeId.includes("_ore") || typeId.includes("ancient_debris");
+  const isStone = [
+    "minecraft:andesite",
+    "minecraft:polished_andesite",
+    "minecraft:granite",
+    "minecraft:polished_granite",
+    "minecraft:diorite",
+    "minecraft:polished_diorite",
+    "minecraft:tuff",
+    "minecraft:polished_tuff",
+    "minecraft:deepslate",
+    "minecraft:cobbled_deepslate",
+    "minecraft:calcite",
+    "minecraft:dripstone_block"
+  ].includes(typeId);
+  return isLog || isLeaf || isOre || isStone;
+}
+world.beforeEvents.playerBreakBlock.subscribe((event) => {
+  const itemStack = event.itemStack;
+  if (itemStack && itemStack.typeId === "mi:explosion_tool") {
+    const blockTypeId = event.block.typeId;
+    if (!isExplosionToolTarget(blockTypeId)) {
+      event.cancel = true;
+    }
+  }
+});
 world.afterEvents.playerBreakBlock.subscribe((event) => {
   const player = event.player;
   if (!player) return;
@@ -4398,18 +4427,179 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
       grantAchievement(player, "josetsu");
     }
   }
+  const equippable = player.getComponent(EntityComponentTypes.Equippable);
+  const handItem = equippable?.getEquipment("Mainhand");
+  if (handItem && handItem.typeId === "mi:explosion_tool") {
+    const isLog = blockTypeId.includes("_log") || blockTypeId.includes("_wood") || blockTypeId.includes("_stem") || blockTypeId.includes("_hyphae");
+    const isOre = blockTypeId.includes("_ore") || blockTypeId.includes("ancient_debris");
+    const isStone = [
+      "minecraft:andesite",
+      "minecraft:polished_andesite",
+      "minecraft:granite",
+      "minecraft:polished_granite",
+      "minecraft:diorite",
+      "minecraft:polished_diorite",
+      "minecraft:tuff",
+      "minecraft:polished_tuff",
+      "minecraft:deepslate",
+      "minecraft:cobbled_deepslate",
+      "minecraft:calcite",
+      "minecraft:dripstone_block"
+    ].includes(blockTypeId);
+    if (isLog || isOre || isStone) {
+      const pKey = `${playerId}_vein_mining`;
+      if (!isVeinMiningInProgress.has(pKey)) {
+        isVeinMiningInProgress.add(pKey);
+        const blockLoc = event.block.location;
+        const dim = event.block.dimension;
+        system.run(() => {
+          try {
+            const maxBlocks = isLog ? 128 : 64;
+            const visited = /* @__PURE__ */ new Set();
+            const queue = [];
+            const destroyedBlocks = [];
+            const startKey = `${blockLoc.x},${blockLoc.y},${blockLoc.z}`;
+            visited.add(startKey);
+            queue.push(blockLoc);
+            while (queue.length > 0 && destroyedBlocks.length < maxBlocks) {
+              const curr = queue.shift();
+              for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dz = -1; dz <= 1; dz++) {
+                    if (dx === 0 && dy === 0 && dz === 0) continue;
+                    const nx = curr.x + dx;
+                    const ny = curr.y + dy;
+                    const nz = curr.z + dz;
+                    const key = `${nx},${ny},${nz}`;
+                    if (!visited.has(key)) {
+                      visited.add(key);
+                      try {
+                        const b = dim.getBlock({ x: nx, y: ny, z: nz });
+                        if (b) {
+                          const bType = b.typeId;
+                          if (bType === blockTypeId || isLog && (bType.includes("_log") || bType.includes("_wood") || bType.includes("_stem"))) {
+                            queue.push({ x: nx, y: ny, z: nz });
+                            destroyedBlocks.push({ x: nx, y: ny, z: nz });
+                          }
+                        }
+                      } catch (e) {
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            const destroyedLeaves = [];
+            if (isLog) {
+              const allTreePositions = [blockLoc, ...destroyedBlocks];
+              const leafVisited = /* @__PURE__ */ new Set();
+              for (const tp of allTreePositions) {
+                for (let lx = -4; lx <= 4; lx++) {
+                  for (let ly = -2; ly <= 6; ly++) {
+                    for (let lz = -4; lz <= 4; lz++) {
+                      const fx = tp.x + lx;
+                      const fy = tp.y + ly;
+                      const fz = tp.z + lz;
+                      const fKey = `${fx},${fy},${fz}`;
+                      if (!leafVisited.has(fKey) && !visited.has(fKey)) {
+                        leafVisited.add(fKey);
+                        try {
+                          const lb = dim.getBlock({ x: fx, y: fy, z: fz });
+                          if (lb && (lb.typeId.includes("leaves") || lb.typeId.includes("wart_block") || lb.typeId.includes("shroomlight"))) {
+                            destroyedLeaves.push({ x: fx, y: fy, z: fz });
+                          }
+                        } catch (e) {
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            let toolBroken = false;
+            let actualBrokenBlocks = 0;
+            let actualBrokenLeaves = 0;
+            const curHeld = equippable.getEquipment("Mainhand");
+            const durabilityComp = curHeld ? curHeld.getComponent("minecraft:durability") : null;
+            let unbreakingLevel = 0;
+            if (curHeld) {
+              const enchantComp = curHeld.getComponent("minecraft:enchantable");
+              if (enchantComp) {
+                const unbreaking = enchantComp.getEnchantment("unbreaking");
+                if (unbreaking) unbreakingLevel = unbreaking.level;
+              }
+            }
+            for (const db of destroyedBlocks) {
+              if (toolBroken) break;
+              try {
+                const b = dim.getBlock({ x: db.x, y: db.y, z: db.z });
+                if (b && !b.isAir) {
+                  dim.runCommand(`destroyblock ${db.x} ${db.y} ${db.z} drop`);
+                  actualBrokenBlocks++;
+                  if (player.gameMode !== "creative" && durabilityComp) {
+                    if (Math.random() < 1 / (unbreakingLevel + 1)) {
+                      durabilityComp.damage += 1;
+                      if (durabilityComp.damage >= durabilityComp.maxDurability) {
+                        toolBroken = true;
+                        equippable.setEquipment("Mainhand", void 0);
+                        dim.spawnParticle("minecraft:smoke_particle", player.location);
+                        player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30B8\u30E7\u30F3\u30C4\u30FC\u30EB\u304C\u4F7F\u3044\u679C\u305F\u3055\u308C\u3066\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+              }
+            }
+            for (const lf of destroyedLeaves) {
+              if (toolBroken) break;
+              try {
+                const lb = dim.getBlock({ x: lf.x, y: lf.y, z: lf.z });
+                if (lb && !lb.isAir) {
+                  dim.runCommand(`destroyblock ${lf.x} ${lf.y} ${lf.z} drop`);
+                  actualBrokenLeaves++;
+                  if (player.gameMode !== "creative" && durabilityComp) {
+                    if (Math.random() < 1 / (unbreakingLevel + 1)) {
+                      durabilityComp.damage += 1;
+                      if (durabilityComp.damage >= durabilityComp.maxDurability) {
+                        toolBroken = true;
+                        equippable.setEquipment("Mainhand", void 0);
+                        dim.spawnParticle("minecraft:smoke_particle", player.location);
+                        player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30B8\u30E7\u30F3\u30C4\u30FC\u30EB\u304C\u4F7F\u3044\u679C\u305F\u3055\u308C\u3066\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+              }
+            }
+            if (!toolBroken && curHeld && player.gameMode !== "creative") {
+              equippable.setEquipment("Mainhand", curHeld);
+            }
+            dim.spawnParticle("minecraft:lava_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
+            dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
+            const totalBroken = actualBrokenBlocks + 1;
+            if (totalBroken > 1 || actualBrokenLeaves > 0) {
+              player.sendMessage(`\xA76\u{1F4A5} [\u4E00\u62EC\u7834\u58CA] \xA7e${totalBroken} \u500B\xA76 \u306E\u30D6\u30ED\u30C3\u30AF${actualBrokenLeaves > 0 ? `\uFF08\uFF0B\u8449\u3063\u3071 ${actualBrokenLeaves}\u500B\uFF09` : ""} \u3092\u4E00\u62EC\u7206\u7815\u63A1\u6398\u3057\u307E\u3057\u305F\uFF01\xA7r`);
+            }
+          } finally {
+            isVeinMiningInProgress.delete(pKey);
+          }
+        });
+      }
+    }
+  }
   if (player.gameMode !== "creative") {
     try {
-      const equippable = player.getComponent(EntityComponentTypes.Equippable);
       if (!equippable) return;
-      const handItem = equippable.getEquipment("Mainhand");
-      if (!handItem) return;
-      const typeId = handItem.typeId;
+      const curHandItem = equippable.getEquipment("Mainhand");
+      if (!curHandItem) return;
+      const typeId = curHandItem.typeId;
       if (typeId === "mi:ota" || typeId === "mi:otaku_cry" || typeId === "mi:igyo_tool") {
-        const durability = handItem.getComponent("minecraft:durability");
+        const durability = curHandItem.getComponent("minecraft:durability");
         if (durability) {
           let unbreakingLevel = 0;
-          const enchantable = handItem.getComponent("minecraft:enchantable");
+          const enchantable = curHandItem.getComponent("minecraft:enchantable");
           if (enchantable) {
             const unbreaking = enchantable.getEnchantment("unbreaking");
             if (unbreaking) unbreakingLevel = unbreaking.level;
@@ -4423,7 +4613,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u9053\u5177\u304C\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
             } else {
               durability.damage += 1;
-              equippable.setEquipment("Mainhand", handItem);
+              equippable.setEquipment("Mainhand", curHandItem);
             }
           }
         }
@@ -4432,4 +4622,5 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     }
   }
 });
+var isVeinMiningInProgress = /* @__PURE__ */ new Set();
 console.warn("[Mi_Addon] All Scripts Loaded & Running Successfully!");
