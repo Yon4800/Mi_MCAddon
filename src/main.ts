@@ -5514,20 +5514,42 @@ world.afterEvents.itemUse.subscribe((event) => {
 // ----------------------------------------------------
 // 0.885. Block Break Before Event (Explosion Tool Target Restriction)
 // ----------------------------------------------------
-function isExplosionToolTarget(typeId: string): boolean {
-  const isLog = typeId.includes("_log") || typeId.includes("_wood") || typeId.includes("_stem") || typeId.includes("_hyphae");
-  const isLeaf = typeId.includes("leaves") || typeId.includes("wart_block") || typeId.includes("shroomlight");
-  const isOre = typeId.includes("_ore") || typeId.includes("ancient_debris");
-  const isStone = [
+function isLogBlock(typeId: string): boolean {
+  return typeId.includes("log") || 
+         typeId.includes("wood") || 
+         typeId.includes("stem") || 
+         typeId.includes("hyphae");
+}
+
+function isLeavesBlock(typeId: string): boolean {
+  return typeId.includes("leaves") || 
+         typeId.includes("wart_block") || 
+         typeId.includes("shroomlight") ||
+         typeId.includes("mangrove_roots");
+}
+
+function isOreBlock(typeId: string): boolean {
+  return typeId.includes("ore") || 
+         typeId.includes("ancient_debris") ||
+         typeId.includes("raw_iron_block") ||
+         typeId.includes("raw_gold_block") ||
+         typeId.includes("raw_copper_block");
+}
+
+function isStoneTypeBlock(typeId: string): boolean {
+  const stones = [
     "minecraft:andesite", "minecraft:polished_andesite",
     "minecraft:granite", "minecraft:polished_granite",
     "minecraft:diorite", "minecraft:polished_diorite",
     "minecraft:tuff", "minecraft:polished_tuff",
     "minecraft:deepslate", "minecraft:cobbled_deepslate",
     "minecraft:calcite", "minecraft:dripstone_block"
-  ].includes(typeId);
+  ];
+  return stones.some(st => typeId === st || typeId.includes(st.replace("minecraft:", "")));
+}
 
-  return isLog || isLeaf || isOre || isStone;
+function isExplosionToolTarget(typeId: string): boolean {
+  return isLogBlock(typeId) || isLeavesBlock(typeId) || isOreBlock(typeId) || isStoneTypeBlock(typeId);
 }
 
 world.beforeEvents.playerBreakBlock.subscribe((event) => {
@@ -5572,25 +5594,18 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
   // 3. エクスプロージョンツール (一括破壊・連鎖採掘 / Vein Mining)
   const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
-  const handItem = equippable?.getEquipment("Mainhand" as any);
+  const handItem = (event as any).itemStackBeforeBreak || equippable?.getEquipment("Mainhand" as any);
 
   if (handItem && handItem.typeId === "mi:explosion_tool") {
-    const isLog = blockTypeId.includes("_log") || blockTypeId.includes("_wood") || blockTypeId.includes("_stem") || blockTypeId.includes("_hyphae");
-    const isOre = blockTypeId.includes("_ore") || blockTypeId.includes("ancient_debris");
-    const isStone = [
-      "minecraft:andesite", "minecraft:polished_andesite",
-      "minecraft:granite", "minecraft:polished_granite",
-      "minecraft:diorite", "minecraft:polished_diorite",
-      "minecraft:tuff", "minecraft:polished_tuff",
-      "minecraft:deepslate", "minecraft:cobbled_deepslate",
-      "minecraft:calcite", "minecraft:dripstone_block"
-    ].includes(blockTypeId);
+    const isLog = isLogBlock(blockTypeId);
+    const isOre = isOreBlock(blockTypeId);
+    const isStone = isStoneTypeBlock(blockTypeId);
 
     if (isLog || isOre || isStone) {
       const pKey = `${playerId}_vein_mining`;
       if (!isVeinMiningInProgress.has(pKey)) {
         isVeinMiningInProgress.add(pKey);
-        const blockLoc = event.block.location;
+        const blockLoc = { x: event.block.location.x, y: event.block.location.y, z: event.block.location.z };
         const dim = event.block.dimension;
 
         system.run(() => {
@@ -5621,9 +5636,12 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                       visited.add(key);
                       try {
                         const b = dim.getBlock({ x: nx, y: ny, z: nz });
-                        if (b) {
+                        if (b && !b.isAir) {
                           const bType = b.typeId;
-                          if (bType === blockTypeId || (isLog && (bType.includes("_log") || bType.includes("_wood") || bType.includes("_stem")))) {
+                          const matches = (isLog && isLogBlock(bType)) ||
+                                          (isOre && (bType === blockTypeId || isOreBlock(bType))) ||
+                                          (isStone && (bType === blockTypeId || isStoneTypeBlock(bType)));
+                          if (matches) {
                             queue.push({ x: nx, y: ny, z: nz });
                             destroyedBlocks.push({ x: nx, y: ny, z: nz });
                           }
@@ -5635,7 +5653,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
 
-            // 木の場合は周囲の葉っぱも全破壊！
+            // 木の場合は周囲の葉っぱも全探索して一括破壊！
             const destroyedLeaves: { x: number, y: number, z: number }[] = [];
             if (isLog) {
               const allTreePositions = [blockLoc, ...destroyedBlocks];
@@ -5654,7 +5672,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                         leafVisited.add(fKey);
                         try {
                           const lb = dim.getBlock({ x: fx, y: fy, z: fz });
-                          if (lb && (lb.typeId.includes("leaves") || lb.typeId.includes("wart_block") || lb.typeId.includes("shroomlight"))) {
+                          if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
                             destroyedLeaves.push({ x: fx, y: fy, z: fz });
                           }
                         } catch (e) { }
@@ -5670,7 +5688,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             let actualBrokenBlocks = 0;
             let actualBrokenLeaves = 0;
 
-            const curHeld = equippable.getEquipment("Mainhand" as any);
+            const curHeld = equippable?.getEquipment("Mainhand" as any);
             const durabilityComp = curHeld ? (curHeld.getComponent("minecraft:durability") as any) : null;
             let unbreakingLevel = 0;
             if (curHeld) {
@@ -5681,13 +5699,13 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
 
-            // 破壊 & ドロップ実行
+            // 破壊 & ドロップ実行 (setblock air destroy でバニラと同じ破壊音・ドロップを発生させる)
             for (const db of destroyedBlocks) {
               if (toolBroken) break;
               try {
                 const b = dim.getBlock({ x: db.x, y: db.y, z: db.z });
                 if (b && !b.isAir) {
-                  dim.runCommand(`destroyblock ${db.x} ${db.y} ${db.z} drop`);
+                  dim.runCommand(`setblock ${db.x} ${db.y} ${db.z} air destroy`);
                   actualBrokenBlocks++;
 
                   // 耐久度消費
@@ -5696,7 +5714,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                       durabilityComp.damage += 1;
                       if (durabilityComp.damage >= durabilityComp.maxDurability) {
                         toolBroken = true;
-                        equippable.setEquipment("Mainhand" as any, undefined);
+                        equippable?.setEquipment("Mainhand" as any, undefined);
                         dim.spawnParticle("minecraft:smoke_particle", player.location);
                         player.sendMessage("§c💥 [Mi_Addon] エクスプロージョンツールが使い果たされて壊れてしまった！§r");
                       }
@@ -5712,7 +5730,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               try {
                 const lb = dim.getBlock({ x: lf.x, y: lf.y, z: lf.z });
                 if (lb && !lb.isAir) {
-                  dim.runCommand(`destroyblock ${lf.x} ${lf.y} ${lf.z} drop`);
+                  dim.runCommand(`setblock ${lf.x} ${lf.y} ${lf.z} air destroy`);
                   actualBrokenLeaves++;
 
                   // 葉っぱも1個につき耐久度消費
@@ -5721,7 +5739,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                       durabilityComp.damage += 1;
                       if (durabilityComp.damage >= durabilityComp.maxDurability) {
                         toolBroken = true;
-                        equippable.setEquipment("Mainhand" as any, undefined);
+                        equippable?.setEquipment("Mainhand" as any, undefined);
                         dim.spawnParticle("minecraft:smoke_particle", player.location);
                         player.sendMessage("§c💥 [Mi_Addon] エクスプロージョンツールが使い果たされて壊れてしまった！§r");
                       }
@@ -5733,7 +5751,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
             // 更新した耐久値を反映
             if (!toolBroken && curHeld && player.gameMode !== "creative") {
-              equippable.setEquipment("Mainhand" as any, curHeld);
+              equippable?.setEquipment("Mainhand" as any, curHeld);
             }
 
             // 爆発火花エフェクト

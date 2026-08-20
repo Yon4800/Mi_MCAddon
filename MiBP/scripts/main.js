@@ -4377,11 +4377,17 @@ world.afterEvents.itemUse.subscribe((event) => {
     return;
   }
 });
-function isExplosionToolTarget(typeId) {
-  const isLog = typeId.includes("_log") || typeId.includes("_wood") || typeId.includes("_stem") || typeId.includes("_hyphae");
-  const isLeaf = typeId.includes("leaves") || typeId.includes("wart_block") || typeId.includes("shroomlight");
-  const isOre = typeId.includes("_ore") || typeId.includes("ancient_debris");
-  const isStone = [
+function isLogBlock(typeId) {
+  return typeId.includes("log") || typeId.includes("wood") || typeId.includes("stem") || typeId.includes("hyphae");
+}
+function isLeavesBlock(typeId) {
+  return typeId.includes("leaves") || typeId.includes("wart_block") || typeId.includes("shroomlight") || typeId.includes("mangrove_roots");
+}
+function isOreBlock(typeId) {
+  return typeId.includes("ore") || typeId.includes("ancient_debris") || typeId.includes("raw_iron_block") || typeId.includes("raw_gold_block") || typeId.includes("raw_copper_block");
+}
+function isStoneTypeBlock(typeId) {
+  const stones = [
     "minecraft:andesite",
     "minecraft:polished_andesite",
     "minecraft:granite",
@@ -4394,8 +4400,11 @@ function isExplosionToolTarget(typeId) {
     "minecraft:cobbled_deepslate",
     "minecraft:calcite",
     "minecraft:dripstone_block"
-  ].includes(typeId);
-  return isLog || isLeaf || isOre || isStone;
+  ];
+  return stones.some((st) => typeId === st || typeId.includes(st.replace("minecraft:", "")));
+}
+function isExplosionToolTarget(typeId) {
+  return isLogBlock(typeId) || isLeavesBlock(typeId) || isOreBlock(typeId) || isStoneTypeBlock(typeId);
 }
 world.beforeEvents.playerBreakBlock.subscribe((event) => {
   const itemStack = event.itemStack;
@@ -4428,29 +4437,16 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     }
   }
   const equippable = player.getComponent(EntityComponentTypes.Equippable);
-  const handItem = equippable?.getEquipment("Mainhand");
+  const handItem = event.itemStackBeforeBreak || equippable?.getEquipment("Mainhand");
   if (handItem && handItem.typeId === "mi:explosion_tool") {
-    const isLog = blockTypeId.includes("_log") || blockTypeId.includes("_wood") || blockTypeId.includes("_stem") || blockTypeId.includes("_hyphae");
-    const isOre = blockTypeId.includes("_ore") || blockTypeId.includes("ancient_debris");
-    const isStone = [
-      "minecraft:andesite",
-      "minecraft:polished_andesite",
-      "minecraft:granite",
-      "minecraft:polished_granite",
-      "minecraft:diorite",
-      "minecraft:polished_diorite",
-      "minecraft:tuff",
-      "minecraft:polished_tuff",
-      "minecraft:deepslate",
-      "minecraft:cobbled_deepslate",
-      "minecraft:calcite",
-      "minecraft:dripstone_block"
-    ].includes(blockTypeId);
+    const isLog = isLogBlock(blockTypeId);
+    const isOre = isOreBlock(blockTypeId);
+    const isStone = isStoneTypeBlock(blockTypeId);
     if (isLog || isOre || isStone) {
       const pKey = `${playerId}_vein_mining`;
       if (!isVeinMiningInProgress.has(pKey)) {
         isVeinMiningInProgress.add(pKey);
-        const blockLoc = event.block.location;
+        const blockLoc = { x: event.block.location.x, y: event.block.location.y, z: event.block.location.z };
         const dim = event.block.dimension;
         system.run(() => {
           try {
@@ -4475,9 +4471,10 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                       visited.add(key);
                       try {
                         const b = dim.getBlock({ x: nx, y: ny, z: nz });
-                        if (b) {
+                        if (b && !b.isAir) {
                           const bType = b.typeId;
-                          if (bType === blockTypeId || isLog && (bType.includes("_log") || bType.includes("_wood") || bType.includes("_stem"))) {
+                          const matches = isLog && isLogBlock(bType) || isOre && (bType === blockTypeId || isOreBlock(bType)) || isStone && (bType === blockTypeId || isStoneTypeBlock(bType));
+                          if (matches) {
                             queue.push({ x: nx, y: ny, z: nz });
                             destroyedBlocks.push({ x: nx, y: ny, z: nz });
                           }
@@ -4505,7 +4502,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
                         leafVisited.add(fKey);
                         try {
                           const lb = dim.getBlock({ x: fx, y: fy, z: fz });
-                          if (lb && (lb.typeId.includes("leaves") || lb.typeId.includes("wart_block") || lb.typeId.includes("shroomlight"))) {
+                          if (lb && !lb.isAir && isLeavesBlock(lb.typeId)) {
                             destroyedLeaves.push({ x: fx, y: fy, z: fz });
                           }
                         } catch (e) {
@@ -4519,7 +4516,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
             let toolBroken = false;
             let actualBrokenBlocks = 0;
             let actualBrokenLeaves = 0;
-            const curHeld = equippable.getEquipment("Mainhand");
+            const curHeld = equippable?.getEquipment("Mainhand");
             const durabilityComp = curHeld ? curHeld.getComponent("minecraft:durability") : null;
             let unbreakingLevel = 0;
             if (curHeld) {
@@ -4534,14 +4531,14 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               try {
                 const b = dim.getBlock({ x: db.x, y: db.y, z: db.z });
                 if (b && !b.isAir) {
-                  dim.runCommand(`destroyblock ${db.x} ${db.y} ${db.z} drop`);
+                  dim.runCommand(`setblock ${db.x} ${db.y} ${db.z} air destroy`);
                   actualBrokenBlocks++;
                   if (player.gameMode !== "creative" && durabilityComp) {
                     if (Math.random() < 1 / (unbreakingLevel + 1)) {
                       durabilityComp.damage += 1;
                       if (durabilityComp.damage >= durabilityComp.maxDurability) {
                         toolBroken = true;
-                        equippable.setEquipment("Mainhand", void 0);
+                        equippable?.setEquipment("Mainhand", void 0);
                         dim.spawnParticle("minecraft:smoke_particle", player.location);
                         player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30B8\u30E7\u30F3\u30C4\u30FC\u30EB\u304C\u4F7F\u3044\u679C\u305F\u3055\u308C\u3066\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
                       }
@@ -4556,14 +4553,14 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               try {
                 const lb = dim.getBlock({ x: lf.x, y: lf.y, z: lf.z });
                 if (lb && !lb.isAir) {
-                  dim.runCommand(`destroyblock ${lf.x} ${lf.y} ${lf.z} drop`);
+                  dim.runCommand(`setblock ${lf.x} ${lf.y} ${lf.z} air destroy`);
                   actualBrokenLeaves++;
                   if (player.gameMode !== "creative" && durabilityComp) {
                     if (Math.random() < 1 / (unbreakingLevel + 1)) {
                       durabilityComp.damage += 1;
                       if (durabilityComp.damage >= durabilityComp.maxDurability) {
                         toolBroken = true;
-                        equippable.setEquipment("Mainhand", void 0);
+                        equippable?.setEquipment("Mainhand", void 0);
                         dim.spawnParticle("minecraft:smoke_particle", player.location);
                         player.sendMessage("\xA7c\u{1F4A5} [Mi_Addon] \u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30B8\u30E7\u30F3\u30C4\u30FC\u30EB\u304C\u4F7F\u3044\u679C\u305F\u3055\u308C\u3066\u58CA\u308C\u3066\u3057\u307E\u3063\u305F\uFF01\xA7r");
                       }
@@ -4574,7 +4571,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
               }
             }
             if (!toolBroken && curHeld && player.gameMode !== "creative") {
-              equippable.setEquipment("Mainhand", curHeld);
+              equippable?.setEquipment("Mainhand", curHeld);
             }
             dim.spawnParticle("minecraft:lava_particle", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
             dim.spawnParticle("minecraft:large_explosion", { x: blockLoc.x + 0.5, y: blockLoc.y + 0.5, z: blockLoc.z + 0.5 });
