@@ -1972,46 +1972,6 @@ function openMouseInsiderUI(player) {
     }
   });
 }
-function handleMouseCopyrightBeam(player) {
-  const dim = player.dimension;
-  const pLoc = player.location;
-  const equippable = player.getComponent(EntityComponentTypes.Equippable);
-  const headItem = equippable?.getEquipment("Head");
-  const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
-  const nearbyEntities = dim.getEntities({
-    location: pLoc,
-    maxDistance: 16
-  });
-  for (const entity of nearbyEntities) {
-    if (entity.id === player.id) continue;
-    const typeId = entity.typeId;
-    const isMonster = typeId.includes("zombie") || typeId.includes("skeleton") || typeId.includes("creeper") || typeId.includes("spider") || typeId.includes("phantom") || typeId.includes("drowned") || typeId.includes("witch") || typeId.includes("slime") || typeId.includes("enderman") || typeId === "mi:blebcat" || typeId === "mi:m_tutinoko_hostile" || typeId === "mi:researcher";
-    if (isMonster) {
-      const eLoc = entity.location;
-      dim.spawnParticle("minecraft:witch_spell_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
-      dim.spawnParticle("minecraft:smoke_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
-      try {
-        entity.kill();
-      } catch (e) {
-        entity.remove();
-      }
-    }
-  }
-  dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
-  dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
-  if (isWearingTinFoil) {
-    dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 2, z: pLoc.z });
-  } else {
-    const bank = getPlayerBankAccount(player);
-    const fine = 500;
-    if (bank >= fine) {
-      setPlayerBankAccount(player, bank - fine);
-    } else {
-      player.addEffect("blindness", 120, { amplifier: 0 });
-      player.addEffect("darkness", 120, { amplifier: 0 });
-    }
-  }
-}
 function openWealthRankUI(player, blockLoc) {
   const cash = countPlayerCash(player);
   const bank = getPlayerBankAccount(player);
@@ -4510,11 +4470,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     }
   }
   if (itemStack.typeId === "mi:mouse") {
-    if (player.isSneaking) {
-      openMouseInsiderUI(player);
-    } else {
-      handleMouseCopyrightBeam(player);
-    }
+    openMouseInsiderUI(player);
     return;
   }
   if (itemStack.typeId.startsWith("mi:yen_")) {

@@ -2521,69 +2521,6 @@ function openMouseInsiderUI(player: Player) {
   });
 }
 
-function handleMouseCopyrightBeam(player: Player) {
-  const dim = player.dimension;
-  const pLoc = player.location;
-
-  // 1. Check Tin Foil Hat
-  const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
-  const headItem = equippable?.getEquipment("Head" as any);
-  const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
-
-  // 2. Kill nearby monsters (Rights Holder Takedown)
-  const nearbyEntities = dim.getEntities({
-    location: pLoc,
-    maxDistance: 16
-  });
-
-  for (const entity of nearbyEntities) {
-    if (entity.id === player.id) continue;
-    const typeId = entity.typeId;
-    const isMonster = 
-      typeId.includes("zombie") || 
-      typeId.includes("skeleton") || 
-      typeId.includes("creeper") || 
-      typeId.includes("spider") || 
-      typeId.includes("phantom") || 
-      typeId.includes("drowned") || 
-      typeId.includes("witch") || 
-      typeId.includes("slime") || 
-      typeId.includes("enderman") || 
-      typeId === "mi:blebcat" || 
-      typeId === "mi:m_tutinoko_hostile" || 
-      typeId === "mi:researcher";
-
-    if (isMonster) {
-      const eLoc = entity.location;
-      dim.spawnParticle("minecraft:witch_spell_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
-      dim.spawnParticle("minecraft:smoke_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
-      try {
-        entity.kill();
-      } catch (e) {
-        entity.remove();
-      }
-    }
-  }
-
-  // Visual & Sound Feedback
-  dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
-  dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
-
-  // Penalty / Fine
-  if (isWearingTinFoil) {
-    dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 2, z: pLoc.z });
-  } else {
-    const bank = getPlayerBankAccount(player);
-    const fine = 500;
-    if (bank >= fine) {
-      setPlayerBankAccount(player, bank - fine);
-    } else {
-      player.addEffect("blindness", 120, { amplifier: 0 });
-      player.addEffect("darkness", 120, { amplifier: 0 });
-    }
-  }
-}
-
 // Wealth Rank UI
 function openWealthRankUI(player: Player, blockLoc?: { x: number, y: number, z: number }) {
   const cash = countPlayerCash(player);
@@ -5689,13 +5626,9 @@ world.afterEvents.itemUse.subscribe((event) => {
     }
   }
 
-  // 3.9. 禁忌の黒いネズミ (mi:mouse) の使用 (通常: 権利者削除ビーム / Shift: インサイダー株価操作)
+  // 3.9. 禁忌の黒いネズミ (mi:mouse) の使用 (右クリック: 夢の国法務部インサイダー株価操作UI)
   if (itemStack.typeId === "mi:mouse") {
-    if (player.isSneaking) {
-      openMouseInsiderUI(player);
-    } else {
-      handleMouseCopyrightBeam(player);
-    }
+    openMouseInsiderUI(player);
     return;
   }
 
