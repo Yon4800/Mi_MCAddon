@@ -875,7 +875,8 @@ var SELLABLE_ITEMS = [
   { typeId: "mi:bunchou", name: "\u6587\u9CE5", price: 800 },
   { typeId: "mi:anko", name: "\u3042\u3093\u3053", price: 300 },
   { typeId: "mi:ecology_server", name: "\u751F\u614B\u30B5\u30FC\u30D0\u30FC", price: 4e3 },
-  { typeId: "mi:baked_mochocho", name: "\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7", price: 400 }
+  { typeId: "mi:baked_mochocho", name: "\u30D9\u30A4\u30AF\u30C9\u30E2\u30C1\u30E7\u30C1\u30E7", price: 400 },
+  { typeId: "mi:mouse", name: "\u7981\u5FCC\u306E\u9ED2\u3044\u30CD\u30BA\u30DF", price: 15e3 }
 ];
 var playerBankBalanceMap = /* @__PURE__ */ new Map();
 var playerStockHoldingsMap = /* @__PURE__ */ new Map();
@@ -1920,6 +1921,96 @@ ${resultMsg}`).button("\u{1F3B2} \u3082\u3046\u4E00\u5EA6\u5F15\u304F").button("
       openFinancialPortalUI(player, blockLoc);
     }
   });
+}
+var mouseInsiderCooldownMap = /* @__PURE__ */ new Map();
+function openMouseInsiderUI(player) {
+  if (!canOpenUI(player)) return;
+  const form = new ActionFormData().title("\u{1F42D} \u5922\u306E\u56FD\u6CD5\u52D9\u90E8\u30FB\u682A\u5F0F\u5E02\u5834\u30A4\u30F3\u30B5\u30A4\u30C0\u30FC\u901A\u5831").body(
+    "\xA7c\u26A0\uFE0F\u3010\u8B66\u544A: \u7981\u5FCC\u306E\u9ED2\u3044\u30CD\u30BA\u30DF\u3011\xA7r\n\u6307\u5B9A\u3057\u305F\u4E0A\u5834\u4F01\u696D\u3092\u6CD5\u52D9\u90E8\u306B\u8457\u4F5C\u6A29\u4FB5\u5BB3\u3067\u901A\u5831\u3057\u3066\u682A\u4FA1\u3092\u66B4\u843D\u3055\u305B\u305F\u308A\u3001\u516C\u5F0F\u30E9\u30A4\u30BB\u30F3\u30B9\u5951\u7D04\u3092\u7D50\u3093\u3067\u6025\u9A30\u3055\u305B\u308B\u3053\u3068\u304C\u3067\u304D\u307E\u3059\u3002\n\n\u64CD\u4F5C\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044:"
+  );
+  for (const stock of stockMarket) {
+    form.button(`\u{1F6A8} ${stock.name} (${stock.code})
+\u6CD5\u52D9\u90E8\u306B\u8457\u4F5C\u6A29\u901A\u5831 (-30%)`);
+  }
+  form.button("\u2728 \u5922\u306E\u56FD\u516C\u5F0F\u30E9\u30A4\u30BB\u30F3\u30B9\u5951\u7D04\u3092\u7D50\u3076\n(\u4FDD\u6709\u682A\u306E\u682A\u4FA1\u6025\u9A30 +40%)");
+  form.button("\u{1F519} \u30AD\u30E3\u30F3\u30BB\u30EB");
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === void 0) return;
+    const now = Date.now();
+    const lastUse = mouseInsiderCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 12e4) {
+      const remainSec = Math.ceil((12e4 - (now - lastUse)) / 1e3);
+      player.sendMessage(`\xA7c\u26A0\uFE0F [\u6CD5\u52D9\u90E8] \u30A4\u30F3\u30B5\u30A4\u30C0\u30FC\u901A\u5831\u306F\u73FE\u5728\u76E3\u67FB\u4E2D\u3067\u3059\u3002\uFF08\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3: \u6B8B\u308A${remainSec}\u79D2\uFF09\xA7r`);
+      return;
+    }
+    if (res.selection < stockMarket.length) {
+      const stock = stockMarket[res.selection];
+      mouseInsiderCooldownMap.set(player.id, now);
+      stock.prevPrice = stock.currentPrice;
+      const dropAmount = Math.max(1, Math.floor(stock.currentPrice * 0.3));
+      stock.currentPrice = Math.max(1, stock.currentPrice - dropAmount);
+      stock.history.push(stock.currentPrice);
+      if (stock.history.length > 20) stock.history.shift();
+      saveMarketWorldData();
+      player.dimension.spawnParticle("minecraft:witch_spell_particle", player.location);
+      player.dimension.spawnParticle("minecraft:large_explosion", player.location);
+    } else if (res.selection === stockMarket.length) {
+      mouseInsiderCooldownMap.set(player.id, now);
+      const holdings = getPlayerStockHoldings(player);
+      let targetStock = stockMarket.find((s) => (holdings[s.code] || 0) > 0);
+      if (!targetStock) {
+        targetStock = stockMarket[Math.floor(Math.random() * stockMarket.length)];
+      }
+      targetStock.prevPrice = targetStock.currentPrice;
+      const riseAmount = Math.max(1, Math.floor(targetStock.currentPrice * 0.4));
+      targetStock.currentPrice += riseAmount;
+      targetStock.history.push(targetStock.currentPrice);
+      if (targetStock.history.length > 20) targetStock.history.shift();
+      saveMarketWorldData();
+      player.dimension.spawnParticle("minecraft:totem_particle", player.location);
+      player.dimension.spawnParticle("minecraft:villager_happy", player.location);
+    }
+  });
+}
+function handleMouseCopyrightBeam(player) {
+  const dim = player.dimension;
+  const pLoc = player.location;
+  const equippable = player.getComponent(EntityComponentTypes.Equippable);
+  const headItem = equippable?.getEquipment("Head");
+  const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
+  const nearbyEntities = dim.getEntities({
+    location: pLoc,
+    maxDistance: 16
+  });
+  for (const entity of nearbyEntities) {
+    if (entity.id === player.id) continue;
+    const typeId = entity.typeId;
+    const isMonster = typeId.includes("zombie") || typeId.includes("skeleton") || typeId.includes("creeper") || typeId.includes("spider") || typeId.includes("phantom") || typeId.includes("drowned") || typeId.includes("witch") || typeId.includes("slime") || typeId.includes("enderman") || typeId === "mi:blebcat" || typeId === "mi:m_tutinoko_hostile" || typeId === "mi:researcher";
+    if (isMonster) {
+      const eLoc = entity.location;
+      dim.spawnParticle("minecraft:witch_spell_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
+      dim.spawnParticle("minecraft:smoke_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
+      try {
+        entity.kill();
+      } catch (e) {
+        entity.remove();
+      }
+    }
+  }
+  dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+  dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+  if (isWearingTinFoil) {
+    dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 2, z: pLoc.z });
+  } else {
+    const bank = getPlayerBankAccount(player);
+    const fine = 500;
+    if (bank >= fine) {
+      setPlayerBankAccount(player, bank - fine);
+    } else {
+      player.addEffect("blindness", 120, { amplifier: 0 });
+      player.addEffect("darkness", 120, { amplifier: 0 });
+    }
+  }
 }
 function openWealthRankUI(player, blockLoc) {
   const cash = countPlayerCash(player);
@@ -4387,6 +4478,42 @@ world.afterEvents.itemUse.subscribe((event) => {
       player.sendMessage(`\xA7d\u26A1 [\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u63A2\u77E5] \u96FB\u6CE2\u304C\u8D85\u5F37\u529B\u3067\u3059\uFF01 Misskey\u958B\u767A\u6240\u306F\u76EE\u3068\u9F3B\u306E\u5148\uFF08\u7D04 \xA7e${dist}m \u5148\xA7d\uFF09\u306B\u3042\u308A\u307E\u3059\uFF01\xA7r`);
     } else {
       player.sendMessage(`\xA7b\u{1F4E1} [\u751F\u614B\u30B5\u30FC\u30D0\u30FC\u63A2\u77E5] \u958B\u767A\u6240\u306E\u96FB\u6CE2\u3092\u30AD\u30E3\u30C3\u30C1\uFF01 \u65B9\u89D2: \u3010\xA7a${dirName}\xA7b \u65B9\u5411 / \u7D04 \xA7e${dist}m \u5148\xA7b\uFF08X: \xA7f${targetHQ.x}\xA7b, Z: \xA7f${targetHQ.z}\xA7b \u4ED8\u8FD1\uFF09\u3011\xA7r`);
+    }
+    return;
+  }
+  if (itemStack.typeId === "minecraft:fishing_rod") {
+    const dim = player.dimension;
+    const pLoc = player.location;
+    let isNearWater = false;
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dy = -2; dy <= 1; dy++) {
+        for (let dz = -3; dz <= 3; dz++) {
+          try {
+            const b = dim.getBlock({ x: Math.floor(pLoc.x + dx), y: Math.floor(pLoc.y + dy), z: Math.floor(pLoc.z + dz) });
+            if (b && (b.isLiquid || b.typeId.includes("water"))) {
+              isNearWater = true;
+              break;
+            }
+          } catch (e) {
+          }
+        }
+        if (isNearWater) break;
+      }
+      if (isNearWater) break;
+    }
+    if (isNearWater && Math.random() < 0.0156) {
+      system.run(() => {
+        dim.spawnItem(new ItemStack("mi:mouse", 1), pLoc);
+        dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+        dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+      });
+    }
+  }
+  if (itemStack.typeId === "mi:mouse") {
+    if (player.isSneaking) {
+      openMouseInsiderUI(player);
+    } else {
+      handleMouseCopyrightBeam(player);
     }
     return;
   }

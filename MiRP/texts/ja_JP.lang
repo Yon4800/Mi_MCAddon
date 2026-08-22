@@ -105,3 +105,6 @@ item.mi:ensei_ha_igyo.name=遠征の偉業
 ## ツール
 item.mi:explosion_tool.name=エクスプロージョンツール
 
+## 特殊アイテム
+item.mi:mouse.name=禁忌の黒いネズミ
+

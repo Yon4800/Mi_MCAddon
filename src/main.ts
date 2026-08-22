@@ -1142,6 +1142,7 @@ const SELLABLE_ITEMS: { typeId: string, name: string, price: number }[] = [
   { typeId: "mi:anko", name: "あんこ", price: 300 },
   { typeId: "mi:ecology_server", name: "生態サーバー", price: 4000 },
   { typeId: "mi:baked_mochocho", name: "ベイクドモチョチョ", price: 400 },
+  { typeId: "mi:mouse", name: "禁忌の黒いネズミ", price: 15000 },
 ];
 
 // --- Bank Account & Storage ---
@@ -2447,6 +2448,140 @@ function openScratchLotteryUI(player: Player, blockLoc?: { x: number, y: number,
       openFinancialPortalUI(player, blockLoc);
     }
   });
+}
+
+// ----------------------------------------------------
+// 0.69. Taboo Mouse of Copyright (夢の国法務部 & インサイダー通報システム)
+// ----------------------------------------------------
+const mouseInsiderCooldownMap = new Map<string, number>();
+
+function openMouseInsiderUI(player: Player) {
+  if (!canOpenUI(player)) return;
+
+  const form = new ActionFormData()
+    .title("🐭 夢の国法務部・株式市場インサイダー通報")
+    .body(
+      "§c⚠️【警告: 禁忌の黒いネズミ】§r\n" +
+      "指定した上場企業を法務部に著作権侵害で通報して株価を暴落させたり、公式ライセンス契約を結んで急騰させることができます。\n\n" +
+      "操作を選択してください:"
+    );
+
+  for (const stock of stockMarket) {
+    form.button(`🚨 ${stock.name} (${stock.code})\n法務部に著作権通報 (-30%)`);
+  }
+  form.button("✨ 夢の国公式ライセンス契約を結ぶ\n(保有株の株価急騰 +40%)");
+  form.button("🔙 キャンセル");
+
+  showFormSafe(player, form, (res) => {
+    if (res.canceled || res.selection === undefined) return;
+
+    const now = Date.now();
+    const lastUse = mouseInsiderCooldownMap.get(player.id) || 0;
+    if (now - lastUse < 120000) { // 2 min cooldown
+      const remainSec = Math.ceil((120000 - (now - lastUse)) / 1000);
+      player.sendMessage(`§c⚠️ [法務部] インサイダー通報は現在監査中です。（クールダウン: 残り${remainSec}秒）§r`);
+      return;
+    }
+
+    if (res.selection < stockMarket.length) {
+      // Report target stock
+      const stock = stockMarket[res.selection];
+      mouseInsiderCooldownMap.set(player.id, now);
+
+      stock.prevPrice = stock.currentPrice;
+      const dropAmount = Math.max(1, Math.floor(stock.currentPrice * 0.30));
+      stock.currentPrice = Math.max(1, stock.currentPrice - dropAmount);
+      stock.history.push(stock.currentPrice);
+      if (stock.history.length > 20) stock.history.shift();
+
+      saveMarketWorldData();
+
+      player.dimension.spawnParticle("minecraft:witch_spell_particle", player.location);
+      player.dimension.spawnParticle("minecraft:large_explosion", player.location);
+    } else if (res.selection === stockMarket.length) {
+      // License contract boost
+      mouseInsiderCooldownMap.set(player.id, now);
+      const holdings = getPlayerStockHoldings(player);
+      let targetStock = stockMarket.find(s => (holdings[s.code] || 0) > 0);
+      if (!targetStock) {
+        targetStock = stockMarket[Math.floor(Math.random() * stockMarket.length)];
+      }
+
+      targetStock.prevPrice = targetStock.currentPrice;
+      const riseAmount = Math.max(1, Math.floor(targetStock.currentPrice * 0.40));
+      targetStock.currentPrice += riseAmount;
+      targetStock.history.push(targetStock.currentPrice);
+      if (targetStock.history.length > 20) targetStock.history.shift();
+
+      saveMarketWorldData();
+
+      player.dimension.spawnParticle("minecraft:totem_particle", player.location);
+      player.dimension.spawnParticle("minecraft:villager_happy", player.location);
+    }
+  });
+}
+
+function handleMouseCopyrightBeam(player: Player) {
+  const dim = player.dimension;
+  const pLoc = player.location;
+
+  // 1. Check Tin Foil Hat
+  const equippable = player.getComponent(EntityComponentTypes.Equippable) as EntityEquippableComponent;
+  const headItem = equippable?.getEquipment("Head" as any);
+  const isWearingTinFoil = headItem?.typeId === "mi:tin_foil_hat";
+
+  // 2. Kill nearby monsters (Rights Holder Takedown)
+  const nearbyEntities = dim.getEntities({
+    location: pLoc,
+    maxDistance: 16
+  });
+
+  for (const entity of nearbyEntities) {
+    if (entity.id === player.id) continue;
+    const typeId = entity.typeId;
+    const isMonster = 
+      typeId.includes("zombie") || 
+      typeId.includes("skeleton") || 
+      typeId.includes("creeper") || 
+      typeId.includes("spider") || 
+      typeId.includes("phantom") || 
+      typeId.includes("drowned") || 
+      typeId.includes("witch") || 
+      typeId.includes("slime") || 
+      typeId.includes("enderman") || 
+      typeId === "mi:blebcat" || 
+      typeId === "mi:m_tutinoko_hostile" || 
+      typeId === "mi:researcher";
+
+    if (isMonster) {
+      const eLoc = entity.location;
+      dim.spawnParticle("minecraft:witch_spell_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
+      dim.spawnParticle("minecraft:smoke_particle", { x: eLoc.x, y: eLoc.y + 1, z: eLoc.z });
+      try {
+        entity.kill();
+      } catch (e) {
+        entity.remove();
+      }
+    }
+  }
+
+  // Visual & Sound Feedback
+  dim.spawnParticle("minecraft:large_explosion", { x: pLoc.x, y: pLoc.y + 1, z: pLoc.z });
+  dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+
+  // Penalty / Fine
+  if (isWearingTinFoil) {
+    dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 2, z: pLoc.z });
+  } else {
+    const bank = getPlayerBankAccount(player);
+    const fine = 500;
+    if (bank >= fine) {
+      setPlayerBankAccount(player, bank - fine);
+    } else {
+      player.addEffect("blindness", 120, { amplifier: 0 });
+      player.addEffect("darkness", 120, { amplifier: 0 });
+    }
+  }
 }
 
 // Wealth Rank UI
@@ -5518,6 +5653,48 @@ world.afterEvents.itemUse.subscribe((event) => {
       player.sendMessage(`§d⚡ [生態サーバー探知] 電波が超強力です！ Misskey開発所は目と鼻の先（約 §e${dist}m 先§d）にあります！§r`);
     } else {
       player.sendMessage(`§b📡 [生態サーバー探知] 開発所の電波をキャッチ！ 方角: 【§a${dirName}§b 方向 / 約 §e${dist}m 先§b（X: §f${targetHQ.x}§b, Z: §f${targetHQ.z}§b 付近）】§r`);
+    }
+    return;
+  }
+
+  // 3.8. 釣り竿による川底・水辺からの禁忌の黒いネズミ引き揚げ (1/64 = 約1.5% の超レア枠)
+  if (itemStack.typeId === "minecraft:fishing_rod") {
+    // Check if player is near water (river/water fishing)
+    const dim = player.dimension;
+    const pLoc = player.location;
+    let isNearWater = false;
+
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dy = -2; dy <= 1; dy++) {
+        for (let dz = -3; dz <= 3; dz++) {
+          try {
+            const b = dim.getBlock({ x: Math.floor(pLoc.x + dx), y: Math.floor(pLoc.y + dy), z: Math.floor(pLoc.z + dz) });
+            if (b && (b.isLiquid || b.typeId.includes("water"))) {
+              isNearWater = true;
+              break;
+            }
+          } catch (e) { }
+        }
+        if (isNearWater) break;
+      }
+      if (isNearWater) break;
+    }
+
+    if (isNearWater && Math.random() < 0.0156) { // 1/64 = 1.56%
+      system.run(() => {
+        dim.spawnItem(new ItemStack("mi:mouse", 1), pLoc);
+        dim.spawnParticle("minecraft:witch_spell_particle", { x: pLoc.x, y: pLoc.y + 1.2, z: pLoc.z });
+        dim.spawnParticle("minecraft:totem_particle", { x: pLoc.x, y: pLoc.y + 1.5, z: pLoc.z });
+      });
+    }
+  }
+
+  // 3.9. 禁忌の黒いネズミ (mi:mouse) の使用 (通常: 権利者削除ビーム / Shift: インサイダー株価操作)
+  if (itemStack.typeId === "mi:mouse") {
+    if (player.isSneaking) {
+      openMouseInsiderUI(player);
+    } else {
+      handleMouseCopyrightBeam(player);
     }
     return;
   }

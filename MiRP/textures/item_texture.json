@@ -145,6 +145,9 @@
     },
     "explosion_tool": {
       "textures": "textures/items/explosion"
+    },
+    "mouse": {
+      "textures": "textures/items/mouse"
     }
   }
 }

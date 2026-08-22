@@ -102,3 +102,6 @@ item.mi:ensei_ha_igyo.name=Expedition Achievement
 ## Tools
 item.mi:explosion_tool.name=Explosion Tool
 
+## Special Items
+item.mi:mouse.name=Taboo Black Mouse
+
